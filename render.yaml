@@ -3,7 +3,7 @@ services:
     name: cad-parser-api
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python app.py
+    startCommand: cd render && python server.py
     plan: free
     envVars:
       - key: FLASK_ENV
