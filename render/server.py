@@ -105,17 +105,33 @@ def after_request(response):
 def serve_index():
     try:
         app.logger.info("Attempting to serve index.html")
-        templates_dir = os.path.join(RENDER_DIR, 'templates')
-        app.logger.info(f"Looking for index.html in: {templates_dir}")
-        app.logger.info(f"Directory contents: {os.listdir(templates_dir)}")
+        app.logger.info(f"Current working directory: {os.getcwd()}")
+        app.logger.info(f"RENDER_DIR: {RENDER_DIR}")
+        app.logger.info(f"Template folder: {app.template_folder}")
+        app.logger.info(f"Static folder: {app.static_folder}")
         
-        # Try both methods of serving the file
+        # Check if template directory exists
+        if not os.path.exists(app.template_folder):
+            app.logger.error(f"Template directory does not exist: {app.template_folder}")
+            return "Template directory not found", 500
+            
+        # Check if index.html exists
+        index_path = os.path.join(app.template_folder, 'index.html')
+        if not os.path.exists(index_path):
+            app.logger.error(f"index.html not found at: {index_path}")
+            return "index.html not found", 500
+            
+        app.logger.info(f"Found index.html at: {index_path}")
+        
+        # Try rendering the template
         try:
+            app.logger.info("Attempting to render template")
             return render_template('index.html')
         except Exception as template_error:
             app.logger.error(f"Template rendering failed: {str(template_error)}")
             app.logger.info("Falling back to send_from_directory")
-            return send_from_directory(templates_dir, 'index.html')
+            return send_from_directory(app.template_folder, 'index.html')
+            
     except Exception as e:
         app.logger.error(f"Error serving index.html: {str(e)}")
         app.logger.error(f"Current directory: {os.getcwd()}")
