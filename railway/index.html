@@ -1,111 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CAD Parser Interface</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .button-group {
-            margin: 20px 0;
-        }
-        button {
-            padding: 10px 20px;
-            margin: 5px;
-            cursor: pointer;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        #result {
-            margin-top: 20px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            white-space: pre-wrap;
-        }
-        textarea {
-            width: 100%;
-            height: 100px;
-            margin: 10px 0;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>SOS Admin UI</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-    <h1>CAD Parser Interface</h1>
-    
-    <div>
-        <label for="input">Enter Label:</label>
-        <textarea id="input" placeholder="Enter your label here..."></textarea>
+  <div class="container">
+    <h1>SOS Admin Panel</h1>
+
+    <div class="section">
+      <label for="fileInput">📤 Upload JSON</label>
+      <input type="file" id="fileInput" accept=".json" />
     </div>
 
-    <div class="button-group">
-        <button onclick="parseAndClean()">Parse/Clean</button>
-        <button onclick="cleanWithAI()">Clean with AI</button>
-        <button onclick="evaluateAndPush()">Evaluate and Push</button>
-        <button onclick="pushToNeo4j()">Push to Neo4j</button>
+    <div class="section">
+      <button onclick="runParser()">🧹 Parse & Clean</button>
     </div>
 
-    <div id="result"></div>
+    <div class="section">
+      <label>👁 Preview Dictionary</label>
+      <pre id="jsonPreview">{ Cleaned JSON output }</pre>
+    </div>
 
-    <script>
-        const API_URL = 'https://endpoint-5pqu.onrender.com';
+    <div class="section">
+      <button onclick="pushToNeo()">🚀 Push to Neo4j</button>
+    </div>
+  </div>
 
-        async function makeRequest(endpoint, data) {
-            try {
-                const response = await fetch(`${API_URL}${endpoint}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(data)
-                });
-                const result = await response.json();
-                document.getElementById('result').textContent = JSON.stringify(result, null, 2);
-            } catch (error) {
-                document.getElementById('result').textContent = `Error: ${error.message}`;
-            }
-        }
-
-        function parseAndClean() {
-            const input = document.getElementById('input').value;
-            makeRequest('/parse', [{"name": input, "shape": "rectangle"}]);
-        }
-
-        function cleanWithAI() {
-            const input = document.getElementById('input').value;
-            makeRequest('/clean_with_ai', [{"name": input, "shape": "rectangle"}]);
-        }
-
-        function evaluateAndPush() {
-            const input = document.getElementById('input').value;
-            makeRequest('/evaluate_and_push', {
-                "component_id": input,
-                "quantity": 1
-            });
-        }
-
-        function pushToNeo4j() {
-            const input = document.getElementById('input').value;
-            makeRequest('/push', [{
-                "name": input,
-                "shape": "rectangle",
-                "component_id": `CMP-${input}`,
-                "node_id": "N-001"
-            }]);
-        }
-    </script>
+  <script src="script.js"></script>
 </body>
-</html> 
+</html>
