@@ -21,6 +21,7 @@ from parse_pdf import parse_pdf_file
 from openai_cleaner import clean_with_ai, gpt_clean_and_validate
 from neo_writer import write_to_neo4j, push_to_neo4j
 from generate_ids import assign_ids
+from db import init_db, push_to_db, get_all_components
 
 # Initialize Sentry for error tracking
 sentry_sdk.init(
@@ -36,6 +37,9 @@ print(f"RENDER_DIR: {RENDER_DIR}")  # Debug print
 
 # Create Flask app with explicit paths
 app = Flask(__name__)
+
+# Initialize database
+init_db(app)
 
 # Debug prints for paths
 print(f"Current working directory: {os.getcwd()}")
@@ -218,15 +222,29 @@ def push_to_neo4j():
     try:
         data = request.json
         if not data or not isinstance(data, list):
-            app.logger.error('Invalid input data for Neo4j push')
+            app.logger.error('Invalid input data for database push')
             return jsonify({'error': 'Invalid input data'}), 400
         
-        app.logger.info('Pushing data to Neo4j')
-        result = write_to_neo4j(data)
-        app.logger.info('Successfully pushed to Neo4j')
-        return jsonify(result)
+        app.logger.info('Pushing data to database')
+        success, message = push_to_db(data)
+        if success:
+            app.logger.info('Successfully pushed to database')
+            return jsonify({'status': 'success', 'message': message})
+        else:
+            app.logger.error(f'Error pushing to database: {message}')
+            return jsonify({'status': 'error', 'message': message}), 500
     except Exception as e:
         app.logger.error(f'Error in push_to_neo4j: {str(e)}')
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/components', methods=['GET'])
+def get_components():
+    """Get all components from database"""
+    try:
+        components = get_all_components()
+        return jsonify(components)
+    except Exception as e:
+        app.logger.error(f'Error getting components: {str(e)}')
         return jsonify({'error': str(e)}), 500
 
 @app.route('/health')
