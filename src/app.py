@@ -11,7 +11,7 @@ import uuid
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 
-# Import your modules
+# Import your modules - Updated for Render deployment
 from parse_dxf import parse_dxf_file
 from dwg_cad_ifc_parser import parse_dwg_file, parse_ifc_file
 from parse_pdf import parse_pdf_file
