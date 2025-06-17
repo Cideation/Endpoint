@@ -240,6 +240,20 @@ def get_components():
         app.logger.error(f'Error getting components: {str(e)}')
         return jsonify({'error': str(e)}), 500
 
+@app.route('/db_data', methods=['GET'])
+def get_db_data():
+    """Get all data from PostgreSQL database"""
+    try:
+        components = get_all_components()
+        return jsonify({
+            'status': 'success',
+            'count': len(components),
+            'data': components
+        })
+    except Exception as e:
+        app.logger.error(f'Error getting database data: {str(e)}')
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/health')
 def health_check():
     return jsonify({"status": "healthy"}), 200
