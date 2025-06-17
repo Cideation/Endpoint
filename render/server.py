@@ -1,4 +1,4 @@
-from flask import Flask, send_from_directory, request, jsonify, render_template, current_app
+from flask import Flask, send_from_directory, request, jsonify, render_template, current_app, send_file
 import os
 from werkzeug.utils import secure_filename
 import sys
@@ -110,13 +110,11 @@ def serve_index():
         app.logger.info(f"Template folder: {app.template_folder}")
         app.logger.info(f"Static folder: {app.static_folder}")
         
-        # Try to read the file directly
+        # Try to send the file directly
         index_path = os.path.join(app.template_folder, 'index.html')
         if os.path.exists(index_path):
             app.logger.info(f"Found index.html at: {index_path}")
-            with open(index_path, 'r') as f:
-                content = f.read()
-            return content, 200, {'Content-Type': 'text/html'}
+            return send_file(index_path, mimetype='text/html')
         else:
             app.logger.error(f"index.html not found at: {index_path}")
             return "index.html not found", 500
