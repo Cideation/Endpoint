@@ -1,4 +1,4 @@
-from flask import Flask, send_from_directory, request, jsonify
+from flask import Flask, send_from_directory, request, jsonify, render_template
 import os
 from werkzeug.utils import secure_filename
 import sys
@@ -30,7 +30,12 @@ sentry_sdk.init(
     environment=os.environ.get('FLASK_ENV', 'development')
 )
 
-app = Flask(__name__, static_folder='static', template_folder='templates')
+# Get the absolute path to the render directory
+RENDER_DIR = os.path.dirname(os.path.abspath(__file__))
+
+app = Flask(__name__,
+           static_folder=os.path.join(RENDER_DIR, 'static'),
+           template_folder=os.path.join(RENDER_DIR, 'templates'))
 
 # Configure logging
 if not os.path.exists('logs'):
@@ -46,7 +51,7 @@ app.logger.setLevel(logging.INFO)
 app.logger.info('CAD Parser startup')
 
 # Configure upload folder
-UPLOAD_FOLDER = 'uploads'
+UPLOAD_FOLDER = os.path.join(RENDER_DIR, 'uploads')
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -84,7 +89,7 @@ def after_request(response):
 
 @app.route('/')
 def serve_index():
-    return send_from_directory('templates', 'index.html')
+    return render_template('index.html')
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
