@@ -1,7 +1,5 @@
 from flask import Flask, request, jsonify
-from openai_cleaner import gpt_clean_and_validate
-from transformer_main import parse_data
-from neo_push import push_to_neo
+import traceback
 
 app = Flask(__name__)
 
@@ -9,27 +7,34 @@ app = Flask(__name__)
 def parse_and_dispatch():
     try:
         data = request.get_json()
-        agent_id = data.get("agent_id", "unknown")
-        phase = data.get("phase", "Alpha")
-        original_payload = data.get("original_payload", {})
 
-        # Step 1: Clean it
-        cleaned = gpt_clean_and_validate(original_payload)
+        if data is None:
+            raise ValueError("No JSON body received")
 
-        # Step 2: Parse it
-        parsed = parse_data(cleaned)
+        file_name = data.get("file_name", "unnamed_file")
+        raw_data = data.get("raw_data", "")
 
-        # Step 3: Push to Neo4j
-        push_to_neo(parsed)
+        print(f"[INFO] Received file_name: {file_name}")
+        print(f"[INFO] Received raw_data preview: {raw_data[:100]}")
 
+        # Simulate output
         return jsonify({
-            "status": "success",
-            "agent_id": agent_id,
-            "cleaned": cleaned,
-            "parsed": parsed
+            "status": "ok",
+            "message": f"Successfully parsed {file_name}",
+            "summary": {
+                "length": len(raw_data),
+                "preview": raw_data[:50]
+            }
         })
+
     except Exception as e:
+        print("❌ ERROR OCCURRED:")
+        traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5001)
+@app.route('/', methods=['GET'])
+def index():
+    return "Endpoint is live", 200
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5001)
