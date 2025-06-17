@@ -430,6 +430,39 @@ def neo4j_health_check():
             'error_type': type(e).__name__
         }), 500
 
+@app.route('/test_push', methods=['POST'])
+def test_push():
+    """Simple test endpoint to debug push issues"""
+    try:
+        # Test PostgreSQL
+        try:
+            components = get_all_components()
+            postgres_status = f"Connected - {len(components)} components"
+        except Exception as e:
+            postgres_status = f"Failed: {str(e)}"
+        
+        # Test Neo4j
+        try:
+            from neo_writer import get_neo4j_connection
+            graph = get_neo4j_connection()
+            if graph:
+                neo4j_status = "Connected"
+            else:
+                neo4j_status = "Connection failed"
+        except Exception as e:
+            neo4j_status = f"Failed: {str(e)}"
+        
+        return jsonify({
+            'postgres_status': postgres_status,
+            'neo4j_status': neo4j_status,
+            'tested_at': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({
+            'error': str(e),
+            'error_type': type(e).__name__
+        }), 500
+
 @app.route('/health')
 def health_check():
     return jsonify({"status": "healthy"}), 200
