@@ -1,9 +1,28 @@
 from flask import Flask, request, jsonify
 import uuid
-from openai_cleaner import gpt_clean_and_validate
-from generate_ids import assign_ids
-from neo_writer import push_to_neo4j
 import os
+
+# Try to import optional modules, with fallbacks
+try:
+    from openai_cleaner import gpt_clean_and_validate
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
+    print("Warning: OpenAI cleaner not available")
+
+try:
+    from generate_ids import assign_ids
+    ID_GENERATOR_AVAILABLE = True
+except ImportError:
+    ID_GENERATOR_AVAILABLE = False
+    print("Warning: ID generator not available")
+
+try:
+    from neo_writer import push_to_neo4j
+    NEO4J_AVAILABLE = True
+except ImportError:
+    NEO4J_AVAILABLE = False
+    print("Warning: Neo4j writer not available")
 
 app = Flask(__name__)
 
@@ -48,6 +67,9 @@ def evaluate_and_push():
 @app.route('/push', methods=['POST'])
 def push():
     data = request.get_json()
+    if not NEO4J_AVAILABLE:
+        return jsonify({"status": "error", "message": "Neo4j not available"}), 500
+    
     try:
         # Use the existing neo_writer module
         push_to_neo4j(data)
@@ -59,11 +81,17 @@ def push():
 @app.route('/clean_with_ai', methods=['POST'])
 def clean_with_ai():
     """Use OpenAI to clean and validate data"""
+    if not OPENAI_AVAILABLE:
+        return jsonify({"status": "error", "message": "OpenAI not available"}), 500
+    
     raw_data = request.get_json()
     try:
         cleaned_data = gpt_clean_and_validate(raw_data)
         # Add IDs to cleaned data
-        result = assign_ids(cleaned_data)
+        if ID_GENERATOR_AVAILABLE:
+            result = assign_ids(cleaned_data)
+        else:
+            result = clean_and_id(cleaned_data)
         return jsonify(result)
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -72,7 +100,15 @@ def clean_with_ai():
 @app.route('/health', methods=['GET'])
 def health():
     """Health check endpoint"""
-    return jsonify({"status": "healthy", "service": "CAD Parser API"})
+    return jsonify({
+        "status": "healthy", 
+        "service": "CAD Parser API",
+        "features": {
+            "openai": OPENAI_AVAILABLE,
+            "neo4j": NEO4J_AVAILABLE,
+            "id_generator": ID_GENERATOR_AVAILABLE
+        }
+    })
 
 
 if __name__ == '__main__':
