@@ -2,3 +2,5 @@ flask
 python-dotenv
 openai
 py2neo
+ezdxf
+ifcopenshell

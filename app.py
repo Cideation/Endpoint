@@ -1,5 +1,9 @@
 from flask import Flask, request, jsonify
 import uuid
+from openai_cleaner import gpt_clean_and_validate
+from generate_ids import assign_ids
+from neo_writer import push_to_neo4j
+import os
 
 app = Flask(__name__)
 
@@ -17,15 +21,13 @@ def clean_and_id(data):
         })
     return cleaned
 
+
 @app.route('/parse', methods=['POST'])
 def parse():
     raw = request.get_json()
     result = clean_and_id(raw)
     return jsonify(result)
 
-
-if __name__ == '__main__':
-    app.run(debug=True)
 
 @app.route('/evaluate_and_push', methods=['POST'])
 def evaluate_and_push():
@@ -35,7 +37,6 @@ def evaluate_and_push():
     unit_price = 1200  # Example fixed price
     estimated_cost = quantity * unit_price
 
-
     return jsonify({
         "status": "pushed",
         "component_id": component_id,
@@ -43,11 +44,37 @@ def evaluate_and_push():
         "estimated_cost": estimated_cost
     })
 
+
 @app.route('/push', methods=['POST'])
 def push():
     data = request.get_json()
-    for item in data:
-        component_id = item.get("component_id")
-        name = item.get("name", "Unknown")
-        print(f"[Neo4j] {component_id} → {name}")
-    return jsonify({"status": "pushed", "count": len(data)})
+    try:
+        # Use the existing neo_writer module
+        push_to_neo4j(data)
+        return jsonify({"status": "pushed", "count": len(data)})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/clean_with_ai', methods=['POST'])
+def clean_with_ai():
+    """Use OpenAI to clean and validate data"""
+    raw_data = request.get_json()
+    try:
+        cleaned_data = gpt_clean_and_validate(raw_data)
+        # Add IDs to cleaned data
+        result = assign_ids(cleaned_data)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/health', methods=['GET'])
+def health():
+    """Health check endpoint"""
+    return jsonify({"status": "healthy", "service": "CAD Parser API"})
+
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(debug=True, host='0.0.0.0', port=port)
