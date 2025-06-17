@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAD Parser Interface</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --hover-color: #45a049;
+            --error-color: #f44336;
+            --success-color: #4CAF50;
+            --border-color: #ddd;
+            --nav-bg: #2c3e50;
+            --nav-text: #ecf0f1;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+
+        .navbar {
+            background-color: var(--nav-bg);
+            padding: 1rem;
+            color: var(--nav-text);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--nav-text);
+            text-decoration: none;
+        }
+
+        .navbar-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .navbar-links a {
+            color: var(--nav-text);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        .navbar-links a:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+        }
+
+        .main-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .sidebar {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .button-group {
+            margin: 1.5rem 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        button {
+            padding: 12px 24px;
+            cursor: pointer;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 120px;
+            gap: 0.5rem;
+        }
+
+        button:hover {
+            background-color: var(--hover-color);
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            position: relative;
+            color: transparent;
+        }
+
+        .loading::after {
+            content: "";
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin: -8px 0 0 -8px;
+            border: 2px solid #ffffff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: button-loading-spinner 1s linear infinite;
+        }
+
+        @keyframes button-loading-spinner {
+            from { transform: rotate(0turn); }
+            to { transform: rotate(1turn); }
+        }
+
+        #result {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            white-space: pre-wrap;
+            background-color: #f8f9fa;
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .success {
+            border-color: var(--success-color);
+            background-color: #e8f5e9;
+        }
+
+        .error {
+            border-color: var(--error-color);
+            background-color: #ffebee;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            margin: 1rem 0;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+        }
+
+        .status {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .status.success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status.error {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+
+        .file-upload {
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            border: 2px dashed var(--border-color);
+            border-radius: 4px;
+            text-align: center;
+            transition: border-color 0.3s;
+        }
+
+        .file-upload:hover {
+            border-color: var(--primary-color);
+        }
+
+        .file-upload input[type="file"] {
+            display: none;
+        }
+
+        .file-upload label {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .file-upload label:hover {
+            background-color: var(--hover-color);
+        }
+
+        .history-item {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-item .timestamp {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .history-item .action {
+            font-weight: 500;
+        }
+
+        .history-item .status {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
+        .history-item .status.success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .history-item .status.error {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="#" class="navbar-brand">CAD Parser</a>
+        <div class="navbar-links">
+            <a href="https://github.com/Cideation/Endpoint" target="_blank"><i class="fab fa-github"></i> Source</a>
+            <a href="#" onclick="showDocumentation()"><i class="fas fa-book"></i> Docs</a>
+            <a href="#" onclick="showSettings()"><i class="fas fa-cog"></i> Settings</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="main-content">
+            <h1>CAD Parser Interface</h1>
+            
+            <div class="file-upload">
+                <input type="file" id="fileInput" accept=".dxf,.dwg,.ifc,.pdf" onchange="handleFileUpload(event)">
+                <label for="fileInput"><i class="fas fa-upload"></i> Upload CAD File</label>
+                <p>Supported formats: DXF, DWG, IFC, PDF</p>
+            </div>
+            
+            <div>
+                <label for="input">Enter Label:</label>
+                <textarea id="input" placeholder="Enter your label here..."></textarea>
+            </div>
+
+            <div class="button-group">
+                <button onclick="parseAndClean()" id="parseBtn"><i class="fas fa-broom"></i> Parse/Clean</button>
+                <button onclick="cleanWithAI()" id="aiBtn"><i class="fas fa-robot"></i> Clean with AI</button>
+                <button onclick="evaluateAndPush()" id="evalBtn"><i class="fas fa-check-circle"></i> Evaluate and Push</button>
+                <button onclick="pushToNeo4j()" id="pushBtn"><i class="fas fa-database"></i> Push to Neo4j</button>
+            </div>
+
+            <div id="status" class="status"></div>
+            <div id="result"></div>
+        </div>
+
+        <div class="sidebar">
+            <h2>Operation History</h2>
+            <div id="history"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://endpoint-5pqu.onrender.com';
+        const buttons = {
+            parse: document.getElementById('parseBtn'),
+            ai: document.getElementById('aiBtn'),
+            eval: document.getElementById('evalBtn'),
+            push: document.getElementById('pushBtn')
+        };
+        const status = document.getElementById('status');
+        const result = document.getElementById('result');
+        const history = document.getElementById('history');
+
+        function showStatus(message, type) {
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 5000);
+        }
+
+        function setLoading(button, isLoading) {
+            button.disabled = isLoading;
+            if (isLoading) {
+                button.classList.add('loading');
+            } else {
+                button.classList.remove('loading');
+            }
+        }
+
+        function addToHistory(action, success, message) {
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            const timestamp = new Date().toLocaleTimeString();
+            item.innerHTML = `
+                <div>
+                    <span class="action">${action}</span>
+                    <span class="timestamp">${timestamp}</span>
+                </div>
+                <span class="status ${success ? 'success' : 'error'}">${success ? 'Success' : 'Error'}</span>
+            `;
+            history.insertBefore(item, history.firstChild);
+        }
+
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(`${API_URL}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                document.getElementById('input').value = result.filename;
+                showStatus('File uploaded successfully!', 'success');
+                addToHistory('File Upload', true, 'File uploaded successfully');
+            } catch (error) {
+                showStatus(`Error uploading file: ${error.message}`, 'error');
+                addToHistory('File Upload', false, error.message);
+            }
+        }
+
+        async function makeRequest(endpoint, data, buttonId, action) {
+            const button = buttons[buttonId];
+            setLoading(button, true);
+            result.className = '';
+            
+            try {
+                const response = await fetch(`${API_URL}${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                document.getElementById('result').textContent = JSON.stringify(result, null, 2);
+                document.getElementById('result').classList.add('success');
+                showStatus('Operation completed successfully!', 'success');
+                addToHistory(action, true, 'Operation completed successfully');
+            } catch (error) {
+                document.getElementById('result').textContent = `Error: ${error.message}`;
+                document.getElementById('result').classList.add('error');
+                showStatus(`Error: ${error.message}`, 'error');
+                addToHistory(action, false, error.message);
+            } finally {
+                setLoading(button, false);
+            }
+        }
+
+        function parseAndClean() {
+            const input = document.getElementById('input').value;
+            if (!input) {
+                showStatus('Please enter a label', 'error');
+                return;
+            }
+            makeRequest('/parse', [{"name": input, "shape": "rectangle"}], 'parse', 'Parse/Clean');
+        }
+
+        function cleanWithAI() {
+            const input = document.getElementById('input').value;
+            if (!input) {
+                showStatus('Please enter a label', 'error');
+                return;
+            }
+            makeRequest('/clean_with_ai', [{"name": input, "shape": "rectangle"}], 'ai', 'Clean with AI');
+        }
+
+        function evaluateAndPush() {
+            const input = document.getElementById('input').value;
+            if (!input) {
+                showStatus('Please enter a label', 'error');
+                return;
+            }
+            makeRequest('/evaluate_and_push', {
+                "component_id": input,
+                "quantity": 1
+            }, 'eval', 'Evaluate and Push');
+        }
+
+        function pushToNeo4j() {
+            const input = document.getElementById('input').value;
+            if (!input) {
+                showStatus('Please enter a label', 'error');
+                return;
+            }
+            makeRequest('/push', [{
+                "name": input,
+                "shape": "rectangle",
+                "component_id": `CMP-${input}`,
+                "node_id": "N-001"
+            }], 'push', 'Push to Neo4j');
+        }
+
+        function showDocumentation() {
+            // TODO: Implement documentation modal
+            alert('Documentation coming soon!');
+        }
+
+        function showSettings() {
+            // TODO: Implement settings modal
+            alert('Settings coming soon!');
+        }
+    </script>
+</body>
+</html> 
