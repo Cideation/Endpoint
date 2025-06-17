@@ -101,7 +101,7 @@ def after_request(response):
     app.logger.info(f'Request duration: {duration:.2f}s')
     return log_response(response)
 
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 def serve_index():
     try:
         app.logger.info("Attempting to serve index.html")
@@ -279,7 +279,10 @@ def get_components():
 
 @app.route('/health')
 def health_check():
+    app.logger.info("Health check endpoint called")
     return jsonify({"status": "healthy"}), 200
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000))) 
+    port = int(os.environ.get('PORT', 10000))
+    app.logger.info(f"Starting server on port {port}")
+    app.run(host='0.0.0.0', port=port) 
