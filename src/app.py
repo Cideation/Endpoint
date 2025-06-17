@@ -240,6 +240,99 @@ def get_components():
         app.logger.error(f'Error getting components: {str(e)}')
         return jsonify({'error': str(e)}), 500
 
+@app.route('/analytics', methods=['GET'])
+def get_analytics():
+    """Get analytics data from both databases"""
+    try:
+        # Get PostgreSQL data
+        postgres_components = get_all_components()
+        
+        # Calculate analytics
+        total_components = len(postgres_components)
+        total_cost = sum(c.get('estimated_cost', 0) for c in postgres_components)
+        avg_cost = total_cost / total_components if total_components > 0 else 0
+        
+        analytics = {
+            'postgres_data': {
+                'total_components': total_components,
+                'total_cost': total_cost,
+                'average_cost': avg_cost,
+                'components': postgres_components
+            },
+            'neo4j_status': 'Connected' if get_neo4j_connection() else 'Not Connected',
+            'generated_at': datetime.now().isoformat()
+        }
+        
+        return jsonify(analytics)
+    except Exception as e:
+        app.logger.error(f'Error in analytics: {str(e)}')
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/process_enhanced', methods=['POST'])
+def process_enhanced():
+    """Enhanced processing pipeline: Parse → Clean → Store → Graph"""
+    try:
+        data = request.json
+        if not data or not isinstance(data, list):
+            return jsonify({'error': 'Invalid input data'}), 400
+        
+        # Step 1: Parse files (enhanced)
+        parsed_results = []
+        for item in data:
+            filename = item.get('name')
+            if filename:
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                if os.path.exists(filepath):
+                    ext = filename.rsplit('.', 1)[1].lower()
+                    if ext == 'dxf':
+                        result = parse_dxf_file(filepath)
+                    elif ext == 'dwg':
+                        result = parse_dwg_file(filepath)
+                    elif ext == 'ifc':
+                        result = parse_ifc_file(filepath)
+                    elif ext == 'pdf':
+                        result = parse_pdf_file(filepath)
+                    else:
+                        continue
+                    parsed_results.append(result)
+        
+        # Step 2: Extract components from parsed results
+        all_components = []
+        for result in parsed_results:
+            if result.get('status') == 'success':
+                all_components.extend(result.get('components', []))
+        
+        # Step 3: Clean with AI
+        cleaned_result = clean_with_ai(all_components)
+        
+        # Step 4: Store in PostgreSQL
+        if cleaned_result.get('status') == 'success':
+            cleaned_components = cleaned_result.get('cleaned_components', [])
+            success, message = push_to_db(cleaned_components)
+            
+            # Step 5: Push to Neo4j
+            neo4j_result = push_to_neo4j(cleaned_components)
+            
+            return jsonify({
+                'status': 'success',
+                'pipeline': {
+                    'parsed_files': len(parsed_results),
+                    'components_extracted': len(all_components),
+                    'components_cleaned': len(cleaned_components),
+                    'postgres_status': 'success' if success else 'failed',
+                    'neo4j_status': neo4j_result.get('message', 'failed'),
+                    'total_processed': len(cleaned_components)
+                },
+                'cleaned_data': cleaned_components,
+                'processed_at': datetime.now().isoformat()
+            })
+        else:
+            return jsonify({'error': 'AI cleaning failed'}), 500
+            
+    except Exception as e:
+        app.logger.error(f'Error in enhanced processing: {str(e)}')
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/db_data', methods=['GET'])
 def get_db_data():
     """Get all data from PostgreSQL database"""
