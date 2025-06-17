@@ -211,23 +211,23 @@ def evaluate_and_push():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/push', methods=['POST'])
-def push_to_neo4j():
+def push_to_neo4j_route():
     try:
         data = request.json
         if not data or not isinstance(data, list):
             app.logger.error('Invalid input data for database push')
             return jsonify({'error': 'Invalid input data'}), 400
         
-        app.logger.info('Pushing data to database')
-        success, message = push_to_db(data)
-        if success:
-            app.logger.info('Successfully pushed to database')
-            return jsonify({'status': 'success', 'message': message})
+        app.logger.info('Pushing data to Neo4j')
+        result = push_to_neo4j(data)
+        if 'error' not in result:
+            app.logger.info('Successfully pushed to Neo4j')
+            return jsonify({'status': 'success', 'message': result.get('message', 'Data pushed successfully')})
         else:
-            app.logger.error(f'Error pushing to database: {message}')
-            return jsonify({'status': 'error', 'message': message}), 500
+            app.logger.error(f'Error pushing to Neo4j: {result.get("error")}')
+            return jsonify({'status': 'error', 'message': result.get('error')}), 500
     except Exception as e:
-        app.logger.error(f'Error in push_to_neo4j: {str(e)}')
+        app.logger.error(f'Error in push_to_neo4j_route: {str(e)}')
         return jsonify({'error': str(e)}), 500
 
 @app.route('/components', methods=['GET'])
