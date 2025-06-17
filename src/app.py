@@ -218,17 +218,58 @@ def push_to_neo4j_route():
             app.logger.error('Invalid input data for database push')
             return jsonify({'error': 'Invalid input data'}), 400
         
+        app.logger.info(f'Starting push process with {len(data)} items')
+        
+        # Step 1: Push to PostgreSQL
+        app.logger.info('Pushing data to PostgreSQL')
+        try:
+            success, message = push_to_db(data)
+            if not success:
+                app.logger.error(f'PostgreSQL push failed: {message}')
+                return jsonify({'status': 'error', 'message': f'PostgreSQL failed: {message}'}), 500
+            app.logger.info('PostgreSQL push successful')
+        except Exception as pg_error:
+            app.logger.error(f'PostgreSQL error: {str(pg_error)}')
+            return jsonify({'status': 'error', 'message': f'PostgreSQL error: {str(pg_error)}'}), 500
+        
+        # Step 2: Push to Neo4j
         app.logger.info('Pushing data to Neo4j')
-        result = push_to_neo4j(data)
-        if 'error' not in result:
-            app.logger.info('Successfully pushed to Neo4j')
-            return jsonify({'status': 'success', 'message': result.get('message', 'Data pushed successfully')})
-        else:
-            app.logger.error(f'Error pushing to Neo4j: {result.get("error")}')
-            return jsonify({'status': 'error', 'message': result.get('error')}), 500
+        try:
+            result = push_to_neo4j(data)
+            if 'error' in result:
+                app.logger.error(f'Neo4j push failed: {result.get("error")}')
+                return jsonify({
+                    'status': 'partial_success', 
+                    'message': f'PostgreSQL: success, Neo4j: failed - {result.get("error")}',
+                    'postgres_status': 'success',
+                    'neo4j_status': 'failed'
+                }), 500
+            app.logger.info('Neo4j push successful')
+        except Exception as neo4j_error:
+            app.logger.error(f'Neo4j error: {str(neo4j_error)}')
+            return jsonify({
+                'status': 'partial_success',
+                'message': f'PostgreSQL: success, Neo4j: error - {str(neo4j_error)}',
+                'postgres_status': 'success',
+                'neo4j_status': 'error'
+            }), 500
+        
+        app.logger.info('Both PostgreSQL and Neo4j pushes successful')
+        return jsonify({
+            'status': 'success', 
+            'message': 'Data pushed to both PostgreSQL and Neo4j successfully',
+            'postgres_status': 'success',
+            'neo4j_status': 'success',
+            'items_processed': len(data)
+        })
+        
     except Exception as e:
         app.logger.error(f'Error in push_to_neo4j_route: {str(e)}')
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'status': 'error',
+            'message': f'Unexpected error: {str(e)}',
+            'error_type': type(e).__name__
+        }), 500
 
 @app.route('/components', methods=['GET'])
 def get_components():
