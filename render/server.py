@@ -1,4 +1,4 @@
-from flask import Flask, send_from_directory, request, jsonify, render_template
+from flask import Flask, send_from_directory, request, jsonify, render_template, current_app
 import os
 from werkzeug.utils import secure_filename
 import sys
@@ -36,7 +36,9 @@ RENDER_DIR = os.path.dirname(os.path.abspath(__file__))
 print(f"RENDER_DIR: {RENDER_DIR}")  # Debug print
 
 # Create Flask app with explicit paths
-app = Flask(__name__)
+app = Flask(__name__,
+           static_folder=os.path.join(RENDER_DIR, 'static'),
+           template_folder=os.path.join(RENDER_DIR, 'templates'))
 
 # Initialize database
 init_db(app)
@@ -46,6 +48,8 @@ print(f"Current working directory: {os.getcwd()}")
 print(f"Files in current directory: {os.listdir('.')}")
 print(f"Files in render directory: {os.listdir(RENDER_DIR)}")
 print(f"Files in templates directory: {os.listdir(os.path.join(RENDER_DIR, 'templates'))}")
+print(f"Static folder: {app.static_folder}")
+print(f"Template folder: {app.template_folder}")
 
 # Configure logging
 if not os.path.exists('logs'):
@@ -104,9 +108,19 @@ def serve_index():
         templates_dir = os.path.join(RENDER_DIR, 'templates')
         app.logger.info(f"Looking for index.html in: {templates_dir}")
         app.logger.info(f"Directory contents: {os.listdir(templates_dir)}")
-        return send_from_directory(templates_dir, 'index.html')
+        
+        # Try both methods of serving the file
+        try:
+            return render_template('index.html')
+        except Exception as template_error:
+            app.logger.error(f"Template rendering failed: {str(template_error)}")
+            app.logger.info("Falling back to send_from_directory")
+            return send_from_directory(templates_dir, 'index.html')
     except Exception as e:
         app.logger.error(f"Error serving index.html: {str(e)}")
+        app.logger.error(f"Current directory: {os.getcwd()}")
+        app.logger.error(f"Template folder: {app.template_folder}")
+        app.logger.error(f"Template folder contents: {os.listdir(app.template_folder) if os.path.exists(app.template_folder) else 'Directory does not exist'}")
         return str(e), 500
 
 @app.route('/upload', methods=['POST'])
