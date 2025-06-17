@@ -109,14 +109,8 @@ def serve_index():
         app.logger.info(f"RENDER_DIR: {RENDER_DIR}")
         app.logger.info(f"Static folder: {app.static_folder}")
         
-        # Try to send the file from static directory
-        index_path = os.path.join(app.static_folder, 'index.html')
-        if os.path.exists(index_path):
-            app.logger.info(f"Found index.html at: {index_path}")
-            return send_file(index_path, mimetype='text/html')
-        else:
-            app.logger.error(f"index.html not found at: {index_path}")
-            return "index.html not found", 500
+        # Try to serve the file using Flask's static file serving
+        return send_from_directory(app.static_folder, 'index.html')
             
     except Exception as e:
         app.logger.error(f"Error serving index.html: {str(e)}")
