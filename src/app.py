@@ -16,7 +16,7 @@ from parse_dxf import parse_dxf_file
 from dwg_cad_ifc_parser import parse_dwg_file, parse_ifc_file
 from parse_pdf import parse_pdf_file
 from openai_cleaner import clean_with_ai, gpt_clean_and_validate
-from neo_writer import write_to_neo4j, push_to_neo4j
+from neo_writer import write_to_neo4j, push_to_neo4j, get_neo4j_connection
 from generate_ids import assign_ids
 from db import init_db, push_to_db, get_all_components
 
@@ -252,6 +252,17 @@ def get_analytics():
         total_cost = sum(c.get('estimated_cost', 0) for c in postgres_components)
         avg_cost = total_cost / total_components if total_components > 0 else 0
         
+        # Check Neo4j connection safely
+        neo4j_status = "Not Connected"
+        try:
+            graph = get_neo4j_connection()
+            if graph:
+                neo4j_status = "Connected"
+            else:
+                neo4j_status = "Connection Failed"
+        except Exception as neo4j_error:
+            neo4j_status = f"Error: {str(neo4j_error)[:100]}"
+        
         analytics = {
             'postgres_data': {
                 'total_components': total_components,
@@ -259,14 +270,19 @@ def get_analytics():
                 'average_cost': avg_cost,
                 'components': postgres_components
             },
-            'neo4j_status': 'Connected' if get_neo4j_connection() else 'Not Connected',
+            'neo4j_status': neo4j_status,
             'generated_at': datetime.now().isoformat()
         }
         
         return jsonify(analytics)
     except Exception as e:
         app.logger.error(f'Error in analytics: {str(e)}')
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'error': str(e),
+            'postgres_data': {'total_components': 0, 'total_cost': 0, 'average_cost': 0, 'components': []},
+            'neo4j_status': 'Error checking connection',
+            'generated_at': datetime.now().isoformat()
+        }), 500
 
 @app.route('/process_enhanced', methods=['POST'])
 def process_enhanced():
@@ -346,6 +362,32 @@ def get_db_data():
     except Exception as e:
         app.logger.error(f'Error getting database data: {str(e)}')
         return jsonify({'error': str(e)}), 500
+
+@app.route('/neo4j_health', methods=['GET'])
+def neo4j_health_check():
+    """Simple Neo4j health check"""
+    try:
+        from neo_writer import get_neo4j_connection
+        graph = get_neo4j_connection()
+        if graph:
+            return jsonify({
+                'status': 'healthy',
+                'neo4j_connection': 'Connected',
+                'message': 'Neo4j is accessible'
+            })
+        else:
+            return jsonify({
+                'status': 'unhealthy',
+                'neo4j_connection': 'Failed',
+                'message': 'Could not connect to Neo4j'
+            }), 500
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'neo4j_connection': 'Error',
+            'message': str(e),
+            'error_type': type(e).__name__
+        }), 500
 
 @app.route('/health')
 def health_check():
