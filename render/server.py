@@ -279,19 +279,7 @@ def get_components():
 
 @app.route('/health')
 def health_check():
-    """Health check endpoint"""
-    return jsonify({
-        'status': 'healthy',
-        'timestamp': datetime.utcnow().isoformat(),
-        'version': '1.0.0',
-        'service': 'CAD Parser API',
-        'features': {
-            'openai': True,
-            'neo4j': True,
-            'id_generator': True
-        }
-    })
+    return jsonify({"status": "healthy"}), 200
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port) 
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000))) 
