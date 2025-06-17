@@ -38,6 +38,7 @@ print(f"RENDER_DIR: {RENDER_DIR}")  # Debug print
 # Create Flask app with explicit paths
 app = Flask(__name__,
            static_folder=os.path.join(RENDER_DIR, 'static'),
+           static_url_path='/static',
            template_folder=os.path.join(RENDER_DIR, 'templates'))
 
 # Initialize database
@@ -101,23 +102,20 @@ def after_request(response):
     app.logger.info(f'Request duration: {duration:.2f}s')
     return log_response(response)
 
-@app.route('/', methods=['GET', 'POST'])
-def serve_index():
-    try:
-        app.logger.info("Attempting to serve index.html")
-        app.logger.info(f"Current working directory: {os.getcwd()}")
-        app.logger.info(f"RENDER_DIR: {RENDER_DIR}")
-        app.logger.info(f"Static folder: {app.static_folder}")
-        
-        # Try to serve the file using Flask's static file serving
-        return send_from_directory(app.static_folder, 'index.html')
-            
-    except Exception as e:
-        app.logger.error(f"Error serving index.html: {str(e)}")
-        app.logger.error(f"Current directory: {os.getcwd()}")
-        app.logger.error(f"Static folder: {app.static_folder}")
-        app.logger.error(f"Static folder contents: {os.listdir(app.static_folder) if os.path.exists(app.static_folder) else 'Directory does not exist'}")
-        return str(e), 500
+@app.route('/test')
+def test():
+    return 'Hello, world!', 200
+
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_index(path):
+    # Serve index.html for root and any unknown route (SPA support)
+    static_folder = app.static_folder
+    index_path = os.path.join(static_folder, 'index.html')
+    if os.path.exists(index_path):
+        return send_from_directory(static_folder, 'index.html')
+    else:
+        return 'index.html not found', 500
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -259,7 +257,6 @@ def get_components():
 
 @app.route('/health')
 def health_check():
-    app.logger.info("Health check endpoint called")
     return jsonify({"status": "healthy"}), 200
 
 if __name__ == '__main__':
