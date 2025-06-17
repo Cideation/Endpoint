@@ -107,11 +107,10 @@ def serve_index():
         app.logger.info("Attempting to serve index.html")
         app.logger.info(f"Current working directory: {os.getcwd()}")
         app.logger.info(f"RENDER_DIR: {RENDER_DIR}")
-        app.logger.info(f"Template folder: {app.template_folder}")
         app.logger.info(f"Static folder: {app.static_folder}")
         
-        # Try to send the file directly
-        index_path = os.path.join(app.template_folder, 'index.html')
+        # Try to send the file from static directory
+        index_path = os.path.join(app.static_folder, 'index.html')
         if os.path.exists(index_path):
             app.logger.info(f"Found index.html at: {index_path}")
             return send_file(index_path, mimetype='text/html')
@@ -122,8 +121,8 @@ def serve_index():
     except Exception as e:
         app.logger.error(f"Error serving index.html: {str(e)}")
         app.logger.error(f"Current directory: {os.getcwd()}")
-        app.logger.error(f"Template folder: {app.template_folder}")
-        app.logger.error(f"Template folder contents: {os.listdir(app.template_folder) if os.path.exists(app.template_folder) else 'Directory does not exist'}")
+        app.logger.error(f"Static folder: {app.static_folder}")
+        app.logger.error(f"Static folder contents: {os.listdir(app.static_folder) if os.path.exists(app.static_folder) else 'Directory does not exist'}")
         return str(e), 500
 
 @app.route('/upload', methods=['POST'])
