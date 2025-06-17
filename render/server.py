@@ -7,6 +7,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 import time
 from datetime import datetime
+import uuid
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 
@@ -17,8 +18,9 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from parse_dxf import parse_dxf_file
 from dwg_cad_ifc_parser import parse_dwg_file, parse_ifc_file
 from parse_pdf import parse_pdf_file
-from openai_cleaner import clean_with_ai
-from neo_writer import write_to_neo4j
+from openai_cleaner import clean_with_ai, gpt_clean_and_validate
+from neo_writer import write_to_neo4j, push_to_neo4j
+from generate_ids import assign_ids
 
 # Initialize Sentry for error tracking
 sentry_sdk.init(
@@ -28,7 +30,7 @@ sentry_sdk.init(
     environment=os.environ.get('FLASK_ENV', 'development')
 )
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', template_folder='templates')
 
 # Configure logging
 if not os.path.exists('logs'):
@@ -82,7 +84,7 @@ def after_request(response):
 
 @app.route('/')
 def serve_index():
-    return send_from_directory('.', 'index.html')
+    return send_from_directory('templates', 'index.html')
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -174,13 +176,16 @@ def evaluate_and_push():
             app.logger.error('Invalid input data for evaluation')
             return jsonify({'error': 'Invalid input data'}), 400
         
-        component_id = data.get('component_id')
+        component_id = data.get('component_id', f"CMP-{uuid.uuid4().hex[:8]}")
         quantity = data.get('quantity', 1)
+        unit_price = 1200  # Example fixed price
+        estimated_cost = quantity * unit_price
         
         app.logger.info(f'Evaluating component: {component_id}')
         result = write_to_neo4j({
             'component_id': component_id,
-            'quantity': quantity
+            'quantity': quantity,
+            'estimated_cost': estimated_cost
         })
         
         app.logger.info(f'Successfully pushed to Neo4j: {component_id}')
@@ -211,7 +216,13 @@ def health_check():
     return jsonify({
         'status': 'healthy',
         'timestamp': datetime.utcnow().isoformat(),
-        'version': '1.0.0'
+        'version': '1.0.0',
+        'service': 'CAD Parser API',
+        'features': {
+            'openai': True,
+            'neo4j': True,
+            'id_generator': True
+        }
     })
 
 if __name__ == '__main__':
