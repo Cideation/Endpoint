@@ -130,7 +130,16 @@ def serve_index():
         except Exception as template_error:
             app.logger.error(f"Template rendering failed: {str(template_error)}")
             app.logger.info("Falling back to send_from_directory")
-            return send_from_directory(app.template_folder, 'index.html')
+            try:
+                return send_from_directory(app.template_folder, 'index.html')
+            except Exception as send_error:
+                app.logger.error(f"send_from_directory failed: {str(send_error)}")
+                # Try one last time with absolute path
+                try:
+                    return send_from_directory(os.path.abspath(app.template_folder), 'index.html')
+                except Exception as abs_error:
+                    app.logger.error(f"Absolute path send_from_directory failed: {str(abs_error)}")
+                    return str(abs_error), 500
             
     except Exception as e:
         app.logger.error(f"Error serving index.html: {str(e)}")
