@@ -15,4 +15,5 @@ services:
       - key: NEO4J_USER
         sync: false
       - key: NEO4J_PASSWORD
-        sync: false 
+        sync: false
+    healthCheckPath: /health 
