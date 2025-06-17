@@ -110,36 +110,16 @@ def serve_index():
         app.logger.info(f"Template folder: {app.template_folder}")
         app.logger.info(f"Static folder: {app.static_folder}")
         
-        # Check if template directory exists
-        if not os.path.exists(app.template_folder):
-            app.logger.error(f"Template directory does not exist: {app.template_folder}")
-            return "Template directory not found", 500
-            
-        # Check if index.html exists
+        # Try to read the file directly
         index_path = os.path.join(app.template_folder, 'index.html')
-        if not os.path.exists(index_path):
+        if os.path.exists(index_path):
+            app.logger.info(f"Found index.html at: {index_path}")
+            with open(index_path, 'r') as f:
+                content = f.read()
+            return content, 200, {'Content-Type': 'text/html'}
+        else:
             app.logger.error(f"index.html not found at: {index_path}")
             return "index.html not found", 500
-            
-        app.logger.info(f"Found index.html at: {index_path}")
-        
-        # Try rendering the template
-        try:
-            app.logger.info("Attempting to render template")
-            return render_template('index.html')
-        except Exception as template_error:
-            app.logger.error(f"Template rendering failed: {str(template_error)}")
-            app.logger.info("Falling back to send_from_directory")
-            try:
-                return send_from_directory(app.template_folder, 'index.html')
-            except Exception as send_error:
-                app.logger.error(f"send_from_directory failed: {str(send_error)}")
-                # Try one last time with absolute path
-                try:
-                    return send_from_directory(os.path.abspath(app.template_folder), 'index.html')
-                except Exception as abs_error:
-                    app.logger.error(f"Absolute path send_from_directory failed: {str(abs_error)}")
-                    return str(abs_error), 500
             
     except Exception as e:
         app.logger.error(f"Error serving index.html: {str(e)}")
