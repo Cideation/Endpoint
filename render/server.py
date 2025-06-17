@@ -34,14 +34,14 @@ sentry_sdk.init(
 RENDER_DIR = os.path.dirname(os.path.abspath(__file__))
 print(f"RENDER_DIR: {RENDER_DIR}")  # Debug print
 
-app = Flask(__name__,
-           static_folder=os.path.join(RENDER_DIR, 'static'),
-           template_folder=os.path.join(RENDER_DIR, 'templates'))
+# Create Flask app with explicit paths
+app = Flask(__name__)
 
 # Debug prints for paths
-print(f"Static folder: {app.static_folder}")
-print(f"Template folder: {app.template_folder}")
-print(f"Files in template folder: {os.listdir(app.template_folder)}")
+print(f"Current working directory: {os.getcwd()}")
+print(f"Files in current directory: {os.listdir('.')}")
+print(f"Files in render directory: {os.listdir(RENDER_DIR)}")
+print(f"Files in templates directory: {os.listdir(os.path.join(RENDER_DIR, 'templates'))}")
 
 # Configure logging
 if not os.path.exists('logs'):
@@ -97,8 +97,10 @@ def after_request(response):
 def serve_index():
     try:
         app.logger.info("Attempting to serve index.html")
-        app.logger.info(f"Template folder contents: {os.listdir(app.template_folder)}")
-        return render_template('index.html')
+        templates_dir = os.path.join(RENDER_DIR, 'templates')
+        app.logger.info(f"Looking for index.html in: {templates_dir}")
+        app.logger.info(f"Directory contents: {os.listdir(templates_dir)}")
+        return send_from_directory(templates_dir, 'index.html')
     except Exception as e:
         app.logger.error(f"Error serving index.html: {str(e)}")
         return str(e), 500
