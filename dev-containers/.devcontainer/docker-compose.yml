@@ -1,0 +1,128 @@
+version: '3.8'
+
+services:
+  # Main Python Application Container
+  app:
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - ..:/workspace:cached
+      - ~/.gitconfig:/home/vscode/.gitconfig:ro
+      - ~/.ssh:/home/vscode/.ssh:ro
+    command: sleep infinity
+    environment:
+      - PYTHONPATH=/workspace
+      - FLASK_ENV=development
+      - DB_HOST=postgres
+      - DB_NAME=cad_parser
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - cad-network
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    restart: unless-stopped
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: postgres
+      POSTGRES_DB: cad_parser
+    ports:
+      - "5434:5432"
+    networks:
+      - cad-network
+
+  # Redis for Caching and Message Queue
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    networks:
+      - cad-network
+
+  # Node.js Microservice Gateway
+  gateway:
+    build:
+      context: .
+      dockerfile: .devcontainer/gateway.Dockerfile
+    volumes:
+      - ..:/workspace:cached
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=development
+      - API_PORT=8080
+    depends_on:
+      - app
+      - postgres
+    networks:
+      - cad-network
+
+  # Python CAD Parser Service
+  cad-parser:
+    build:
+      context: .
+      dockerfile: .devcontainer/cad-parser.Dockerfile
+    volumes:
+      - ..:/workspace:cached
+    ports:
+      - "5001:5000"
+    environment:
+      - SERVICE_NAME=cad-parser
+      - SERVICE_PORT=5000
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - cad-network
+
+  # Python Data Processing Service
+  data-processor:
+    build:
+      context: .
+      dockerfile: .devcontainer/data-processor.Dockerfile
+    volumes:
+      - ..:/workspace:cached
+    ports:
+      - "5002:5001"
+    environment:
+      - SERVICE_NAME=data-processor
+      - SERVICE_PORT=5001
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - cad-network
+
+  # Node.js Admin UI Service
+  admin-ui:
+    build:
+      context: .
+      dockerfile: .devcontainer/admin-ui.Dockerfile
+    volumes:
+      - ..:/workspace:cached
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - UI_PORT=3000
+    depends_on:
+      - gateway
+    networks:
+      - cad-network
+
+volumes:
+  postgres-data:
+
+networks:
+  cad-network:
+    driver: bridge 
