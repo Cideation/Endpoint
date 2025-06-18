@@ -14,13 +14,14 @@ from typing import Dict, List, Any, Optional
 import logging
 from datetime import datetime
 import uuid
+from config import NEON_CONFIG
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 class CSVMigrator:
-    def __init__(self, db_config: Dict[str, str], csv_directory: str):
+    def __init__(self, db_config: Optional[Dict[str, str]] = None, csv_directory: str = None):
         """
         Initialize the CSV migrator
         
@@ -28,8 +29,12 @@ class CSVMigrator:
             db_config: Database connection configuration
             csv_directory: Directory containing CSV files
         """
-        self.db_config = db_config
-        self.csv_directory = csv_directory
+        self.db_config = db_config or NEON_CONFIG
+        if csv_directory is None:
+            # Use absolute path to the CSV directory
+            self.csv_directory = os.path.abspath(os.path.join(os.path.dirname(__file__), '../postgre/auraDB Migration'))
+        else:
+            self.csv_directory = csv_directory
         self.connection = None
         
     def connect(self):
@@ -451,23 +456,25 @@ class CSVMigrator:
     def run_migration(self):
         """Run the complete migration process"""
         logger.info("Starting CSV migration process")
-        
+        summary = {}
         try:
             self.connect()
             migration_mapping = self.get_migration_mapping()
             csv_files = self.get_csv_files()
-            
+            logger.info(f"Found {len(csv_files)} CSV files to process")
             for csv_file in csv_files:
                 if csv_file in migration_mapping:
                     logger.info(f"Processing {csv_file}")
                     data = self.read_csv_data(csv_file)
+                    summary[csv_file] = len(data)
                     if data:
                         migration_mapping[csv_file](data)
                 else:
                     logger.warning(f"No migration function found for {csv_file}")
-            
             logger.info("CSV migration completed successfully")
-            
+            logger.info("\n=== MIGRATION SUMMARY ===")
+            for k, v in summary.items():
+                logger.info(f"{k}: {v} rows loaded")
         except Exception as e:
             logger.error(f"Migration failed: {e}")
             raise
@@ -476,20 +483,8 @@ class CSVMigrator:
 
 def main():
     """Main function to run the migration"""
-    # Database configuration - update with your Neon credentials
-    db_config = {
-        'host': os.getenv('NEON_HOST', 'localhost'),
-        'port': os.getenv('NEON_PORT', '5432'),
-        'database': os.getenv('NEON_DATABASE', 'cad_parser'),
-        'user': os.getenv('NEON_USER', 'postgres'),
-        'password': os.getenv('NEON_PASSWORD', '')
-    }
-    
-    # CSV directory path
-    csv_directory = "postgre/auraDB Migration"
-    
     # Create migrator and run migration
-    migrator = CSVMigrator(db_config, csv_directory)
+    migrator = CSVMigrator()
     migrator.run_migration()
 
 if __name__ == "__main__":
