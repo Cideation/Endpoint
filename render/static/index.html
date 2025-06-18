@@ -308,7 +308,6 @@
                 <button onclick="parseAndClean()" id="parseBtn"><i class="fas fa-broom"></i> Parse/Clean</button>
                 <button onclick="cleanWithAI()" id="aiBtn"><i class="fas fa-robot"></i> Clean with AI</button>
                 <button onclick="evaluateAndPush()" id="evalBtn"><i class="fas fa-check-circle"></i> Evaluate and Push</button>
-                <button onclick="pushToNeo4j()" id="pushBtn"><i class="fas fa-database"></i> Push to Neo4j</button>
             </div>
 
             <div id="status" class="status"></div>
@@ -326,8 +325,7 @@
         const buttons = {
             parse: document.getElementById('parseBtn'),
             ai: document.getElementById('aiBtn'),
-            eval: document.getElementById('evalBtn'),
-            push: document.getElementById('pushBtn')
+            eval: document.getElementById('evalBtn')
         };
         const status = document.getElementById('status');
         const result = document.getElementById('result');
@@ -453,20 +451,6 @@
                 "component_id": input,
                 "quantity": 1
             }, 'eval', 'Evaluate and Push');
-        }
-
-        function pushToNeo4j() {
-            const input = document.getElementById('input').value;
-            if (!input) {
-                showStatus('Please enter a label', 'error');
-                return;
-            }
-            makeRequest('/push', [{
-                "name": input,
-                "shape": "rectangle",
-                "component_id": `CMP-${input}`,
-                "node_id": "N-001"
-            }], 'push', 'Push to Neo4j');
         }
 
         function showDocumentation() {

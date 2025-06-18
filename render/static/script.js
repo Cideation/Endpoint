@@ -36,18 +36,3 @@ function sanitize(obj) {
   }
   return clean;
 }
-
-function pushToNeo() {
-  if (!parsedJSON) {
-    alert("No cleaned data to push.");
-    return;
-  }
-
-  fetch("/api/push-neo", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(parsedJSON)
-  })
-  .then(res => res.ok ? alert("✅ Pushed to Neo4j!") : alert("❌ Push failed"))
-  .catch(() => alert("❌ Network error."));
-}

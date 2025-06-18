@@ -3,7 +3,7 @@ import json
 from parse_ifc import parse_ifc_file
 from parse_dxf import parse_dxf_file
 
-def cad_parser_main(input_path, output_path="neo_ready_output.json"):
+def cad_parser_main(input_path, output_path="parsed_output.json"):
     ext = os.path.splitext(input_path)[-1].lower()
     if ext == ".ifc":
         results = parse_ifc_file(input_path)

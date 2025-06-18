@@ -4,8 +4,7 @@ import os
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 def gpt_clean_and_validate(raw_dict):
-    prompt = f"""
-    You are a data cleaner for a Neo4j system. Standardize this input dictionary:
+    system_prompt = """You are a data cleaner for a PostgreSQL system. Standardize this input dictionary:
     - Ensure keys are snake_case.
     - Detect malformed/mislabeled fields.
     - Return valid fields only with inferred fixes.
@@ -17,7 +16,7 @@ def gpt_clean_and_validate(raw_dict):
     """
     response = openai.chat.completions.create(
         model="gpt-4",
-        messages=[{"role": "user", "content": prompt}],
+        messages=[{"role": "user", "content": system_prompt}],
         temperature=0.1
     )
     return response.choices[0].message.content
