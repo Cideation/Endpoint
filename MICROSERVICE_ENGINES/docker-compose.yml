@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  ne-dag-alpha:
+    build: ./ne-dag-alpha
+    volumes:
+      - ./inputs:/inputs:ro
+      - ./outputs:/outputs
+      - ./shared:/shared:ro
+      - ./pulse:/pulse:ro
+    working_dir: /app
+
+  ne-functor-types:
+    build: ./ne-functor-types
+    volumes:
+      - ./inputs:/inputs:ro
+      - ./outputs:/outputs
+      - ./shared:/shared:ro
+      - ./pulse:/pulse:ro
+    working_dir: /app
+
+  ne-callback-engine:
+    build: ./ne-callback-engine
+    volumes:
+      - ./inputs:/inputs:ro
+      - ./outputs:/outputs
+      - ./shared:/shared:ro
+      - ./pulse:/pulse:ro
+    working_dir: /app 
