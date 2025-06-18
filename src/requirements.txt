@@ -10,10 +10,4 @@ PyPDF2==3.0.1
 gunicorn==21.2.0
 psycopg2-binary==2.9.9
 SQLAlchemy==1.4.53
-Flask-SQLAlchemy==3.0.5
-
-File Upload → Parse → Clean → PostgreSQL (Staging) → Neo4j (Graph Analytics) 
-
-NEO4J_URI=bolt://localhost:7687
-NEO4J_USER=neo4j
-NEO4J_PASSWORD=your_password_here 
+Flask-SQLAlchemy==3.0.5 
