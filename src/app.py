@@ -1,473 +1,295 @@
-from flask import Flask, send_from_directory, request, jsonify, render_template, current_app, send_file
+#!/usr/bin/env python3
+"""
+Enhanced CAD Parser API with PostgreSQL Integration
+"""
+
+from flask import Flask, request, jsonify, render_template
+from flask_cors import CORS
 import os
-from werkzeug.utils import secure_filename
-import sys
 import json
 import logging
-from logging.handlers import RotatingFileHandler
-import time
 from datetime import datetime
-import uuid
-import sentry_sdk
-from sentry_sdk.integrations.flask import FlaskIntegration
+import psycopg2
+from psycopg2.extras import RealDictCursor
+import pandas as pd
 
-# Import your modules - Updated for Render deployment
-from parse_dxf import parse_dxf_file
+# Import parsers
 from dwg_cad_ifc_parser import parse_dwg_file, parse_ifc_file
+from parse_dxf import parse_dxf_file
 from parse_pdf import parse_pdf_file
-from openai_cleaner import clean_with_ai, gpt_clean_and_validate
-from neo_writer import write_to_neo4j, push_to_neo4j, get_neo4j_connection
-from generate_ids import assign_ids
-from db import init_db, push_to_db, get_all_components
-
-# Initialize Sentry for error tracking
-sentry_sdk.init(
-    dsn=os.environ.get('SENTRY_DSN'),
-    integrations=[FlaskIntegration()],
-    traces_sample_rate=1.0,
-    environment=os.environ.get('FLASK_ENV', 'development')
-)
-
-# Create Flask app
-app = Flask(__name__,
-           static_folder='static',
-           static_url_path='/static',
-           template_folder='templates')
-
-# Initialize database
-init_db(app)
+from openai_cleaner import clean_data_with_ai
 
 # Configure logging
-if not os.path.exists('logs'):
-    os.makedirs('logs')
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-file_handler = RotatingFileHandler('logs/app.log', maxBytes=10240, backupCount=10)
-file_handler.setFormatter(logging.Formatter(
-    '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-))
-file_handler.setLevel(logging.INFO)
-app.logger.addHandler(file_handler)
-app.logger.setLevel(logging.INFO)
-app.logger.info('CAD Parser startup')
+app = Flask(__name__)
+CORS(app)
 
-# Configure upload folder
-UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+# Database configuration
+DB_CONFIG = {
+    'host': os.getenv('DB_HOST', 'ep-white-waterfall-a85g0dgx-pooler.eastus2.azure.neon.tech'),
+    'port': os.getenv('DB_PORT', '5432'),
+    'database': os.getenv('DB_NAME', 'neondb'),
+    'user': os.getenv('DB_USER', 'neondb_owner'),
+    'password': os.getenv('DB_PASSWORD', 'npg_CcgA0kKeYVU2'),
+    'sslmode': 'require'
+}
 
-# Allowed file extensions
-ALLOWED_EXTENSIONS = {'dxf', 'dwg', 'ifc', 'pdf'}
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-def log_request():
-    """Log request details"""
-    app.logger.info(f'Request: {request.method} {request.url}')
-    app.logger.info(f'Headers: {dict(request.headers)}')
-    if request.is_json:
-        app.logger.info(f'JSON Data: {request.get_json()}')
-
-def log_response(response):
-    """Log response details"""
-    app.logger.info(f'Response: {response.status_code}')
-    return response
-
-@app.before_request
-def before_request():
-    """Log request details before processing"""
-    log_request()
-    request.start_time = time.time()
-
-@app.after_request
-def after_request(response):
-    """Log response details after processing"""
-    duration = time.time() - request.start_time
-    app.logger.info(f'Request duration: {duration:.2f}s')
-    return log_response(response)
-
-@app.route('/test')
-def test():
-    return 'Hello, world!', 200
-
-@app.route('/', defaults={'path': ''})
-@app.route('/<path:path>')
-def serve_index(path):
-    # Serve index.html for root and any unknown route (SPA support)
-    static_folder = app.static_folder
-    index_path = os.path.join(static_folder, 'index.html')
-    if os.path.exists(index_path):
-        return send_from_directory(static_folder, 'index.html')
-    else:
-        return 'index.html not found', 500
-
-@app.route('/upload', methods=['POST'])
-def upload_file():
+def get_db_connection():
+    """Get PostgreSQL database connection"""
     try:
-        if 'file' not in request.files:
-            app.logger.error('No file part in request')
-            return jsonify({'error': 'No file part'}), 400
-        
-        file = request.files['file']
-        if file.filename == '':
-            app.logger.error('No selected file')
-            return jsonify({'error': 'No selected file'}), 400
-        
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
-            app.logger.info(f'File uploaded successfully: {filename}')
-            return jsonify({'filename': filename, 'message': 'File uploaded successfully'})
-        
-        app.logger.error(f'File type not allowed: {file.filename}')
-        return jsonify({'error': 'File type not allowed'}), 400
+        conn = psycopg2.connect(**DB_CONFIG)
+        return conn
     except Exception as e:
-        app.logger.error(f'Error in upload_file: {str(e)}')
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Database connection failed: {e}")
+        return None
+
+def write_to_postgresql(data):
+    """Write data to PostgreSQL database"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return {"error": "Could not connect to PostgreSQL"}
+        
+        cursor = conn.cursor()
+        
+        # Create components table if it doesn't exist
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS components (
+                id SERIAL PRIMARY KEY,
+                component_id TEXT UNIQUE,
+                component_type TEXT,
+                properties JSONB,
+                geometry JSONB,
+                metadata JSONB,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Insert or update component data
+        cursor.execute("""
+            INSERT INTO components (component_id, component_type, properties, geometry, metadata)
+            VALUES (%s, %s, %s, %s, %s)
+            ON CONFLICT (component_id) 
+            DO UPDATE SET 
+                component_type = EXCLUDED.component_type,
+                properties = EXCLUDED.properties,
+                geometry = EXCLUDED.geometry,
+                metadata = EXCLUDED.metadata,
+                updated_at = CURRENT_TIMESTAMP
+        """, (
+            data.get('component_id'),
+            data.get('component_type'),
+            json.dumps(data.get('properties', {})),
+            json.dumps(data.get('geometry', {})),
+            json.dumps(data.get('metadata', {}))
+        ))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return {
+            "success": True,
+            "message": "Data written to PostgreSQL successfully",
+            "component_id": data.get('component_id')
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to write to PostgreSQL: {str(e)}")
+        return {"error": f"Failed to write to PostgreSQL: {str(e)}"}
+
+@app.route('/')
+def index():
+    """Serve the main application page"""
+    return render_template('index.html')
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint"""
+    try:
+        conn = get_db_connection()
+        if conn:
+            conn.close()
+            db_status = "Connected"
+        else:
+            db_status = "Connection Failed"
+    except Exception as e:
+        db_status = f"Error: {str(e)[:100]}"
+    
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': datetime.now().isoformat(),
+        'postgresql_status': db_status,
+        'version': '2.0.0'
+    })
 
 @app.route('/parse', methods=['POST'])
 def parse_file():
+    """Parse uploaded CAD/BIM file"""
     try:
-        data = request.json
-        if not data or not isinstance(data, list):
-            app.logger.error('Invalid input data for parsing')
-            return jsonify({'error': 'Invalid input data'}), 400
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
         
-        results = []
-        for item in data:
-            filename = item.get('name')
-            if not filename:
-                continue
-            
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            if not os.path.exists(filepath):
-                app.logger.error(f'File not found: {filename}')
-                continue
-            
-            app.logger.info(f'Parsing file: {filename}')
-            ext = filename.rsplit('.', 1)[1].lower()
-            if ext == 'dxf':
-                result = parse_dxf_file(filepath)
-            elif ext == 'dwg':
-                result = parse_dwg_file(filepath)
-            elif ext == 'ifc':
-                result = parse_ifc_file(filepath)
-            elif ext == 'pdf':
-                result = parse_pdf_file(filepath)
-            else:
-                app.logger.error(f'Unsupported file type: {ext}')
-                continue
-            
-            results.append(result)
-            app.logger.info(f'Successfully parsed: {filename}')
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
         
-        return jsonify(results)
-    except Exception as e:
-        app.logger.error(f'Error in parse_file: {str(e)}')
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/clean_with_ai', methods=['POST'])
-def clean_data():
-    try:
-        data = request.json
-        if not data or not isinstance(data, list):
-            app.logger.error('Invalid input data for AI cleaning')
-            return jsonify({'error': 'Invalid input data'}), 400
+        # Save file temporarily
+        temp_path = f"/tmp/{file.filename}"
+        file.save(temp_path)
         
-        app.logger.info('Starting AI cleaning process')
-        cleaned_data = clean_with_ai(data)
-        app.logger.info('AI cleaning completed successfully')
-        return jsonify(cleaned_data)
-    except Exception as e:
-        app.logger.error(f'Error in clean_data: {str(e)}')
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/evaluate_and_push', methods=['POST'])
-def evaluate_and_push():
-    try:
-        data = request.json
-        if not data or not isinstance(data, dict):
-            app.logger.error('Invalid input data for evaluation')
-            return jsonify({'error': 'Invalid input data'}), 400
+        # Determine file type and parse
+        filename = file.filename.lower()
         
-        component_id = data.get('component_id', f"CMP-{uuid.uuid4().hex[:8]}")
-        quantity = data.get('quantity', 1)
-        unit_price = 1200  # Example fixed price
-        estimated_cost = quantity * unit_price
+        if filename.endswith('.dwg'):
+            result = parse_dwg_file(temp_path)
+        elif filename.endswith('.ifc'):
+            result = parse_ifc_file(temp_path)
+        elif filename.endswith('.dxf'):
+            result = parse_dxf_file(temp_path)
+        elif filename.endswith('.pdf'):
+            result = parse_pdf_file(temp_path)
+        else:
+            return jsonify({'error': 'Unsupported file type'}), 400
         
-        app.logger.info(f'Evaluating component: {component_id}')
-        result = write_to_neo4j({
-            'component_id': component_id,
-            'quantity': quantity,
-            'estimated_cost': estimated_cost
-        })
+        # Clean up temp file
+        os.remove(temp_path)
         
-        app.logger.info(f'Successfully pushed to Neo4j: {component_id}')
+        if result.get('error'):
+            return jsonify(result), 400
+        
         return jsonify(result)
+        
     except Exception as e:
-        app.logger.error(f'Error in evaluate_and_push: {str(e)}')
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Error in parse_file: {str(e)}")
+        return jsonify({'error': f'Parsing failed: {str(e)}'}), 500
 
 @app.route('/push', methods=['POST'])
-def push_to_neo4j_route():
+def push_to_postgresql():
+    """Push parsed data to PostgreSQL"""
     try:
-        data = request.json
-        if not data or not isinstance(data, list):
-            app.logger.error('Invalid input data for database push')
-            return jsonify({'error': 'Invalid input data'}), 400
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
         
-        app.logger.info(f'Starting push process with {len(data)} items')
+        # Generate component ID if not provided
+        if 'component_id' not in data:
+            data['component_id'] = f"COMP_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         
-        # Step 1: Push to PostgreSQL
-        app.logger.info('Pushing data to PostgreSQL')
-        try:
-            success, message = push_to_db(data)
-            if not success:
-                app.logger.error(f'PostgreSQL push failed: {message}')
-                return jsonify({'status': 'error', 'message': f'PostgreSQL failed: {message}'}), 500
-            app.logger.info('PostgreSQL push successful')
-        except Exception as pg_error:
-            app.logger.error(f'PostgreSQL error: {str(pg_error)}')
-            return jsonify({'status': 'error', 'message': f'PostgreSQL error: {str(pg_error)}'}), 500
+        # Write to PostgreSQL
+        result = write_to_postgresql(data)
         
-        # Step 2: Push to Neo4j
-        app.logger.info('Pushing data to Neo4j')
-        try:
-            result = push_to_neo4j(data)
-            if 'error' in result:
-                app.logger.error(f'Neo4j push failed: {result.get("error")}')
-                return jsonify({
-                    'status': 'partial_success', 
-                    'message': f'PostgreSQL: success, Neo4j: failed - {result.get("error")}',
-                    'postgres_status': 'success',
-                    'neo4j_status': 'failed'
-                }), 500
-            app.logger.info('Neo4j push successful')
-        except Exception as neo4j_error:
-            app.logger.error(f'Neo4j error: {str(neo4j_error)}')
-            return jsonify({
-                'status': 'partial_success',
-                'message': f'PostgreSQL: success, Neo4j: error - {str(neo4j_error)}',
-                'postgres_status': 'success',
-                'neo4j_status': 'error'
-            }), 500
+        if result.get('error'):
+            return jsonify(result), 500
         
-        app.logger.info('Both PostgreSQL and Neo4j pushes successful')
+        app.logger.info(f'Successfully pushed to PostgreSQL: {data["component_id"]}')
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f'Error in push_to_postgresql: {str(e)}')
+        return jsonify({'error': f'Push failed: {str(e)}'}), 500
+
+@app.route('/push_enhanced', methods=['POST'])
+def push_enhanced_data():
+    """Push enhanced data with AI cleaning to PostgreSQL"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        # Step 1: Clean data with AI
+        app.logger.info('Cleaning data with AI')
+        cleaned_data = clean_data_with_ai(data)
+        
+        if cleaned_data.get('error'):
+            return jsonify(cleaned_data), 500
+        
+        # Step 2: Write to PostgreSQL
+        app.logger.info('Writing cleaned data to PostgreSQL')
+        result = write_to_postgresql(cleaned_data)
+        
+        if result.get('error'):
+            return jsonify(result), 500
+        
+        app.logger.info('Enhanced data push successful')
         return jsonify({
-            'status': 'success', 
-            'message': 'Data pushed to both PostgreSQL and Neo4j successfully',
-            'postgres_status': 'success',
-            'neo4j_status': 'success',
-            'items_processed': len(data)
+            'success': True,
+            'message': 'Enhanced data pushed to PostgreSQL successfully',
+            'component_id': cleaned_data.get('component_id'),
+            'postgresql_status': 'success'
         })
         
     except Exception as e:
-        app.logger.error(f'Error in push_to_neo4j_route: {str(e)}')
-        return jsonify({
-            'status': 'error',
-            'message': f'Unexpected error: {str(e)}',
-            'error_type': type(e).__name__
-        }), 500
-
-@app.route('/components', methods=['GET'])
-def get_components():
-    """Get all components from database"""
-    try:
-        components = get_all_components()
-        return jsonify(components)
-    except Exception as e:
-        app.logger.error(f'Error getting components: {str(e)}')
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/analytics', methods=['GET'])
-def get_analytics():
-    """Get analytics data from both databases"""
-    try:
-        # Get PostgreSQL data
-        postgres_components = get_all_components()
-        
-        # Calculate analytics
-        total_components = len(postgres_components)
-        total_cost = sum(c.get('estimated_cost', 0) for c in postgres_components)
-        avg_cost = total_cost / total_components if total_components > 0 else 0
-        
-        # Check Neo4j connection safely
-        neo4j_status = "Not Connected"
-        try:
-            graph = get_neo4j_connection()
-            if graph:
-                neo4j_status = "Connected"
-            else:
-                neo4j_status = "Connection Failed"
-        except Exception as neo4j_error:
-            neo4j_status = f"Error: {str(neo4j_error)[:100]}"
-        
-        analytics = {
-            'postgres_data': {
-                'total_components': total_components,
-                'total_cost': total_cost,
-                'average_cost': avg_cost,
-                'components': postgres_components
-            },
-            'neo4j_status': neo4j_status,
-            'generated_at': datetime.now().isoformat()
-        }
-        
-        return jsonify(analytics)
-    except Exception as e:
-        app.logger.error(f'Error in analytics: {str(e)}')
-        return jsonify({
-            'error': str(e),
-            'postgres_data': {'total_components': 0, 'total_cost': 0, 'average_cost': 0, 'components': []},
-            'neo4j_status': 'Error checking connection',
-            'generated_at': datetime.now().isoformat()
-        }), 500
-
-@app.route('/process_enhanced', methods=['POST'])
-def process_enhanced():
-    """Enhanced processing pipeline: Parse → Clean → Store → Graph"""
-    try:
-        data = request.json
-        if not data or not isinstance(data, list):
-            return jsonify({'error': 'Invalid input data'}), 400
-        
-        # Step 1: Parse files (enhanced)
-        parsed_results = []
-        for item in data:
-            filename = item.get('name')
-            if filename:
-                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                if os.path.exists(filepath):
-                    ext = filename.rsplit('.', 1)[1].lower()
-                    if ext == 'dxf':
-                        result = parse_dxf_file(filepath)
-                    elif ext == 'dwg':
-                        result = parse_dwg_file(filepath)
-                    elif ext == 'ifc':
-                        result = parse_ifc_file(filepath)
-                    elif ext == 'pdf':
-                        result = parse_pdf_file(filepath)
-                    else:
-                        continue
-                    parsed_results.append(result)
-        
-        # Step 2: Extract components from parsed results
-        all_components = []
-        for result in parsed_results:
-            if result.get('status') == 'success':
-                all_components.extend(result.get('components', []))
-        
-        # Step 3: Clean with AI
-        cleaned_result = clean_with_ai(all_components)
-        
-        # Step 4: Store in PostgreSQL
-        if cleaned_result.get('status') == 'success':
-            cleaned_components = cleaned_result.get('cleaned_components', [])
-            success, message = push_to_db(cleaned_components)
-            
-            # Step 5: Push to Neo4j
-            neo4j_result = push_to_neo4j(cleaned_components)
-            
-            return jsonify({
-                'status': 'success',
-                'pipeline': {
-                    'parsed_files': len(parsed_results),
-                    'components_extracted': len(all_components),
-                    'components_cleaned': len(cleaned_components),
-                    'postgres_status': 'success' if success else 'failed',
-                    'neo4j_status': neo4j_result.get('message', 'failed'),
-                    'total_processed': len(cleaned_components)
-                },
-                'cleaned_data': cleaned_components,
-                'processed_at': datetime.now().isoformat()
-            })
-        else:
-            return jsonify({'error': 'AI cleaning failed'}), 500
-            
-    except Exception as e:
-        app.logger.error(f'Error in enhanced processing: {str(e)}')
-        return jsonify({'error': str(e)}), 500
+        logger.error(f'Error in push_enhanced_data: {str(e)}')
+        return jsonify({'error': f'Enhanced push failed: {str(e)}'}), 500
 
 @app.route('/db_data', methods=['GET'])
 def get_db_data():
-    """Get all data from PostgreSQL database"""
+    """Get data from PostgreSQL database"""
     try:
-        components = get_all_components()
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'error': 'Database connection failed'}), 500
+        
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor.execute("SELECT * FROM components ORDER BY created_at DESC LIMIT 10")
+        rows = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        # Convert to list of dicts
+        data = [dict(row) for row in rows]
+        
         return jsonify({
-            'status': 'success',
-            'count': len(components),
-            'data': components
+            'success': True,
+            'data': data,
+            'count': len(data)
         })
+        
     except Exception as e:
-        app.logger.error(f'Error getting database data: {str(e)}')
-        return jsonify({'error': str(e)}), 500
+        logger.error(f'Error getting database data: {str(e)}')
+        return jsonify({'error': f'Failed to get data: {str(e)}'}), 500
 
-@app.route('/neo4j_health', methods=['GET'])
-def neo4j_health_check():
-    """Simple Neo4j health check"""
+@app.route('/test', methods=['GET'])
+def test_endpoint():
+    """Test endpoint for debugging"""
     try:
-        from neo_writer import get_neo4j_connection
-        graph = get_neo4j_connection()
-        if graph:
-            return jsonify({
-                'status': 'healthy',
-                'neo4j_connection': 'Connected',
-                'message': 'Neo4j is accessible'
-            })
+        # Test PostgreSQL connection
+        conn = get_db_connection()
+        if conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT version()")
+            version = cursor.fetchone()[0]
+            cursor.close()
+            conn.close()
+            postgresql_status = "Connected"
         else:
-            return jsonify({
-                'status': 'unhealthy',
-                'neo4j_connection': 'Failed',
-                'message': 'Could not connect to Neo4j'
-            }), 500
-    except Exception as e:
-        return jsonify({
-            'status': 'error',
-            'neo4j_connection': 'Error',
-            'message': str(e),
-            'error_type': type(e).__name__
-        }), 500
-
-@app.route('/test_push', methods=['POST'])
-def test_push():
-    """Simple test endpoint to debug push issues"""
-    try:
-        # Test PostgreSQL
-        try:
-            components = get_all_components()
-            postgres_status = f"Connected - {len(components)} components"
-        except Exception as e:
-            postgres_status = f"Failed: {str(e)}"
-        
-        # Test Neo4j
-        try:
-            from neo_writer import get_neo4j_connection
-            graph = get_neo4j_connection()
-            if graph:
-                neo4j_status = "Connected"
-            else:
-                neo4j_status = "Connection failed"
-        except Exception as e:
-            neo4j_status = f"Failed: {str(e)}"
+            postgresql_status = "Connection failed"
+            version = "Unknown"
         
         return jsonify({
-            'postgres_status': postgres_status,
-            'neo4j_status': neo4j_status,
-            'tested_at': datetime.now().isoformat()
+            'status': 'test_successful',
+            'timestamp': datetime.now().isoformat(),
+            'postgresql_status': postgresql_status,
+            'postgresql_version': version,
+            'environment': {
+                'db_host': DB_CONFIG['host'],
+                'db_name': DB_CONFIG['database'],
+                'db_user': DB_CONFIG['user']
+            }
         })
+        
     except Exception as e:
         return jsonify({
+            'status': 'test_failed',
             'error': str(e),
-            'error_type': type(e).__name__
+            'timestamp': datetime.now().isoformat()
         }), 500
 
-@app.route('/health')
-def health_check():
-    return jsonify({"status": "healthy"}), 200
-
-if __name__ == "__main__":
-    port = int(os.environ.get('PORT', 10000))
-    app.logger.info(f"Starting server on port {port}")
-    app.run(host='0.0.0.0', port=port) 
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True) 

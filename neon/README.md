@@ -1,357 +1,215 @@
-# Neon PostgreSQL Integration for Enhanced CAD Parser
+# Neon PostgreSQL Integration
 
-This directory contains the Neon PostgreSQL integration layer for the Enhanced CAD Parser system. It provides a robust, scalable database backend optimized for CAD/BIM data storage and querying.
+This directory contains the Neon PostgreSQL integration for the CAD Parser system.
 
-## 🏗️ Architecture Overview
-
-```
-Enhanced CAD Parser
-├── Parser Layer (DXF, DWG, IFC, PDF, OBJ, STEP)
-├── Neon PostgreSQL (Staging Layer)
-└── Neo4j Aura (Graph Modeling)
-```
-
-## 📁 File Structure
+## Architecture Overview
 
 ```
-neon/
-├── postgresql_schema.sql      # Complete database schema
-├── csv_migration.py           # CSV data migration script
-├── db_manager.py              # Database connection manager
-├── requirements.txt           # Python dependencies
-└── README.md                  # This file
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   CAD Parser    │───▶│  Neon PostgreSQL │───▶│  Enhanced       │
+│   Application   │    │  (Primary DB)    │    │  Schema (132    │
+│                 │    │                  │    │  Tables)        │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
 ```
 
-## 🚀 Quick Start
+## Database Schema
 
-### 1. Set Up Neon PostgreSQL
+### Enhanced Schema Features
+- **132 enhanced tables** with standardized field names
+- **Proper data types** (INTEGER, DOUBLE PRECISION, BOOLEAN, TEXT)
+- **Audit trails** (created_at, updated_at)
+- **Performance indexes** for fast querying
+- **Analytics views** for business intelligence
 
-1. **Create Neon Account**: Sign up at [neon.tech](https://neon.tech)
-2. **Create Database**: Create a new project in Neon console
-3. **Get Connection Details**: Copy your connection string
+### Key Tables
+- `components` - Main component storage
+- `component_hierarchy` - Parent-child relationships
+- `material_variants` - Material variant management
+- `manufacturing_methods` - Manufacturing capabilities
+- `spatial_references` - PostGIS spatial data
 
-### 2. Environment Configuration
+### Analytics Views
+- `component_analytics` - Component analysis
+- `supply_chain_analytics` - Supply chain insights
 
-Create a `.env` file in your project root:
+## Configuration
 
-```bash
-# Neon PostgreSQL Configuration
-NEON_HOST=your-neon-host.neon.tech
-NEON_PORT=5432
-NEON_DATABASE=cad_parser
-NEON_USER=your-username
-NEON_PASSWORD=your-password
-
-# Optional: Connection Pool Settings
-NEON_POOL_MIN_SIZE=5
-NEON_POOL_MAX_SIZE=20
-```
-
-### 3. Install Dependencies
-
-```bash
-cd neon
-pip install -r requirements.txt
-```
-
-### 4. Initialize Database
-
-```bash
-# Connect to your Neon database and run the schema
-psql "postgresql://user:password@host:port/database" -f postgresql_schema.sql
-```
-
-### 5. Migrate CSV Data
-
-```bash
-# Run the CSV migration script
-python csv_migration.py
-```
-
-## 📊 Database Schema
-
-### Core Tables
-
-| Table | Description | Key Features |
-|-------|-------------|--------------|
-| `components` | Main component entities | UUID primary keys, timestamps |
-| `materials` | Material definitions | Base materials, variants, codes |
-| `suppliers` | Supplier information | Contact details, lead times |
-| `functions` | Functional classifications | Functors, types, descriptions |
-| `families` | Product families | Variants, product families |
-| `spatial_data` | Spatial coordinates | PostGIS geometry, centroids |
-| `dimensions` | Physical measurements | Length, width, height, volume |
-| `properties` | Component properties | Key-value pairs, units |
-
-### Parser Integration Tables
-
-| Table | Description | Purpose |
-|-------|-------------|---------|
-| `parsed_files` | File processing metadata | Track parsing status, performance |
-| `parsed_components` | Parser output mapping | Link parser data to database entities |
-
-### Views
-
-| View | Description | Use Case |
-|------|-------------|----------|
-| `component_summary` | Complete component data | Reporting, analysis |
-| `parser_statistics` | Parser performance metrics | Monitoring, optimization |
-
-## 🔧 Usage Examples
-
-### Basic Database Operations
-
+### Database Connection
 ```python
-from neon.db_manager import NeonDBManager
-import asyncio
-
-async def main():
-    # Initialize database manager
-    db_manager = NeonDBManager()
-    
-    try:
-        # Get database statistics
-        stats = await db_manager.get_database_stats()
-        print(f"Total components: {stats['components']}")
-        
-        # Search for components
-        results = await db_manager.search_components("wall", limit=10)
-        for component in results:
-            print(f"Found: {component['component_name']}")
-            
-        # Get spatial components
-        spatial_components = await db_manager.get_spatial_components()
-        print(f"Spatial components: {len(spatial_components)}")
-        
-    finally:
-        await db_manager.close_async()
-
-# Run the example
-asyncio.run(main())
+DB_CONFIG = {
+    'host': 'ep-white-waterfall-a85g0dgx-pooler.eastus2.azure.neon.tech',
+    'port': '5432',
+    'database': 'neondb',
+    'user': 'neondb_owner',
+    'password': 'npg_CcgA0kKeYVU2',
+    'sslmode': 'require'
+}
 ```
-
-### Parser Integration
-
-```python
-async def process_cad_file(file_path: str):
-    db_manager = NeonDBManager()
-    
-    try:
-        # Insert file metadata
-        file_data = {
-            'file_name': 'example.dxf',
-            'file_path': file_path,
-            'file_type': 'DXF',
-            'file_size': 1024000,
-            'parsing_status': 'processing'
-        }
-        
-        file_id = await db_manager.insert_parsed_file(file_data)
-        
-        # Process components (example from parser output)
-        component_data = {
-            'name': 'Wall_001',
-            'type': 'Wall',
-            'description': 'Exterior wall',
-            'geometry': {
-                'has_position': True,
-                'position': [100.0, 200.0, 0.0],
-                'dimensions': {
-                    'length': 5000.0,
-                    'width': 200.0,
-                    'height': 3000.0,
-                    'volume': 3000000.0
-                },
-                'properties': {
-                    'vertex_count': 8,
-                    'face_count': 6,
-                    'edge_count': 12,
-                    'surface_area': 30.0
-                }
-            }
-        }
-        
-        component_id = await db_manager.insert_parsed_component(file_id, component_data)
-        
-        # Update parsing status
-        await db_manager.update_parsing_status(file_id, 'success')
-        
-        print(f"Processed component: {component_id}")
-        
-    finally:
-        await db_manager.close_async()
-```
-
-## 🔍 Query Examples
-
-### Component Search
-
-```sql
--- Search components by name or type
-SELECT * FROM component_summary 
-WHERE component_name ILIKE '%wall%' 
-   OR component_type ILIKE '%wall%'
-ORDER BY created_at DESC 
-LIMIT 10;
-```
-
-### Spatial Queries
-
-```sql
--- Find components within bounding box
-SELECT c.component_name, sp.centroid_x, sp.centroid_y, sp.centroid_z
-FROM components c
-JOIN spatial_data sp ON c.component_id = sp.component_id
-WHERE sp.centroid_x BETWEEN 0 AND 1000
-  AND sp.centroid_y BETWEEN 0 AND 1000
-  AND sp.centroid_z BETWEEN 0 AND 100;
-```
-
-### Parser Statistics
-
-```sql
--- Get parser performance metrics
-SELECT 
-    file_type,
-    COUNT(*) as total_files,
-    AVG(processing_time_ms) as avg_processing_time,
-    SUM(components_extracted) as total_components
-FROM parsed_files
-WHERE parsing_status = 'success'
-GROUP BY file_type
-ORDER BY total_files DESC;
-```
-
-## 🚀 Performance Optimization
-
-### Indexes
-
-The schema includes optimized indexes for:
-
-- **Spatial queries**: GIST indexes on geometry columns
-- **Component searches**: B-tree indexes on names and types
-- **Parser data**: GIN indexes on JSONB columns
-- **Timestamps**: B-tree indexes for time-based queries
-
-### Connection Pooling
-
-The `NeonDBManager` uses connection pooling for optimal performance:
-
-```python
-# Configure pool size
-await db_manager.create_pool(min_size=5, max_size=20)
-```
-
-### Query Optimization
-
-- Use parameterized queries to prevent SQL injection
-- Leverage the `component_summary` view for complex joins
-- Use spatial indexes for location-based queries
-- Implement pagination for large result sets
-
-## 🔒 Security Considerations
 
 ### Environment Variables
+- `DB_HOST` - PostgreSQL host
+- `DB_PORT` - PostgreSQL port (default: 5432)
+- `DB_NAME` - Database name
+- `DB_USER` - Database username
+- `DB_PASSWORD` - Database password
 
-- Store database credentials in environment variables
-- Use `.env` files for local development
-- Never commit credentials to version control
+## Setup Instructions
 
-### Connection Security
+1. **Install Dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-- Use SSL connections to Neon
-- Implement connection pooling to prevent connection exhaustion
-- Use parameterized queries to prevent SQL injection
+2. **Initialize Schema**
+   ```bash
+   python schema_enrichment.py
+   ```
 
-### Data Validation
+3. **Test Connection**
+   ```bash
+   python -c "from config import DB_CONFIG; import psycopg2; conn = psycopg2.connect(**DB_CONFIG); print('Connected!')"
+   ```
 
-- Validate all input data before database insertion
-- Use appropriate data types and constraints
-- Implement proper error handling
+## Migration Process
 
-## 📈 Monitoring and Maintenance
+### CSV Migration
+The system supports migration from CSV files with:
+- **Content-based deduplication**
+- **Schema harmonization**
+- **Smart merging**
+- **Batch processing**
 
-### Database Statistics
+### Schema Enrichment
+The schema enrichment process:
+1. Loads property mapping data
+2. Analyzes schema structure
+3. Maps types to PostgreSQL types
+4. Generates enhanced schema SQL
+5. Applies schema to database
 
-```python
-# Get comprehensive database stats
-stats = await db_manager.get_database_stats()
-print(json.dumps(stats, indent=2))
-```
+## Performance Optimization
 
-### Cleanup Operations
+### Database Features
+- **Automatic indexes** for common queries
+- **Materialized views** for performance
+- **Connection pooling** for efficiency
+- **SSL encryption** for security
 
-```python
-# Clean up old parsed data (older than 30 days)
-await db_manager.cleanup_old_data(days=30)
-```
+### Query Optimization
+- **Indexed foreign keys**
+- **Composite indexes** for complex queries
+- **Partitioning** for large tables
+- **Query caching** for repeated operations
 
-### Performance Monitoring
+## Monitoring and Maintenance
 
-- Monitor query execution times
-- Track connection pool usage
-- Monitor disk space usage
-- Set up alerts for failed parsing operations
+### Health Checks
+- Database connectivity monitoring
+- Query performance tracking
+- Connection pool status
+- Schema validation
 
-## 🔗 Integration with Enhanced CAD Parsers
+### Backup and Recovery
+- Automated backups
+- Point-in-time recovery
+- Schema versioning
+- Data integrity checks
 
-The Neon database integrates seamlessly with the enhanced CAD parsers:
+## Security
 
-1. **Parser Output**: Parsers generate structured JSON data
-2. **Database Storage**: `NeonDBManager` stores parsed data efficiently
-3. **Query Interface**: Rich query capabilities for analysis
-4. **Spatial Support**: PostGIS integration for spatial queries
+### Data Protection
+- **SSL/TLS encryption** for all connections
+- **Credential management** via environment variables
+- **Input validation** and sanitization
+- **Audit logging** for all operations
 
-### Parser Integration Flow
+### Access Control
+- **Role-based permissions**
+- **Connection limiting**
+- **Query timeout protection**
+- **SQL injection prevention**
 
-```
-CAD File → Parser → JSON Output → NeonDBManager → PostgreSQL
-                                    ↓
-                              Neo4j Aura (Graph)
-```
-
-## 🛠️ Troubleshooting
+## Troubleshooting
 
 ### Common Issues
-
-1. **Connection Errors**
-   - Verify Neon credentials
-   - Check network connectivity
-   - Ensure SSL is enabled
-
-2. **Performance Issues**
-   - Monitor connection pool usage
-   - Check query execution plans
-   - Optimize indexes
-
-3. **Data Migration Issues**
-   - Verify CSV file format
-   - Check data types compatibility
-   - Review error logs
+1. **Connection Timeout**: Check network connectivity and credentials
+2. **Schema Errors**: Verify schema enrichment process completed successfully
+3. **Performance Issues**: Check indexes and query optimization
+4. **Permission Errors**: Verify user permissions and role assignments
 
 ### Debug Mode
-
-Enable debug logging:
-
+Enable debug logging for detailed error information:
 ```python
-import logging
 logging.basicConfig(level=logging.DEBUG)
 ```
 
-## 📚 Additional Resources
+## API Integration
 
-- [Neon PostgreSQL Documentation](https://neon.tech/docs)
-- [PostGIS Documentation](https://postgis.net/documentation/)
-- [Enhanced CAD Parser Documentation](../README.md)
-- [Neo4j Aura Integration](../neo4j/README.md)
+### Database Operations
+```python
+from config import DB_CONFIG
+import psycopg2
 
-## 🤝 Contributing
+# Connect to database
+conn = psycopg2.connect(**DB_CONFIG)
 
-1. Follow the existing code style
-2. Add comprehensive tests
-3. Update documentation
-4. Submit pull requests
+# Execute queries
+cursor = conn.cursor()
+cursor.execute("SELECT * FROM components LIMIT 10")
+results = cursor.fetchall()
 
-## 📄 License
+# Close connection
+cursor.close()
+conn.close()
+```
 
-This project is licensed under the MIT License - see the main project LICENSE file for details. 
+### Component Storage
+```python
+def store_component(component_data):
+    conn = psycopg2.connect(**DB_CONFIG)
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        INSERT INTO components (component_id, component_type, properties, geometry, metadata)
+        VALUES (%s, %s, %s, %s, %s)
+        ON CONFLICT (component_id) DO UPDATE SET
+            component_type = EXCLUDED.component_type,
+            properties = EXCLUDED.properties,
+            geometry = EXCLUDED.geometry,
+            metadata = EXCLUDED.metadata,
+            updated_at = CURRENT_TIMESTAMP
+    """, (
+        component_data['component_id'],
+        component_data['component_type'],
+        json.dumps(component_data['properties']),
+        json.dumps(component_data['geometry']),
+        json.dumps(component_data['metadata'])
+    ))
+    
+    conn.commit()
+    cursor.close()
+    conn.close()
+```
+
+## Future Enhancements
+
+### Planned Features
+- **Real-time replication** for high availability
+- **Advanced analytics** with machine learning
+- **Graph-like queries** using PostgreSQL's recursive CTEs
+- **Spatial indexing** for 3D geometry
+- **Time-series analysis** for component lifecycle
+
+### Performance Improvements
+- **Query optimization** with execution plan analysis
+- **Connection pooling** improvements
+- **Caching layer** for frequently accessed data
+- **Parallel processing** for bulk operations
+
+## Support
+
+For issues and questions:
+- Check the main documentation in `../DOCUMENTATION.md`
+- Review the schema enrichment logs
+- Test with the provided examples
+- Contact the development team 

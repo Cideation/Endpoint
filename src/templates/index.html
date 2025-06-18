@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CAD Parser Interface</title>
+    <title>CAD Parser - PostgreSQL Integration</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -290,194 +291,103 @@
     </nav>
 
     <div class="container">
-        <div class="main-content">
-            <h1>CAD Parser Interface</h1>
-            
-            <div class="file-upload">
-                <input type="file" id="fileInput" accept=".dxf,.dwg,.ifc,.pdf" onchange="handleFileUpload(event)">
-                <label for="fileInput"><i class="fas fa-upload"></i> Upload CAD File</label>
-                <p>Supported formats: DXF, DWG, IFC, PDF</p>
+        <header>
+            <h1><i class="fas fa-cogs"></i> CAD Parser v2.0</h1>
+            <p>Enhanced CAD/BIM file parsing with PostgreSQL integration</p>
+            <div id="healthStatus" class="health-status">
+                <span class="status-indicator offline"></span>
+                Checking connection...
             </div>
-            
-            <div>
-                <label for="input">Enter Label:</label>
-                <textarea id="input" placeholder="Enter your label here..."></textarea>
-            </div>
+        </header>
 
-            <div class="button-group">
-                <button onclick="parseAndClean()" id="parseBtn"><i class="fas fa-broom"></i> Parse/Clean</button>
-                <button onclick="cleanWithAI()" id="aiBtn"><i class="fas fa-robot"></i> Clean with AI</button>
-                <button onclick="evaluateAndPush()" id="evalBtn"><i class="fas fa-check-circle"></i> Evaluate and Push</button>
-                <button onclick="pushToNeo4j()" id="pushBtn"><i class="fas fa-database"></i> Push to Neo4j</button>
-            </div>
+        <main>
+            <!-- File Upload Section -->
+            <section class="card">
+                <h2><i class="fas fa-upload"></i> File Upload</h2>
+                <div class="upload-area">
+                    <input type="file" id="fileInput" multiple accept=".dwg,.ifc,.dxf,.pdf" class="file-input">
+                    <label for="fileInput" class="file-label">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <span>Choose files or drag them here</span>
+                        <small>Supported: DWG, IFC, DXF, PDF</small>
+                    </label>
+                </div>
+                <div id="fileList" class="file-list"></div>
+            </section>
 
-            <div id="status" class="status"></div>
-            <div id="result"></div>
-        </div>
+            <!-- Parse Section -->
+            <section class="card">
+                <h2><i class="fas fa-cogs"></i> Parse Files</h2>
+                <button id="parseBtn" class="btn btn-primary">
+                    <i class="fas fa-cogs"></i> Parse Files
+                </button>
+                <div id="parseResults" class="results-container"></div>
+            </section>
 
-        <div class="sidebar">
-            <h2>Operation History</h2>
-            <div id="history"></div>
-        </div>
+            <!-- Database Operations -->
+            <section class="card">
+                <h2><i class="fas fa-database"></i> Database Operations</h2>
+                <div class="button-group">
+                    <button id="pushBtn" class="btn btn-success">
+                        <i class="fas fa-database"></i> Push to PostgreSQL
+                    </button>
+                    <button id="refreshBtn" class="btn btn-info">
+                        <i class="fas fa-sync"></i> Refresh Data
+                    </button>
+                </div>
+            </section>
+
+            <!-- Database Data -->
+            <section class="card">
+                <h2><i class="fas fa-table"></i> Database Data</h2>
+                <div id="databaseData" class="data-container">
+                    <p>Loading data...</p>
+                </div>
+            </section>
+
+            <!-- API Endpoints -->
+            <section class="card">
+                <h2><i class="fas fa-code"></i> API Endpoints</h2>
+                <div class="endpoint-list">
+                    <div class="endpoint">
+                        <span class="method">POST</span>
+                        <span class="path">/parse</span>
+                        <span class="description">Parse CAD/BIM files</span>
+                    </div>
+                    <div class="endpoint">
+                        <span class="method">POST</span>
+                        <span class="path">/push</span>
+                        <span class="description">Push data to PostgreSQL</span>
+                    </div>
+                    <div class="endpoint">
+                        <span class="method">POST</span>
+                        <span class="path">/push_enhanced</span>
+                        <span class="description">Push with AI cleaning</span>
+                    </div>
+                    <div class="endpoint">
+                        <span class="method">GET</span>
+                        <span class="path">/db_data</span>
+                        <span class="description">Get database data</span>
+                    </div>
+                    <div class="endpoint">
+                        <span class="method">GET</span>
+                        <span class="path">/health</span>
+                        <span class="description">Health check</span>
+                    </div>
+                    <div class="endpoint">
+                        <span class="method">GET</span>
+                        <span class="path">/test</span>
+                        <span class="description">Test endpoint</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2024 CAD Parser. Enhanced with PostgreSQL integration.</p>
+        </footer>
     </div>
 
-    <script>
-        const API_URL = 'https://endpoint-5pqu.onrender.com';
-        const buttons = {
-            parse: document.getElementById('parseBtn'),
-            ai: document.getElementById('aiBtn'),
-            eval: document.getElementById('evalBtn'),
-            push: document.getElementById('pushBtn')
-        };
-        const status = document.getElementById('status');
-        const result = document.getElementById('result');
-        const history = document.getElementById('history');
-
-        function showStatus(message, type) {
-            status.textContent = message;
-            status.className = `status ${type}`;
-            status.style.display = 'block';
-            setTimeout(() => {
-                status.style.display = 'none';
-            }, 5000);
-        }
-
-        function setLoading(button, isLoading) {
-            button.disabled = isLoading;
-            if (isLoading) {
-                button.classList.add('loading');
-            } else {
-                button.classList.remove('loading');
-            }
-        }
-
-        function addToHistory(action, success, message) {
-            const item = document.createElement('div');
-            item.className = 'history-item';
-            const timestamp = new Date().toLocaleTimeString();
-            item.innerHTML = `
-                <div>
-                    <span class="action">${action}</span>
-                    <span class="timestamp">${timestamp}</span>
-                </div>
-                <span class="status ${success ? 'success' : 'error'}">${success ? 'Success' : 'Error'}</span>
-            `;
-            history.insertBefore(item, history.firstChild);
-        }
-
-        async function handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const formData = new FormData();
-            formData.append('file', file);
-
-            try {
-                const response = await fetch(`${API_URL}/upload`, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const result = await response.json();
-                document.getElementById('input').value = result.filename;
-                showStatus('File uploaded successfully!', 'success');
-                addToHistory('File Upload', true, 'File uploaded successfully');
-            } catch (error) {
-                showStatus(`Error uploading file: ${error.message}`, 'error');
-                addToHistory('File Upload', false, error.message);
-            }
-        }
-
-        async function makeRequest(endpoint, data, buttonId, action) {
-            const button = buttons[buttonId];
-            setLoading(button, true);
-            result.className = '';
-            
-            try {
-                const response = await fetch(`${API_URL}${endpoint}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(data)
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const result = await response.json();
-                document.getElementById('result').textContent = JSON.stringify(result, null, 2);
-                document.getElementById('result').classList.add('success');
-                showStatus('Operation completed successfully!', 'success');
-                addToHistory(action, true, 'Operation completed successfully');
-            } catch (error) {
-                document.getElementById('result').textContent = `Error: ${error.message}`;
-                document.getElementById('result').classList.add('error');
-                showStatus(`Error: ${error.message}`, 'error');
-                addToHistory(action, false, error.message);
-            } finally {
-                setLoading(button, false);
-            }
-        }
-
-        function parseAndClean() {
-            const input = document.getElementById('input').value;
-            if (!input) {
-                showStatus('Please enter a label', 'error');
-                return;
-            }
-            makeRequest('/parse', [{"name": input, "shape": "rectangle"}], 'parse', 'Parse/Clean');
-        }
-
-        function cleanWithAI() {
-            const input = document.getElementById('input').value;
-            if (!input) {
-                showStatus('Please enter a label', 'error');
-                return;
-            }
-            makeRequest('/clean_with_ai', [{"name": input, "shape": "rectangle"}], 'ai', 'Clean with AI');
-        }
-
-        function evaluateAndPush() {
-            const input = document.getElementById('input').value;
-            if (!input) {
-                showStatus('Please enter a label', 'error');
-                return;
-            }
-            makeRequest('/evaluate_and_push', {
-                "component_id": input,
-                "quantity": 1
-            }, 'eval', 'Evaluate and Push');
-        }
-
-        function pushToNeo4j() {
-            const input = document.getElementById('input').value;
-            if (!input) {
-                showStatus('Please enter a label', 'error');
-                return;
-            }
-            makeRequest('/push', [{
-                "name": input,
-                "shape": "rectangle",
-                "component_id": `CMP-${input}`,
-                "node_id": "N-001"
-            }], 'push', 'Push to Neo4j');
-        }
-
-        function showDocumentation() {
-            // TODO: Implement documentation modal
-            alert('Documentation coming soon!');
-        }
-
-        function showSettings() {
-            // TODO: Implement settings modal
-            alert('Settings coming soon!');
-        }
-    </script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html> 
