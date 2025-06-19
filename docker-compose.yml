@@ -9,6 +9,7 @@ services:
       - ./shared:/shared:ro
       - ./pulse:/pulse:ro
     working_dir: /app
+    command: python main_debug.py
 
 #  ne-functor-types:
 #    build: ./ne-functor-types

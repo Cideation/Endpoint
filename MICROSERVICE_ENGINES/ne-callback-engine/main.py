@@ -1,8 +1,6 @@
-import sys
 import os
+import sys
 import json
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../shared')))
-from phase_2_runtime_modules import CallbackEngineRunner
 
 def load_config():
     with open('../inputs/node_dictionarY.json') as f:
@@ -12,6 +10,10 @@ def load_config():
     return node_dict, agent_coeffs
 
 def main():
+    print('DEBUG sys.path:', sys.path)
+    print('DEBUG /shared contents:', os.listdir('/shared'))
+    sys.path.append("/shared")
+    from phase_2_runtime_modules import CallbackEngineRunner
     node_dict, agent_coeffs = load_config()
     runner = CallbackEngineRunner(node_dict, agent_coeffs)
     runner.run()

@@ -1,0 +1,7 @@
+numpy
+pandas
+networkx
+websockets 
+
+import sys
+sys.path.append("/app/shared") 

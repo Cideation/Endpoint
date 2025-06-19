@@ -1,8 +1,6 @@
-import sys
 import os
+import sys
 import json
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../shared')))
-from sfde_utility_foundation_extended import SFDEngine
 
 def load_config():
     with open('../inputs/node_dictionarY.json') as f:
@@ -12,10 +10,14 @@ def load_config():
     return node_dict, agent_coeffs
 
 def main():
+    print('DEBUG sys.path:', sys.path)
+    print('DEBUG /shared contents:', os.listdir('/shared'))
+    sys.path.append("/shared")
+    from sfde_utility_foundation_extended import SFDEngine
     node_dict, agent_coeffs = load_config()
     engine = SFDEngine(node_dict, agent_coeffs)
     engine.run()
-    print('[✓] SFDE container booted and ran successfully')
+    print('[✓] sfde booted and ran successfully')
 
 if __name__ == '__main__':
     main() 

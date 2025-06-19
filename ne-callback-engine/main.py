@@ -1,6 +1,8 @@
-import os
 import sys
+import os
 import json
+sys.path.append("/shared")
+from phase_2_runtime_modules import CallbackEngineRunner
 
 def load_config():
     with open('../inputs/node_dictionarY.json') as f:
@@ -10,14 +12,10 @@ def load_config():
     return node_dict, agent_coeffs
 
 def main():
-    print('DEBUG sys.path:', sys.path)
-    print('DEBUG /shared contents:', os.listdir('/shared'))
-    sys.path.append("/shared")
-    from phase_2_runtime_modules import FunctorTypesRunner
     node_dict, agent_coeffs = load_config()
-    runner = FunctorTypesRunner(node_dict, agent_coeffs)
+    runner = CallbackEngineRunner(node_dict, agent_coeffs)
     runner.run()
-    print('[✓] ne-functor-types booted and ran successfully')
+    print('[✓] ne-callback-engine booted and ran successfully')
 
 if __name__ == '__main__':
     main() 
