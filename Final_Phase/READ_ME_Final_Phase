@@ -1,0 +1,62 @@
+# FINAL PHASE: ECM GATEWAY + OPTIMIZATION SYSTEM
+
+## 📌 Abstract
+
+The final phase of the SOS architecture combines two core runtime operations:
+1. **Environmental Computation Matrix (ECM)** — A persistent WebSocket-FSM gateway that orchestrates environmental sensing and functor routing.
+2. **Graph-Based Optimization System** — A training pipeline that analyzes node outputs, edge interactions, and agent coefficients using DGL and NetworkX to optimize system behavior.
+
+This fusion forms the runtime intelligence of the system: ECM handles live interaction, while optimization ensures continuous learning.
+
+---
+## ⚙️ ECM Gateway 
+
+### Core Features
+- FSM-based routing for all node interactions
+- WebSocket server connected to Unreal/External UI
+- Executes scientific functors (from SFDE) dynamically
+- Updates node state maps and logs transitions
+
+### Key Files
+- `ecm_gateway.py`: Main WebSocket handler
+- `fsm_runtime.py`: FSM engine per node
+- `fsm_matrix.ecm`: DSL file defining state transitions
+- `functor_router.py`: Executes functor logic based on FSM
+- `agent_state.json`: Cache of current agent-node states
+
+---
+
+## 🧠 Optimization System 
+
+### Core Features
+- Uses DGL to analyze node/edge embeddings
+- Trains models to optimize:
+  - ROI
+  - Occupancy matching
+  - Spec-fit scoring
+- Updates PostgreSQL/ECM thresholds in real-time
+
+### Key Files
+- `graph_training_engine.py`: DGL-based learner
+- `embedding_optimizer.py`: Refines coefficient/edge parameters
+- `objective_scoring.py`: Applies goals to graph
+- `postgres_updater.py`: Injects learning outputs back to storage
+
+---
+
+## 🔁 Combined Runtime Loop
+
+```text
+Unreal / UI → ECM Gateway → Functor Execution → DGL Learning → Graph Update / Threshold Adjustment
+```
+
+Each pulse updates not only the node FSM but also contributes to future graph optimization and smarter emergent behaviors.
+
+---
+
+## ✅ Result
+
+- Live node control (via ECM)
+- Continuous learning (via DGL)
+- Agent and coefficient-sensitive edge behavior
+- Supports emergent strategies across combinatorial node links
