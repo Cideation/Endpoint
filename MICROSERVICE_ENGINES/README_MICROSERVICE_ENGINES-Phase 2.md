@@ -1,3 +1,46 @@
+# Phase 2 Microservice Architecture
+
+## Overview
+This phase implements a deterministic, modular microservice architecture for CAD parsing and graph-based computation. All logic is deterministic and structured, with no LLM/AI except for a future, isolated SFDE module.
+
+## Containers (5 Total)
+
+1. **ne-dag-alpha**
+   - DAG logic and orchestration
+2. **ne-functor-types**
+   - Functor type logic and computation
+3. **ne-callback-engine**
+   - Callback/event-driven computation
+4. **sfde**
+   - System Functor Data Engine (deterministic for now; LLM/AI in future)
+5. **ne-graph-runtime-engine**
+   - Dedicated NetworkX graph engine for runtime graph building, execution, and future DGL integration
+
+## Shared Code
+- All shared logic is in the `shared/` package, mounted into each container.
+- Each microservice imports shared modules using `from shared import ...`.
+
+## Docker & Compose
+- Each service has its own Dockerfile.
+- `docker-compose.yml` orchestrates all services, mounting shared code and data as needed.
+
+## How to Run
+1. Build and start all services:
+   ```bash
+   docker compose build --no-cache
+   docker compose up --abort-on-container-exit
+   ```
+2. Debug output in each service will confirm shared imports and graph logic are working.
+
+## Key Principles
+- Deterministic, testable, and maintainable
+- All shared code is centralized
+- Containers are isolated but share code/data via Docker volumes
+
+---
+
+For more details on each container, see their respective folders and documentation.
+
 # MICROSERVICE ENGINES (Phase 2 Runtime) – Final Revised with JSON-Driven Logic
 
 This version reflects the full container architecture **with JSON-level integration insights** including: formula sourcing, coefficient logic, callback modes, and runtime graph interplay — ensuring a structured execution model across all functor types and node phases.
