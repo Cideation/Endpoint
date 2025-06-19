@@ -60,3 +60,51 @@ Each pulse updates not only the node FSM but also contributes to future graph op
 - Continuous learning (via DGL)
 - Agent and coefficient-sensitive edge behavior
 - Supports emergent strategies across combinatorial node links
+
+# SOS System Data Lake Architecture
+
+This system operates with **two coordinated data lakes**:
+
+---
+
+## 1. PostgreSQL Lake – Canonical Source of Truth
+
+- **Purpose**: Stores structured, validated system data (nodes, edges, coefficients, formulas).
+- **Format**: Relational (SQL tables and views)
+- **Used For**:
+  - Runtime microservices (Phase 2)
+  - Graph construction
+  - Functor execution and edge evaluation
+- **Populated By**: Phase 2 Runtime Modules, JSON parsers, and environment generators
+
+---
+
+## 2. Training Data Lake – Machine Learning Context
+
+- **Purpose**: Prepares and structures data for training SFDE (Scientific Formula Discovery Engine) and other ML models.
+- **Format**: Graphs, tensors, CSVs, embedding matrices
+- **Used For**:
+  - Graph learning with DGL
+  - Emergence training (Phase 4)
+  - Formula completion, combinatorial inference
+- **Populated By**: SQL exports, functor-enriched outputs, feature transformers
+
+---
+
+## 🔁 Relationship
+
+- PostgreSQL is the **input** and **reference base** for the training lake.
+- Training data is a **derived mirror**, often snapshotting current system states + functor evaluations.
+- They stay loosely coupled via:
+  - Materialized views
+  - Scheduled exports
+  - Functor tagging + variable alignment
+
+---
+
+## 🔒 Recommendation
+
+- Treat PostgreSQL as **immutable and curated**.
+- Treat the Training Data Lake as **ephemeral and experimental** — refreshed per training cycle.
+
+
