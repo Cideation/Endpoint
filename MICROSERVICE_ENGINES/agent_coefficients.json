@@ -1,0 +1,227 @@
+{
+  "agent_coefficients_by_node": {
+    "V01": {
+      "material_weight_preference": 0.6,
+      "build_cost_limit": 22000000
+    },
+    "V02": {
+      "geometry_accuracy": 0.8,
+      "conversion_effort": 0.5
+    },
+    "V03": {
+      "routing_priority": 0.7,
+      "logic_depth": 0.6
+    },
+    "V04": {
+      "investment_expectation": 0.75,
+      "user_affordability_score": 0.82
+    },
+    "V05": {
+      "site_preference_weight": 0.7,
+      "zoning_strictness_score": 0.4
+    },
+    "V06": {
+      "regulation_adaptiveness": 0.65,
+      "policy_threshold": 0.5
+    },
+    "V07": {
+      "energy_tolerance": 0.3,
+      "mep_priority": 0.6
+    },
+    "V08": {
+      "bid_preference": 0.9,
+      "market_match_threshold": 0.75
+    },
+    "V09": {
+      "occupancy_priority": 0.8,
+      "usage_variability": 0.5
+    },
+    "V10": {
+      "roi_priority": 0.85,
+      "risk_aversion_score": 0.6
+    }
+  },
+  "agent_coefficient_key_reference": {
+    "material_id": {
+      "used_in": [
+        "Alpha"
+      ],
+      "description": "Material selector or code used in manufacturing and conversion."
+    },
+    "geometry_type": {
+      "used_in": [
+        "Alpha",
+        "Beta"
+      ],
+      "description": "Component shape/class used in manufacturing, logic, and compliance."
+    },
+    "joinery_profile": {
+      "used_in": [
+        "Alpha"
+      ],
+      "description": "Type of joint/connection between materials and components."
+    },
+    "tooling_type": {
+      "used_in": [
+        "Alpha"
+      ],
+      "description": "Manufacturing method/tooling approach, affects cost/time."
+    },
+    "site_geometry": {
+      "used_in": [
+        "Alpha"
+      ],
+      "description": "The physical layout or polygon of the site."
+    },
+    "orientation": {
+      "used_in": [
+        "Alpha"
+      ],
+      "description": "Directional placement of component/site (e.g. N/S/E/W)."
+    },
+    "budget_range": {
+      "used_in": [
+        "Beta",
+        "Gamma"
+      ],
+      "description": "User-defined economic scope for decision-making and matching."
+    },
+    "design_priority": {
+      "used_in": [
+        "Beta"
+      ],
+      "description": "User preference weightings, typically for style vs cost vs time."
+    },
+    "parcel_use_class": {
+      "used_in": [
+        "Alpha",
+        "Beta"
+      ],
+      "description": "Legal parcel usage category (e.g., residential, mixed-use)."
+    },
+    "zoning_code": {
+      "used_in": [
+        "Alpha",
+        "Beta"
+      ],
+      "description": "Applicable zoning regulations affecting the component/site."
+    },
+    "material_weight_preference": {
+      "used_in": [
+        "Alpha"
+      ],
+      "description": "Preference score for lighter/heavier materials."
+    },
+    "build_cost_limit": {
+      "used_in": [
+        "Alpha",
+        "Gamma"
+      ],
+      "description": "Maximum budget for component or project cost."
+    },
+    "conversion_effort": {
+      "used_in": [
+        "Alpha"
+      ],
+      "description": "Complexity or computational effort in geometry conversion."
+    },
+    "routing_priority": {
+      "used_in": [
+        "Beta"
+      ],
+      "description": "Weight of node routing decisions during logic execution."
+    },
+    "logic_depth": {
+      "used_in": [
+        "Beta"
+      ],
+      "description": "Evaluation depth for logic-based routing nodes."
+    },
+    "investment_expectation": {
+      "used_in": [
+        "Gamma"
+      ],
+      "description": "Minimum return expectation for investment nodes."
+    },
+    "user_affordability_score": {
+      "used_in": [
+        "Gamma"
+      ],
+      "description": "Derived score of affordability for a given product-user pair."
+    },
+    "site_preference_weight": {
+      "used_in": [
+        "Alpha",
+        "Beta"
+      ],
+      "description": "Weighting for site-related decisions (location, zoning, etc)."
+    },
+    "zoning_strictness_score": {
+      "used_in": [
+        "Alpha",
+        "Beta"
+      ],
+      "description": "Tolerance level for zoning constraint violations."
+    },
+    "regulation_adaptiveness": {
+      "used_in": [
+        "Beta"
+      ],
+      "description": "How flexible the system is in interpreting regulatory boundaries."
+    },
+    "policy_threshold": {
+      "used_in": [
+        "Beta"
+      ],
+      "description": "Strictness threshold for passing compliance."
+    },
+    "energy_tolerance": {
+      "used_in": [
+        "Beta"
+      ],
+      "description": "Accepted upper limit of energy demand or inefficiency."
+    },
+    "mep_priority": {
+      "used_in": [
+        "Beta"
+      ],
+      "description": "Weight for matching MEP system compatibility."
+    },
+    "bid_preference": {
+      "used_in": [
+        "Gamma"
+      ],
+      "description": "Preference score influencing which bids are favored."
+    },
+    "market_match_threshold": {
+      "used_in": [
+        "Gamma"
+      ],
+      "description": "Cutoff score for accepting product-market fit."
+    },
+    "occupancy_priority": {
+      "used_in": [
+        "Gamma"
+      ],
+      "description": "Weight of occupancy metrics during evaluation."
+    },
+    "usage_variability": {
+      "used_in": [
+        "Gamma"
+      ],
+      "description": "Expected fluctuation in space or usage patterns."
+    },
+    "roi_priority": {
+      "used_in": [
+        "Gamma"
+      ],
+      "description": "Importance of ROI for final decision-making."
+    },
+    "risk_aversion_score": {
+      "used_in": [
+        "Gamma"
+      ],
+      "description": "Risk tolerance level for investments or allocation."
+    }
+  }
+}

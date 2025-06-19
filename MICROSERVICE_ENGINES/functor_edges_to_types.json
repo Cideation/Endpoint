@@ -1,0 +1,79 @@
+[
+  {
+    "source_functor": "ProductComponent",
+    "source_type": "local_calcs",
+    "target_type": "aggregator",
+    "data_affinity": "local_calcs\u2192aggregator",
+    "edge_type": "functor_type_link"
+  },
+  {
+    "source_functor": "MaterialandProfile",
+    "source_type": "local_calcs",
+    "target_type": "aggregator",
+    "data_affinity": "local_calcs\u2192aggregator",
+    "edge_type": "functor_type_link"
+  },
+  {
+    "source_functor": "SystemLogicAgent",
+    "source_type": "local_calcs",
+    "target_type": "aggregator",
+    "data_affinity": "local_calcs\u2192aggregator",
+    "edge_type": "functor_type_link"
+  },
+  {
+    "source_functor": "UserEconomicProfile",
+    "source_type": "local_calcs",
+    "target_type": "aggregator",
+    "data_affinity": "local_calcs\u2192aggregator",
+    "edge_type": "functor_type_link"
+  },
+  {
+    "source_functor": "LandProfile",
+    "source_type": "local_calcs",
+    "target_type": "aggregator",
+    "data_affinity": "local_calcs\u2192aggregator",
+    "edge_type": "functor_type_link"
+  },
+  {
+    "source_functor": "ComplianceNode",
+    "source_type": "local_calcs",
+    "target_type": "aggregator",
+    "data_affinity": "local_calcs\u2192aggregator",
+    "edge_type": "functor_type_link"
+  },
+  {
+    "source_functor": "MEPSystemNode",
+    "source_type": "stateless_spatial",
+    "target_type": "local_calcs",
+    "data_affinity": "stateless_spatial\u2192local_calcs",
+    "edge_type": "functor_type_link"
+  },
+  {
+    "source_functor": "MEPSystemNode",
+    "source_type": "stateless_spatial",
+    "target_type": "aggregator",
+    "data_affinity": "stateless_spatial\u2192aggregator",
+    "edge_type": "functor_type_link"
+  },
+  {
+    "source_functor": "BiddingAgent",
+    "source_type": "local_calcs",
+    "target_type": "aggregator",
+    "data_affinity": "local_calcs\u2192aggregator",
+    "edge_type": "functor_type_link"
+  },
+  {
+    "source_functor": "OccupancyNode",
+    "source_type": "local_calcs",
+    "target_type": "aggregator",
+    "data_affinity": "local_calcs\u2192aggregator",
+    "edge_type": "functor_type_link"
+  },
+  {
+    "source_functor": "InvestmentNode",
+    "source_type": "local_calcs",
+    "target_type": "aggregator",
+    "data_affinity": "local_calcs\u2192aggregator",
+    "edge_type": "functor_type_link"
+  }
+]

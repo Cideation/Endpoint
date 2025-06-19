@@ -1,0 +1,102 @@
+[
+  {
+    "variable": "geometry,_performance_score,_connection_zones,_material_id",
+    "functor": "ProductComponent",
+    "direction": "input"
+  },
+  {
+    "variable": "manufacturing_score",
+    "functor": "ProductComponent",
+    "direction": "output"
+  },
+  {
+    "variable": "geometry,_performance_score,_connection_zones,_material_id",
+    "functor": "MaterialandProfile",
+    "direction": "input"
+  },
+  {
+    "variable": "manufacturing_score",
+    "functor": "MaterialandProfile",
+    "direction": "output"
+  },
+  {
+    "variable": "geometry,_performance_score,_connection_zones,_material_id",
+    "functor": "SystemLogicAgent",
+    "direction": "input"
+  },
+  {
+    "variable": "manufacturing_score",
+    "functor": "SystemLogicAgent",
+    "direction": "output"
+  },
+  {
+    "variable": "geometry,_performance_score,_connection_zones,_material_id",
+    "functor": "UserEconomicProfile",
+    "direction": "input"
+  },
+  {
+    "variable": "manufacturing_score",
+    "functor": "UserEconomicProfile",
+    "direction": "output"
+  },
+  {
+    "variable": "geometry,_performance_score,_connection_zones,_material_id",
+    "functor": "LandProfile",
+    "direction": "input"
+  },
+  {
+    "variable": "manufacturing_score",
+    "functor": "LandProfile",
+    "direction": "output"
+  },
+  {
+    "variable": "geometry,_performance_score,_connection_zones,_material_id",
+    "functor": "ComplianceNode",
+    "direction": "input"
+  },
+  {
+    "variable": "manufacturing_score",
+    "functor": "ComplianceNode",
+    "direction": "output"
+  },
+  {
+    "variable": "geometry,_performance_score,_connection_zones,_material_id",
+    "functor": "MEPSystemNode",
+    "direction": "input"
+  },
+  {
+    "variable": "manufacturing_score",
+    "functor": "MEPSystemNode",
+    "direction": "output"
+  },
+  {
+    "variable": "geometry,_performance_score,_connection_zones,_material_id",
+    "functor": "BiddingAgent",
+    "direction": "input"
+  },
+  {
+    "variable": "manufacturing_score",
+    "functor": "BiddingAgent",
+    "direction": "output"
+  },
+  {
+    "variable": "geometry,_performance_score,_connection_zones,_material_id",
+    "functor": "OccupancyNode",
+    "direction": "input"
+  },
+  {
+    "variable": "manufacturing_score",
+    "functor": "OccupancyNode",
+    "direction": "output"
+  },
+  {
+    "variable": "geometry,_performance_score,_connection_zones,_material_id",
+    "functor": "InvestmentNode",
+    "direction": "input"
+  },
+  {
+    "variable": "manufacturing_score",
+    "functor": "InvestmentNode",
+    "direction": "output"
+  }
+]

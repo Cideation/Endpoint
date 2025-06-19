@@ -1,0 +1,82 @@
+[
+  {
+    "functor_id": "ProductComponent",
+    "phase": null,
+    "callback_type": "UNKNOWN",
+    "input_fields": [],
+    "output_fields": [],
+    "data_affinity": {}
+  },
+  {
+    "functor_id": "MaterialandProfile",
+    "phase": null,
+    "callback_type": "UNKNOWN",
+    "input_fields": [],
+    "output_fields": [],
+    "data_affinity": {}
+  },
+  {
+    "functor_id": "SystemLogicAgent",
+    "phase": null,
+    "callback_type": "UNKNOWN",
+    "input_fields": [],
+    "output_fields": [],
+    "data_affinity": {}
+  },
+  {
+    "functor_id": "UserEconomicProfile",
+    "phase": null,
+    "callback_type": "UNKNOWN",
+    "input_fields": [],
+    "output_fields": [],
+    "data_affinity": {}
+  },
+  {
+    "functor_id": "LandProfile",
+    "phase": null,
+    "callback_type": "UNKNOWN",
+    "input_fields": [],
+    "output_fields": [],
+    "data_affinity": {}
+  },
+  {
+    "functor_id": "ComplianceNode",
+    "phase": null,
+    "callback_type": "UNKNOWN",
+    "input_fields": [],
+    "output_fields": [],
+    "data_affinity": {}
+  },
+  {
+    "functor_id": "MEPSystemNode",
+    "phase": null,
+    "callback_type": "UNKNOWN",
+    "input_fields": [],
+    "output_fields": [],
+    "data_affinity": {}
+  },
+  {
+    "functor_id": "BiddingAgent",
+    "phase": null,
+    "callback_type": "UNKNOWN",
+    "input_fields": [],
+    "output_fields": [],
+    "data_affinity": {}
+  },
+  {
+    "functor_id": "OccupancyNode",
+    "phase": null,
+    "callback_type": "UNKNOWN",
+    "input_fields": [],
+    "output_fields": [],
+    "data_affinity": {}
+  },
+  {
+    "functor_id": "InvestmentNode",
+    "phase": null,
+    "callback_type": "UNKNOWN",
+    "input_fields": [],
+    "output_fields": [],
+    "data_affinity": {}
+  }
+]

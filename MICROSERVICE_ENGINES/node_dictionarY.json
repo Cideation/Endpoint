@@ -1,0 +1,177 @@
+{
+  "nodes": [
+    {
+      "node_id": "V01",
+      "node_label": "ProductComponent",
+      "phase": "alpha",
+      "agent": 1,
+      "callback_type": "dag",
+      "trigger_functor": "evaluate_manufacturing",
+      "dictionary": {
+        "component_density": 7800,
+        "material_strength": 250,
+        "buildability_score": 0.68
+      },
+      "allowed_callback_types": [
+        "dag",
+        "relational",
+        "combinatorial"
+      ]
+    },
+    {
+      "node_id": "V02",
+      "node_label": "MaterialandProfile",
+      "phase": "alpha",
+      "agent": 1,
+      "callback_type": "dag",
+      "trigger_functor": "evaluate_manufacturing",
+      "dictionary": {
+        "component_density": 7800,
+        "material_strength": 250,
+        "buildability_score": 0.68
+      },
+      "allowed_callback_types": [
+        "dag",
+        "relational",
+        "combinatorial"
+      ]
+    },
+    {
+      "node_id": "V03",
+      "node_label": "SystemLogicAgent",
+      "phase": "alpha",
+      "agent": 2,
+      "callback_type": "dag",
+      "trigger_functor": "evaluate_manufacturing",
+      "dictionary": {
+        "component_density": 7800,
+        "material_strength": 250,
+        "buildability_score": 0.68
+      },
+      "allowed_callback_types": [
+        "relational",
+        "combinatorial"
+      ]
+    },
+    {
+      "node_id": "V04",
+      "node_label": "UserEconomicProfile",
+      "phase": "beta",
+      "agent": 2,
+      "callback_type": "relational",
+      "trigger_functor": "check_compliance",
+      "dictionary": {
+        "regulatory_strictness": 0.7,
+        "user_priority_score": 0.85,
+        "compliance_pass": true
+      },
+      "allowed_callback_types": [
+        "relational",
+        "combinatorial"
+      ]
+    },
+    {
+      "node_id": "V05",
+      "node_label": "LandProfile",
+      "phase": "beta",
+      "agent": 1,
+      "callback_type": "relational",
+      "trigger_functor": "check_compliance",
+      "dictionary": {
+        "regulatory_strictness": 0.7,
+        "user_priority_score": 0.85,
+        "compliance_pass": true
+      },
+      "allowed_callback_types": [
+        "dag",
+        "relational",
+        "combinatorial"
+      ]
+    },
+    {
+      "node_id": "V06",
+      "node_label": "ComplianceNode",
+      "phase": "beta",
+      "agent": 2,
+      "callback_type": "relational",
+      "trigger_functor": "check_compliance",
+      "dictionary": {
+        "regulatory_strictness": 0.7,
+        "user_priority_score": 0.85,
+        "compliance_pass": true
+      },
+      "allowed_callback_types": [
+        "relational",
+        "combinatorial"
+      ]
+    },
+    {
+      "node_id": "V07",
+      "node_label": "MEPSystemNode",
+      "phase": "gamma",
+      "agent": 1,
+      "callback_type": "combinatorial",
+      "trigger_functor": "generate_bid",
+      "dictionary": {
+        "bid_match_score": 0.9,
+        "occupancy_rate": 0.65,
+        "roi_estimate": 0.78
+      },
+      "allowed_callback_types": [
+        "relational",
+        "combinatorial"
+      ]
+    },
+    {
+      "node_id": "V08",
+      "node_label": "BiddingAgent",
+      "phase": "gamma",
+      "agent": 2,
+      "callback_type": "combinatorial",
+      "trigger_functor": "generate_bid",
+      "dictionary": {
+        "bid_match_score": 0.9,
+        "occupancy_rate": 0.65,
+        "roi_estimate": 0.78
+      },
+      "allowed_callback_types": [
+        "relational",
+        "combinatorial"
+      ]
+    },
+    {
+      "node_id": "V09",
+      "node_label": "OccupancyNode",
+      "phase": "gamma",
+      "agent": 2,
+      "callback_type": "combinatorial",
+      "trigger_functor": "generate_bid",
+      "dictionary": {
+        "bid_match_score": 0.9,
+        "occupancy_rate": 0.65,
+        "roi_estimate": 0.78
+      },
+      "allowed_callback_types": [
+        "relational",
+        "combinatorial"
+      ]
+    },
+    {
+      "node_id": "V10",
+      "node_label": "InvestmentNode",
+      "phase": "gamma",
+      "agent": 2,
+      "callback_type": "combinatorial",
+      "trigger_functor": "generate_bid",
+      "dictionary": {
+        "bid_match_score": 0.9,
+        "occupancy_rate": 0.65,
+        "roi_estimate": 0.78
+      },
+      "allowed_callback_types": [
+        "relational",
+        "combinatorial"
+      ]
+    }
+  ]
+}
