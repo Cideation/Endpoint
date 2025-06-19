@@ -114,7 +114,7 @@ def health_check():
         if conn:
             conn.close()
             db_status = "Connected"
-        else:
+    else:
             db_status = "Connection Failed"
     except Exception as e:
         db_status = f"Error: {str(e)[:100]}"
@@ -152,7 +152,7 @@ def parse_file():
             result = parse_dxf_file(temp_path)
         elif filename.endswith('.pdf'):
             result = parse_pdf_file(temp_path)
-        else:
+            else:
             return jsonify({'error': 'Unsupported file type'}), 400
         
         # Clean up temp file
@@ -221,7 +221,7 @@ def push_enhanced_data():
             'component_id': cleaned_data.get('component_id'),
             'postgresql_status': 'success'
         })
-        
+            
     except Exception as e:
         logger.error(f'Error in push_enhanced_data: {str(e)}')
         return jsonify({'error': f'Enhanced push failed: {str(e)}'}), 500

@@ -181,8 +181,8 @@ def parse_dxf_file(file_path: str) -> Dict[str, Any]:
         metadata = extract_dxf_metadata(file_path)
         
         # Read DXF file
-        doc = ezdxf.readfile(file_path)
-        msp = doc.modelspace()
+    doc = ezdxf.readfile(file_path)
+    msp = doc.modelspace()
         
         components = []
         layers = set()
@@ -207,7 +207,7 @@ def parse_dxf_file(file_path: str) -> Dict[str, Any]:
                 blocks.add(block.name)
         
         # Process all entities in modelspace
-        for entity in msp:
+    for entity in msp:
             try:
                 entity_type = entity.dxftype()
                 entity_types.add(entity_type)

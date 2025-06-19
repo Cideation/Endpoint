@@ -54,14 +54,14 @@ function setupDataView() {
 }
 
 async function parseFiles() {
-    const fileInput = document.getElementById('fileInput');
+  const fileInput = document.getElementById('fileInput');
     const files = fileInput.files;
-    
+
     if (files.length === 0) {
         alert('Please select files to parse');
-        return;
-    }
-    
+    return;
+  }
+
     const parseBtn = document.getElementById('parseBtn');
     parseBtn.disabled = true;
     parseBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Parsing...';
@@ -161,7 +161,7 @@ async function pushToPostgreSQL() {
     } finally {
         pushBtn.disabled = false;
         pushBtn.innerHTML = '<i class="fas fa-database"></i> Push to PostgreSQL';
-    }
+}
 }
 
 async function loadDatabaseData() {
@@ -180,7 +180,7 @@ async function loadDatabaseData() {
             displayDatabaseData(result.data);
         } else {
             dataContainer.innerHTML = '<p>No data available</p>';
-        }
+  }
         
     } catch (error) {
         console.error('Load data error:', error);
@@ -194,9 +194,9 @@ function displayDatabaseData(data) {
     
     if (data.length === 0) {
         dataContainer.innerHTML = '<p>No components in database</p>';
-        return;
-    }
-    
+    return;
+  }
+
     const table = document.createElement('table');
     table.className = 'data-table';
     

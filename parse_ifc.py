@@ -230,7 +230,7 @@ def parse_ifc_file(file_path: str) -> Dict[str, Any]:
         metadata = extract_ifc_metadata(file_path)
         
         # Open IFC model
-        model = ifcopenshell.open(file_path)
+    model = ifcopenshell.open(file_path)
         
         components = []
         entity_types = set()
