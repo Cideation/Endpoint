@@ -26,4 +26,13 @@ services:
       - ./outputs:/outputs
       - ./shared:/shared:ro
       - ./pulse:/pulse:ro
+    working_dir: /app
+
+  sfde:
+    build: ./sfde
+    volumes:
+      - ./inputs:/inputs:ro
+      - ./outputs:/outputs
+      - ./shared:/shared:ro
+      - ./pulse:/pulse:ro
     working_dir: /app 
