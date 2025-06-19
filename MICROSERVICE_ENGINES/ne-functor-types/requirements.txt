@@ -1,1 +1,6 @@
+numpy
+pandas
+networkx
+websockets
+
 -r ../shared/requirements_base.txt 
