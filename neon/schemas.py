@@ -22,6 +22,13 @@ class Phase(str, Enum):
     BETA = "beta"
     GAMMA = "gamma"
 
+class ExecutionPhase(str, Enum):
+    """Execution phases for the BEM system"""
+    ALPHA = "alpha"
+    BETA = "beta"
+    GAMMA = "gamma"
+    CROSS_PHASE = "cross_phase"
+
 class NodeDictionary(BaseModel):
     """Schema for node_dictionarY.json used by microservices"""
     node_id: str = Field(..., description="Unique node identifier")

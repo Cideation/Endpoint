@@ -1,0 +1,9 @@
+2025-06-20 17:47:47,901 [INFO] ECM Gateway starting on 0.0.0.0:8765
+2025-06-20 17:47:47,903 [INFO] ECM Health: 0 connected clients
+2025-06-20 17:47:47,903 [INFO] server listening on 0.0.0.0:8765
+2025-06-20 17:47:50,850 [INFO] connection open
+2025-06-20 17:47:50,850 [ERROR] connection handler failed
+Traceback (most recent call last):
+  File "/Users/jpoldphone/Desktop/temporary destination/Endpoint-1/.venv/lib/python3.9/site-packages/websockets/asyncio/server.py", line 376, in conn_handler
+    await self.handler(connection)
+TypeError: ecm_handler() missing 1 required positional argument: 'path'
