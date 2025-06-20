@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dual Agent Coefficient System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    .cosmetic-ui { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .spatial-environment { background: #000; border: 2px solid #4f46e5; }
+    .node-engine-status { background: linear-gradient(90deg, #10b981 0%, #059669 100%); }
+    .agent-active { animation: pulse 2s infinite; }
+    .ac-cosmetic { border-left: 4px solid #8b5cf6; }
+    .ac-unreal { border-left: 4px solid #06b6d4; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+    
+    /* Mobile-specific styles */
+    .mobile-panel-toggle {
+      transition: transform 0.3s ease-in-out;
+    }
+    .panel-collapsed {
+      transform: translateX(-100%);
+    }
+    .panel-collapsed.right-panel {
+      transform: translateX(100%);
+    }
+    
+    /* Touch-optimized controls */
+    input[type="range"] {
+      height: 2rem;
+      -webkit-appearance: none;
+      appearance: none;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 1rem;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 1.5rem;
+      width: 1.5rem;
+      border-radius: 50%;
+      background: #8b5cf6;
+      cursor: pointer;
+    }
+    input[type="range"]::-moz-range-thumb {
+      height: 1.5rem;
+      width: 1.5rem;
+      border-radius: 50%;
+      background: #8b5cf6;
+      cursor: pointer;
+      border: none;
+    }
+    
+    /* Mobile canvas adjustments */
+    #spatialCanvas {
+      touch-action: manipulation;
+    }
+    
+    /* Responsive typography */
+    @media (max-width: 768px) {
+      .text-responsive-xl { font-size: 1.25rem; }
+      .text-responsive-lg { font-size: 1.125rem; }
+      .text-responsive-base { font-size: 0.875rem; }
+      .text-responsive-sm { font-size: 0.75rem; }
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-white overflow-hidden" x-data="dualACInterface()">
+  
+  <!-- Mobile Navigation Bar -->
+  <div class="lg:hidden bg-gray-800 border-b border-gray-700 p-3 flex items-center justify-between relative z-50">
+    <div class="flex items-center space-x-3">
+      <button @click="togglePanel('cosmetic')" 
+              class="p-2 bg-purple-600 rounded-lg touch-target">
+        <i class="fas fa-sliders-h text-white"></i>
+      </button>
+      <button @click="togglePanel('engine')" 
+              class="p-2 bg-green-600 rounded-lg touch-target">
+        <i class="fas fa-brain text-white"></i>
+      </button>
+      <button @click="togglePanel('spatial')" 
+              class="p-2 bg-blue-600 rounded-lg touch-target">
+        <i class="fas fa-cube text-white"></i>
+      </button>
+    </div>
+    <div class="text-sm font-medium text-white">
+      <span x-text="currentPanel" class="capitalize"></span> AC Panel
+    </div>
+    <button @click="showMobileMenu = !showMobileMenu" 
+            class="p-2 bg-gray-700 rounded-lg touch-target">
+      <i class="fas fa-bars text-white"></i>
+    </button>
+  </div>
+
+  <!-- Mobile Menu Overlay -->
+  <div x-show="showMobileMenu" 
+       @click="showMobileMenu = false"
+       x-transition:enter="transition ease-out duration-200"
+       x-transition:enter-start="opacity-0"
+       x-transition:enter-end="opacity-100"
+       x-transition:leave="transition ease-in duration-150"
+       x-transition:leave-start="opacity-100"
+       x-transition:leave-end="opacity-0"
+       class="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40">
+    <div class="absolute top-0 right-0 bg-gray-800 w-64 h-full p-4" @click.stop>
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-lg font-semibold text-white">AC System Menu</h3>
+        <button @click="showMobileMenu = false" class="text-gray-400">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="space-y-4">
+        <div class="bg-gray-700 rounded-lg p-3">
+          <h4 class="text-sm font-medium text-white mb-2">Active AC</h4>
+          <div class="text-xs text-gray-300">
+            Cosmetic: <span x-text="Object.keys(activeCosmeticAC).length" class="text-purple-300"></span>
+          </div>
+          <div class="text-xs text-gray-300">
+            Unreal: <span x-text="Object.keys(activeUnrealAC).length" class="text-cyan-300"></span>
+          </div>
+        </div>
+        
+        <div class="bg-gray-700 rounded-lg p-3">
+          <h4 class="text-sm font-medium text-white mb-2">Engine Status</h4>
+          <div class="text-xs text-gray-300">
+            CPU: <span x-text="Math.round(engineMetrics.cpu)" class="text-blue-300"></span>%
+          </div>
+          <div class="text-xs text-gray-300">
+            Load: <span x-text="engineMetrics.acLoad" class="text-green-300"></span>
+          </div>
+        </div>
+        
+        <button @click="resetAllAC()" 
+                class="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg text-sm">
+          Reset All AC
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Interface Container -->
+  <div class="h-screen flex relative" :class="{ 'lg:flex': true }">
+    
+    <!-- Left Panel: Cosmetic AC Group -->
+    <div class="w-full lg:w-1/3 cosmetic-ui p-3 lg:p-6 overflow-y-auto mobile-panel-toggle absolute lg:relative inset-0 lg:inset-auto z-30"
+         :class="{ 
+           'panel-collapsed': mobileActivePanel !== 'cosmetic',
+           'hidden lg:block': mobileActivePanel !== 'cosmetic' 
+         }"
+         x-show="mobileActivePanel === 'cosmetic' || screenSize === 'desktop'">
+      
+      <div class="mb-4 lg:mb-6">
+        <h1 class="text-xl lg:text-2xl font-bold text-white mb-2 text-responsive-xl">
+          <i class="fas fa-sliders-h mr-2"></i>Cosmetic AC Group
+        </h1>
+        <p class="text-indigo-100 text-xs lg:text-sm text-responsive-base">Structured Agent Coefficients → Node Engine</p>
+      </div>
+
+      <!-- Agent Sign-Up Form -->
+      <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 lg:p-6 mb-4 lg:mb-6 ac-cosmetic">
+        <h2 class="text-lg lg:text-xl font-semibold text-white mb-3 lg:mb-4 text-responsive-lg">Agent Registration</h2>
+        <form @submit.prevent="submitAgent()" class="space-y-3 lg:space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-indigo-100 mb-1 text-responsive-sm">Agent Name</label>
+            <input type="text" x-model="agentName" 
+                   class="w-full rounded-md bg-white/20 border-white/30 text-white p-3 lg:p-2 text-base lg:text-sm touch-target"/>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-indigo-100 mb-1 text-responsive-sm">Agent Class</label>
+            <select x-model="agentClass" 
+                    class="w-full rounded-md bg-white/20 border-white/30 text-white p-3 lg:p-2 text-base lg:text-sm touch-target">
+              <option value="">Select Agent...</option>
+              <option value="product">Product Agent</option>
+              <option value="user">User Agent</option>
+              <option value="spatial">Spatial Agent</option>
+              <option value="material">Material Agent</option>
+              <option value="structural">Structural Agent</option>
+              <option value="mep">MEP Agent</option>
+              <option value="cost">Cost Agent</option>
+              <option value="time">Time Agent</option>
+              <option value="quality">Quality Agent</option>
+              <option value="integration">Integration Agent</option>
+            </select>
+          </div>
+          <button type="submit" 
+                  class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 lg:py-2 px-4 rounded-md text-base lg:text-sm font-medium touch-target">
+            Register Agent
+          </button>
+        </form>
+      </div>
+
+      <!-- Cosmetic AC Sliders -->
+      <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 lg:p-6 mb-4 lg:mb-6 ac-cosmetic">
+        <h3 class="text-base lg:text-lg font-semibold text-white mb-3 lg:mb-4 text-responsive-lg">Cosmetic Agent Coefficients</h3>
+        <div class="space-y-4 lg:space-y-4">
+          <div>
+            <label class="block text-sm text-indigo-100 mb-2 text-responsive-sm">
+              Budget: <span x-text="budget + '%'" class="font-semibold text-white"></span>
+            </label>
+            <input type="range" x-model="budget" @input="updateCosmeticAC('budget', budget)" 
+                   min="0" max="100" class="w-full touch-target">
+          </div>
+          <div>
+            <label class="block text-sm text-indigo-100 mb-2 text-responsive-sm">
+              Quality: <span x-text="quality + '%'" class="font-semibold text-white"></span>
+            </label>
+            <input type="range" x-model="quality" @input="updateCosmeticAC('quality', quality)" 
+                   min="0" max="100" class="w-full touch-target">
+          </div>
+          <div>
+            <label class="block text-sm text-indigo-100 mb-2 text-responsive-sm">
+              Timeline: <span x-text="timeline + '%'" class="font-semibold text-white"></span>
+            </label>
+            <input type="range" x-model="timeline" @input="updateCosmeticAC('timeline', timeline)" 
+                   min="0" max="100" class="w-full touch-target">
+          </div>
+          <button @click="sendAllCosmeticAC()" 
+                  class="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 lg:py-2 px-4 rounded-md text-base lg:text-sm font-medium touch-target">
+            Send All Cosmetic AC to Engine
+          </button>
+        </div>
+      </div>
+
+      <!-- Active Cosmetic AC Display -->
+      <div class="bg-white/10 backdrop-blur-sm rounded-xl p-3 lg:p-4 ac-cosmetic">
+        <h4 class="text-sm font-semibold text-white mb-2 text-responsive-sm">Active Cosmetic AC</h4>
+        <div class="space-y-1 max-h-32 overflow-y-auto">
+          <template x-for="[key, value] in Object.entries(activeCosmeticAC)" :key="key">
+            <div class="text-xs bg-purple-500/20 p-2 rounded flex justify-between text-responsive-sm">
+              <span x-text="key" class="font-medium"></span>
+              <span x-text="value" class="text-white"></span>
+            </div>
+          </template>
+          <div x-show="Object.keys(activeCosmeticAC).length === 0" 
+               class="text-xs text-gray-400 text-center py-2 text-responsive-sm">
+            No active cosmetic coefficients
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center Panel: Node Engine (Mobile: Overlay) -->
+    <div class="w-full lg:w-1/6 bg-gray-800 border-l border-r border-gray-700 p-3 lg:p-4 flex flex-col mobile-panel-toggle absolute lg:relative inset-0 lg:inset-auto z-20"
+         :class="{ 
+           'panel-collapsed': mobileActivePanel !== 'engine',
+           'hidden lg:flex': mobileActivePanel !== 'engine' 
+         }"
+         x-show="mobileActivePanel === 'engine' || screenSize === 'desktop'">
+      
+      <div class="text-center mb-3 lg:mb-4">
+        <div class="node-engine-status rounded-full w-12 h-12 lg:w-16 lg:h-16 mx-auto flex items-center justify-center mb-2">
+          <i class="fas fa-brain text-xl lg:text-2xl text-white"></i>
+        </div>
+        <h3 class="text-sm font-bold text-white text-responsive-base">Node Engine</h3>
+        <p class="text-xs text-gray-400 text-responsive-sm">Dual AC Processing</p>
+      </div>
+
+      <!-- AC Processing Status -->
+      <div class="mb-3 lg:mb-4">
+        <h4 class="text-xs font-semibold text-gray-300 mb-2 text-responsive-sm">AC Processing</h4>
+        <div class="space-y-1">
+          <div class="bg-purple-500/20 text-purple-300 text-xs p-2 rounded text-responsive-sm">
+            Cosmetic AC: <span x-text="Object.keys(activeCosmeticAC).length" class="font-semibold"></span>
+          </div>
+          <div class="bg-cyan-500/20 text-cyan-300 text-xs p-2 rounded text-responsive-sm">
+            Unreal AC: <span x-text="Object.keys(activeUnrealAC).length" class="font-semibold"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Agents -->
+      <div class="mb-3 lg:mb-4 flex-1 min-h-0">
+        <h4 class="text-xs font-semibold text-gray-300 mb-2 text-responsive-sm">Active Agents</h4>
+        <div class="space-y-1 max-h-32 lg:max-h-none overflow-y-auto">
+          <template x-for="agent in activeAgents" :key="agent.id">
+            <div class="bg-green-500/20 text-green-300 text-xs p-2 rounded text-responsive-sm">
+              <div x-text="agent.name" class="font-medium"></div>
+              <div class="text-xs">AC Count: <span x-text="agent.acCount" class="font-semibold"></span></div>
+            </div>
+          </template>
+          <div x-show="activeAgents.length === 0" 
+               class="text-xs text-gray-400 text-center py-2 text-responsive-sm">
+            No active agents
+          </div>
+        </div>
+      </div>
+
+      <!-- Engine Metrics -->
+      <div class="mt-auto">
+        <h4 class="text-xs font-semibold text-gray-300 mb-2 text-responsive-sm">Metrics</h4>
+        <div class="space-y-1 text-xs text-responsive-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-400">CPU:</span>
+            <span class="text-blue-300 font-semibold" x-text="Math.round(engineMetrics.cpu) + '%'"></span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-400">AC Load:</span>
+            <span class="text-green-300 font-semibold" x-text="engineMetrics.acLoad"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel: Spatial Environment (Unreal AC Group) -->
+    <div class="w-full lg:w-1/2 spatial-environment relative mobile-panel-toggle absolute lg:relative inset-0 lg:inset-auto z-10"
+         :class="{ 
+           'panel-collapsed right-panel': mobileActivePanel !== 'spatial',
+           'hidden lg:block': mobileActivePanel !== 'spatial' 
+         }"
+         x-show="mobileActivePanel === 'spatial' || screenSize === 'desktop'">
+      
+      <div class="absolute top-2 lg:top-4 left-2 lg:left-4 z-10 bg-black/50 rounded-lg p-2 lg:p-3">
+        <h2 class="text-lg lg:text-xl font-bold text-white mb-1 text-responsive-lg">Unreal AC Group</h2>
+        <p class="text-blue-200 text-xs lg:text-sm text-responsive-sm">Spatial Actions → Unreal Agent Coefficients</p>
+      </div>
+
+      <!-- 3D Canvas -->
+      <canvas id="spatialCanvas" class="w-full h-full touch-action-manipulation"></canvas>
+
+      <!-- Mobile-Optimized Spatial Action Controls -->
+      <div class="absolute bottom-2 lg:bottom-4 left-2 lg:left-4 right-2 lg:right-4">
+        <div class="bg-black/70 backdrop-blur-sm rounded-lg p-3 lg:p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="text-white font-semibold text-sm lg:text-base text-responsive-base">Spatial Actions → Unreal AC</h4>
+            <button @click="showSpatialControls = !showSpatialControls" 
+                    class="lg:hidden p-2 bg-gray-600 rounded touch-target">
+              <i class="fas" :class="showSpatialControls ? 'fa-chevron-down' : 'fa-chevron-up'"></i>
+            </button>
+          </div>
+          
+          <div :class="{ 'hidden lg:block': !showSpatialControls }">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 lg:gap-2 mb-3">
+              <button @click="triggerSpatialAC('select_wall')" 
+                      class="bg-blue-600/80 hover:bg-blue-500 text-white text-sm lg:text-xs py-3 lg:py-2 px-3 rounded touch-target">
+                <i class="fas fa-mouse-pointer mr-2 lg:mr-1"></i>Select Wall
+              </button>
+              <button @click="triggerSpatialAC('place_room')" 
+                      class="bg-green-600/80 hover:bg-green-500 text-white text-sm lg:text-xs py-3 lg:py-2 px-3 rounded touch-target">
+                <i class="fas fa-home mr-2 lg:mr-1"></i>Place Room
+              </button>
+              <button @click="triggerSpatialAC('touch_zone')" 
+                      class="bg-purple-600/80 hover:bg-purple-500 text-white text-sm lg:text-xs py-3 lg:py-2 px-3 rounded touch-target">
+                <i class="fas fa-hand-paper mr-2 lg:mr-1"></i>Touch Zone
+              </button>
+              <button @click="triggerSpatialAC('measure')" 
+                      class="bg-orange-600/80 hover:bg-orange-500 text-white text-sm lg:text-xs py-3 lg:py-2 px-3 rounded touch-target">
+                <i class="fas fa-ruler mr-2 lg:mr-1"></i>Measure
+              </button>
+            </div>
+
+            <!-- Active Unreal AC -->
+            <div class="bg-cyan-900/30 rounded p-3 ac-unreal">
+              <div class="flex items-center justify-between mb-2">
+                <h5 class="text-xs font-semibold text-cyan-100 text-responsive-sm">Active Unreal AC</h5>
+                <span class="text-xs text-cyan-200 text-responsive-sm" x-text="Object.keys(activeUnrealAC).length + ' active'"></span>
+              </div>
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-2 max-h-20 lg:max-h-16 overflow-y-auto">
+                <template x-for="[key, value] in Object.entries(activeUnrealAC)" :key="key">
+                  <div class="text-xs bg-cyan-500/20 p-2 rounded text-responsive-sm">
+                    <div x-text="key" class="font-medium"></div>
+                    <div class="text-cyan-200" x-text="typeof value === 'number' ? Math.round(value) : value"></div>
+                  </div>
+                </template>
+                <div x-show="Object.keys(activeUnrealAC).length === 0" 
+                     class="text-xs text-cyan-300 text-center py-2 col-span-full text-responsive-sm">
+                  No active unreal coefficients
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile-Optimized Event Stream -->
+  <div class="fixed bottom-0 left-0 right-0 bg-gray-900/95 border-t border-gray-700 p-2 lg:p-2 z-50">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-2 lg:space-x-4">
+        <h4 class="text-sm font-semibold text-white text-responsive-base">AC Engine Stream</h4>
+        <button @click="showEventStream = !showEventStream" 
+                class="lg:hidden p-1 bg-gray-700 rounded touch-target">
+          <i class="fas text-xs" :class="showEventStream ? 'fa-chevron-down' : 'fa-chevron-up'"></i>
+        </button>
+      </div>
+      <div class="text-xs text-gray-400 hidden lg:block text-responsive-sm">
+        Cosmetic AC + Unreal AC → Unified Node Engine → Controlled Emergence
+      </div>
+    </div>
+    
+    <div class="mt-1 lg:mt-2 space-y-1 max-h-12 lg:max-h-16 overflow-y-auto"
+         :class="{ 'hidden lg:block': !showEventStream }">
+      <template x-for="event in eventStream.slice(-3)" :key="event.id">
+        <div class="text-xs flex items-center text-responsive-sm">
+          <span class="text-gray-300 w-16 lg:w-auto" x-text="event.time"></span>
+          <span class="text-white ml-2 flex-1 lg:flex-none" x-text="event.source"></span>
+          <span class="text-gray-400 mx-1 lg:mx-2">→</span>
+          <span class="text-green-300 flex-1" x-text="event.result"></span>
+        </div>
+      </template>
+      <div x-show="eventStream.length === 0" 
+           class="text-xs text-gray-400 text-center py-1 text-responsive-sm">
+        No events yet
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function dualACInterface() {
+      return {
+        // Mobile Responsive State
+        screenSize: 'desktop',
+        mobileActivePanel: 'cosmetic',
+        currentPanel: 'cosmetic',
+        showMobileMenu: false,
+        showSpatialControls: true,
+        showEventStream: false,
+        
+        // Cosmetic AC State
+        agentName: '',
+        agentClass: '',
+        budget: 50,
+        quality: 60,
+        timeline: 80,
+        activeCosmeticAC: {},
+        
+        // Unreal AC State
+        activeUnrealAC: {},
+        spatialInteractionCount: 0,
+        
+        // Engine State
+        activeAgents: [],
+        engineMetrics: { cpu: 45, acLoad: 0 },
+        eventStream: [],
+        
+        // 3D Environment
+        scene: null,
+        renderer: null,
+        camera: null,
+        components: [],
+        
+        init() {
+          this.detectScreenSize();
+          this.initSpatialEnvironment();
+          this.startEngineSimulation();
+          
+          // Add resize listener
+          window.addEventListener('resize', () => {
+            this.detectScreenSize();
+            this.resizeRenderer();
+          });
+          
+          // Add touch gesture support
+          this.initTouchGestures();
+        },
+        
+        // Mobile Responsive Methods
+        detectScreenSize() {
+          if (window.innerWidth >= 1024) {
+            this.screenSize = 'desktop';
+            this.mobileActivePanel = 'cosmetic'; // Reset for desktop
+          } else if (window.innerWidth >= 768) {
+            this.screenSize = 'tablet';
+          } else {
+            this.screenSize = 'mobile';
+          }
+        },
+        
+        togglePanel(panel) {
+          if (this.screenSize === 'desktop') return;
+          
+          this.mobileActivePanel = panel;
+          this.currentPanel = panel;
+          this.showMobileMenu = false;
+          
+          // Auto-hide spatial controls on mobile when switching panels
+          if (panel !== 'spatial') {
+            this.showSpatialControls = false;
+          }
+        },
+        
+        initTouchGestures() {
+          let startX = 0;
+          let currentX = 0;
+          
+          document.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+          });
+          
+          document.addEventListener('touchmove', (e) => {
+            currentX = e.touches[0].clientX;
+          });
+          
+          document.addEventListener('touchend', () => {
+            if (this.screenSize === 'desktop') return;
+            
+            const deltaX = currentX - startX;
+            const threshold = 100;
+            
+            if (Math.abs(deltaX) > threshold) {
+              const panels = ['cosmetic', 'engine', 'spatial'];
+              const currentIndex = panels.indexOf(this.mobileActivePanel);
+              
+              if (deltaX > 0 && currentIndex > 0) {
+                // Swipe right - previous panel
+                this.togglePanel(panels[currentIndex - 1]);
+              } else if (deltaX < 0 && currentIndex < panels.length - 1) {
+                // Swipe left - next panel
+                this.togglePanel(panels[currentIndex + 1]);
+              }
+            }
+          });
+        },
+        
+        resizeRenderer() {
+          if (this.renderer && this.camera) {
+            const canvas = document.getElementById('spatialCanvas');
+            const width = canvas.clientWidth;
+            const height = canvas.clientHeight;
+            
+            this.renderer.setSize(width, height);
+            this.camera.aspect = width / height;
+            this.camera.updateProjectionMatrix();
+          }
+        },
+        
+        resetAllAC() {
+          this.activeCosmeticAC = {};
+          this.activeUnrealAC = {};
+          this.activeAgents = [];
+          this.eventStream = [];
+          this.spatialInteractionCount = 0;
+          this.addEvent('System', 'All AC reset');
+          this.showMobileMenu = false;
+        },
+        
+        // Cosmetic AC Methods
+        async submitAgent() {
+          if (!this.agentName || !this.agentClass) return;
+          
+          const agent = {
+            id: Date.now(),
+            name: this.agentName,
+            class: this.agentClass,
+            acCount: 0
+          };
+          
+          this.activeAgents.push(agent);
+          this.addEvent('Cosmetic AC', `Agent ${this.agentName} registered`);
+          
+          this.agentName = '';
+          this.agentClass = '';
+          
+          // Show success feedback
+          this.showToast('Agent registered successfully!', 'success');
+        },
+        
+        updateCosmeticAC(key, value) {
+          this.activeCosmeticAC[key] = parseInt(value);
+          this.addEvent('Cosmetic AC', `${key} updated to ${value}%`);
+        },
+        
+        async sendAllCosmeticAC() {
+          const allAC = {
+            budget: this.budget,
+            quality: this.quality,
+            timeline: this.timeline
+          };
+          
+          Object.assign(this.activeCosmeticAC, allAC);
+          this.addEvent('Cosmetic AC', 'Bulk coefficients sent to engine');
+          this.showToast('Cosmetic AC sent to engine', 'info');
+        },
+        
+        // Unreal AC Methods
+        async triggerSpatialAC(action) {
+          this.spatialInteractionCount++;
+          
+          const unrealAC = this.generateUnrealAC(action);
+          Object.assign(this.activeUnrealAC, unrealAC);
+          
+          this.addEvent('Unreal AC', `${action.replace('_', ' ')} → AC generated`);
+          this.updateSpatialVisualization();
+          
+          // Haptic feedback on mobile
+          if ('vibrate' in navigator && this.screenSize !== 'desktop') {
+            navigator.vibrate(50);
+          }
+        },
+        
+        generateUnrealAC(action) {
+          const ac = {};
+          
+          switch (action) {
+            case 'select_wall':
+              ac.wall_size = Math.floor(Math.random() * 100) + 50;
+              ac.location_zone = Math.floor(Math.random() * 10) + 1;
+              break;
+            case 'place_room':
+              ac.room_area = Math.floor(Math.random() * 500) + 100;
+              ac.position_x = Math.floor(Math.random() * 1000);
+              break;
+            case 'touch_zone':
+              ac.interaction_count = this.spatialInteractionCount;
+              ac.touch_pressure = Math.round(Math.random() * 100);
+              break;
+            case 'measure':
+              ac.geometry_size = Math.floor(Math.random() * 1000) + 100;
+              ac.precision = Math.round(Math.random() * 100);
+              break;
+          }
+          
+          return ac;
+        },
+        
+        // 3D Environment
+        initSpatialEnvironment() {
+          const canvas = document.getElementById('spatialCanvas');
+          const scene = new THREE.Scene();
+          const camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+          const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+          
+          renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+          renderer.setClearColor(0x000000, 0);
+          
+          // Add lighting
+          const light = new THREE.AmbientLight(0x404040, 0.6);
+          scene.add(light);
+          
+          const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+          directionalLight.position.set(10, 10, 5);
+          scene.add(directionalLight);
+          
+          // Create components
+          this.createComponents(scene);
+          
+          camera.position.set(5, 5, 10);
+          camera.lookAt(0, 0, 0);
+          
+          this.scene = scene;
+          this.renderer = renderer;
+          this.camera = camera;
+          
+          // Add touch/click interaction
+          canvas.addEventListener('click', (e) => this.handleCanvasInteraction(e));
+          canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            this.handleCanvasInteraction(e);
+          });
+          
+          this.animate();
+        },
+        
+        createComponents(scene) {
+          const components = [
+            { name: 'Steel Beam', color: 0x4f46e5, pos: [0, 0, 0] },
+            { name: 'Concrete Column', color: 0x059669, pos: [3, 0, 0] },
+            { name: 'HVAC Duct', color: 0xdc2626, pos: [0, 3, 0] }
+          ];
+          
+          components.forEach(comp => {
+            const geometry = new THREE.BoxGeometry(1, 1, 1);
+            const material = new THREE.MeshLambertMaterial({ color: comp.color });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(...comp.pos);
+            mesh.userData = comp;
+            scene.add(mesh);
+            this.components.push(mesh);
+          });
+        },
+        
+        handleCanvasInteraction(event) {
+          if (this.mobileActivePanel !== 'spatial' && this.screenSize !== 'desktop') return;
+          
+          // Trigger spatial AC on canvas interaction
+          const actions = ['select_wall', 'place_room', 'touch_zone', 'measure'];
+          const randomAction = actions[Math.floor(Math.random() * actions.length)];
+          this.triggerSpatialAC(randomAction);
+        },
+        
+        animate() {
+          if (this.renderer && this.scene && this.camera) {
+            this.components.forEach(comp => {
+              comp.rotation.y += 0.01;
+              comp.rotation.x += 0.005;
+            });
+            this.renderer.render(this.scene, this.camera);
+          }
+          requestAnimationFrame(() => this.animate());
+        },
+        
+        updateSpatialVisualization() {
+          this.components.forEach(comp => {
+            const originalColor = comp.userData.color;
+            comp.material.color.setHex(0x06b6d4);
+            setTimeout(() => {
+              comp.material.color.setHex(originalColor);
+            }, 1500);
+          });
+        },
+        
+        // Engine Simulation
+        startEngineSimulation() {
+          setInterval(() => {
+            const totalAC = Object.keys(this.activeCosmeticAC).length + 
+                           Object.keys(this.activeUnrealAC).length;
+            
+            this.engineMetrics.cpu = Math.min(95, 45 + totalAC * 3 + Math.random() * 10);
+            this.engineMetrics.acLoad = totalAC;
+            
+            // Update agent AC counts
+            this.activeAgents.forEach(agent => {
+              agent.acCount = Math.floor(totalAC / Math.max(1, this.activeAgents.length));
+            });
+          }, 1000);
+        },
+        
+        addEvent(source, result) {
+          this.eventStream.push({
+            id: Date.now(),
+            time: new Date().toLocaleTimeString().slice(0, 8),
+            source: source,
+            result: result
+          });
+          
+          if (this.eventStream.length > 20) {
+            this.eventStream = this.eventStream.slice(-20);
+          }
+        },
+        
+        showToast(message, type = 'info') {
+          // Simple toast notification for mobile feedback
+          console.log(`[${type.toUpperCase()}] ${message}`);
+          
+          // Could implement actual toast UI here
+          if (this.screenSize !== 'desktop') {
+            const toast = document.createElement('div');
+            toast.className = `fixed top-20 left-4 right-4 z-50 p-3 rounded-lg text-white text-sm ${
+              type === 'success' ? 'bg-green-600' : 
+              type === 'error' ? 'bg-red-600' : 'bg-blue-600'
+            }`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+              toast.remove();
+            }, 3000);
+          }
+        }
+      }
+    }
+    
+    // Add CSS classes for touch targets
+    document.addEventListener('DOMContentLoaded', function() {
+      const style = document.createElement('style');
+      style.textContent = `
+        .touch-target {
+          min-height: 44px;
+          min-width: 44px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+      `;
+      document.head.appendChild(style);
+    });
+  </script>
+</body>
+</html>

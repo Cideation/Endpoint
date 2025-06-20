@@ -1,0 +1,26 @@
+{
+  "stateless_spatial": {
+    "data_affinity": "Works with geometric or spatial data; does not rely on internal state; pure transformation based on topology or position.",
+    "included_functors": [
+      "MEPSystemNode"
+    ]
+  },
+  "local_calcs": {
+    "data_affinity": "Performs numeric or local evaluations based on specific node inputs; has no global aggregation.",
+    "included_functors": [
+      "BiddingAgent",
+      "ComplianceNode",
+      "InvestmentNode",
+      "LandProfile",
+      "MaterialandProfile",
+      "OccupancyNode",
+      "ProductComponent",
+      "SystemLogicAgent",
+      "UserEconomicProfile"
+    ]
+  },
+  "aggregator": {
+    "data_affinity": "Consumes multiple node-level or local results and produces a consolidated decision, output, or routing logic.",
+    "included_functors": []
+  }
+}

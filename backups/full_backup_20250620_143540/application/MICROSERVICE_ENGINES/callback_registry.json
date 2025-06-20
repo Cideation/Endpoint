@@ -1,0 +1,112 @@
+[
+  {
+    "node_id": "V01",
+    "callback_types": [
+      "dag",
+      "relational",
+      "combinatorial"
+    ],
+    "primary_functors": [
+      "evaluate_manufacturing"
+    ]
+  },
+  {
+    "node_id": "V02",
+    "callback_types": [
+      "dag",
+      "relational",
+      "combinatorial"
+    ],
+    "primary_functors": [
+      "convert_to_geometry"
+    ]
+  },
+  {
+    "node_id": "V03",
+    "callback_types": [
+      "relational",
+      "combinatorial"
+    ],
+    "primary_functors": [
+      "dispatch_logic",
+      "route_to_node"
+    ]
+  },
+  {
+    "node_id": "V04",
+    "callback_types": [
+      "relational",
+      "combinatorial"
+    ],
+    "primary_functors": [
+      "evaluate_investment_potential",
+      "evaluate_affordability"
+    ]
+  },
+  {
+    "node_id": "V05",
+    "callback_types": [
+      "dag",
+      "relational",
+      "combinatorial"
+    ],
+    "primary_functors": [
+      "evaluate_site_fit",
+      "check_zoning_compliance"
+    ]
+  },
+  {
+    "node_id": "V06",
+    "callback_types": [
+      "relational",
+      "combinatorial"
+    ],
+    "primary_functors": [
+      "check_compliance",
+      "parse_regulations"
+    ]
+  },
+  {
+    "node_id": "V07",
+    "callback_types": [
+      "relational",
+      "combinatorial"
+    ],
+    "primary_functors": [
+      "evaluate_mep_fit",
+      "calculate_energy_demand"
+    ]
+  },
+  {
+    "node_id": "V08",
+    "callback_types": [
+      "relational",
+      "combinatorial"
+    ],
+    "primary_functors": [
+      "generate_bid",
+      "evaluate_market_match"
+    ]
+  },
+  {
+    "node_id": "V09",
+    "callback_types": [
+      "relational",
+      "combinatorial"
+    ],
+    "primary_functors": [
+      "simulate_occupancy",
+      "trigger_load_analysis"
+    ]
+  },
+  {
+    "node_id": "V10",
+    "callback_types": [
+      "relational",
+      "combinatorial"
+    ],
+    "primary_functors": [
+      "project_roi"
+    ]
+  }
+]

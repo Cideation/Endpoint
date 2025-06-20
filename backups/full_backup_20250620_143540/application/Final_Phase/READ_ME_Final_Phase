@@ -1,0 +1,88 @@
+## Final Phase: ECM Gateway & Optimization System
+
+### Abstract
+
+The final phase integrates two engines:
+
+1. **ECM Gateway**: A WebSocket‑based FSM that handles environmental input, routes functors, and maintains node states in real time.
+2. **Optimization Engine**: A DGL/NetworkX pipeline that analyzes graph data (nodes, edges, agent coefficients) and updates thresholds and parameters for continuous improvement.
+
+Together, they deliver live interaction control and self‑tuning behavior.
+
+---
+
+### 1. ECM Gateway
+
+**Features**
+
+* FSM-driven routing per node
+* WebSocket server for Unreal and external UIs
+* Dynamic execution of scientific functors
+* Real‑time state mapping and transition logging
+
+**Key Modules**
+
+* `ecm_gateway.py`: WebSocket handler and entry point
+* `fsm_runtime.py`: Node FSM logic
+* `fsm_matrix.ecm`: State‑transition definitions
+* `functor_router.py`: Dispatches functor calls
+* `agent_state.json`: In‑memory cache of node states
+
+---
+
+### 2. Optimization Engine
+
+**Features**
+
+* Graph embedding analysis via DGL
+* NetworkX‑based diagnostics
+* Objective-driven training (ROI, occupancy, spec‑fit)
+* Automated updates to PostgreSQL and ECM thresholds
+
+**Key Modules**
+
+* `graph_training_engine.py`: Model training loop
+* `embedding_optimizer.py`: Parameter refinement
+* `objective_scoring.py`: Scoring and loss functions
+* `postgres_updater.py`: Persists updates back to SQL
+
+---
+
+### 3. Runtime Loop
+
+```text
+Unreal/UI → ECM Gateway → Functor Execution → DGL Training → Threshold Update → Repeat
+```
+
+Each cycle ingests live events, executes logic, learns from outcomes, and adjusts for the next iteration.
+
+---
+
+### 4. Data Lakes Architecture
+
+**A. PostgreSQL Lake** (immutable source)
+
+* Stores: nodes, edges, coefficients, formulas
+* Used for: runtime services and graph materialization
+* Fed by: parsers, microservices
+
+**B. Training Lake** (ephemeral snapshots)
+
+* Stores: embedding tensors, CSV exports, feature sets
+* Used for: DGL training, formula discovery
+* Fed by: SQL exports and functor outputs
+
+**Integration**
+
+* Materialized views and scheduled exports link both lakes.
+
+---
+
+### Recommendation
+
+* Keep PostgreSQL data curated and write‑once.
+* Refresh the training lake each cycle for experimentation.
+* Monitor latency between ingestion, training, and deployment to ensure stability.
+
+
+

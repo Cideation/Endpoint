@@ -1,0 +1,137 @@
+{
+  "edge_list": [
+    {
+      "source_functor": "MEPSystemNode",
+      "target_functor": "ProductComponent",
+      "source_type": "stateless_spatial",
+      "target_type": "local_calcs",
+      "edge_type": "functor_type_link"
+    },
+    {
+      "source_functor": "MEPSystemNode",
+      "target_functor": "MaterialandProfile",
+      "source_type": "stateless_spatial",
+      "target_type": "local_calcs",
+      "edge_type": "functor_type_link"
+    },
+    {
+      "source_functor": "MEPSystemNode",
+      "target_functor": "SystemLogicAgent",
+      "source_type": "stateless_spatial",
+      "target_type": "local_calcs",
+      "edge_type": "functor_type_link"
+    },
+    {
+      "source_functor": "MEPSystemNode",
+      "target_functor": "UserEconomicProfile",
+      "source_type": "stateless_spatial",
+      "target_type": "local_calcs",
+      "edge_type": "functor_type_link"
+    },
+    {
+      "source_functor": "MEPSystemNode",
+      "target_functor": "LandProfile",
+      "source_type": "stateless_spatial",
+      "target_type": "local_calcs",
+      "edge_type": "functor_type_link"
+    },
+    {
+      "source_functor": "MEPSystemNode",
+      "target_functor": "ComplianceNode",
+      "source_type": "stateless_spatial",
+      "target_type": "local_calcs",
+      "edge_type": "functor_type_link"
+    },
+    {
+      "source_functor": "MEPSystemNode",
+      "target_functor": "BiddingAgent",
+      "source_type": "stateless_spatial",
+      "target_type": "local_calcs",
+      "edge_type": "functor_type_link"
+    },
+    {
+      "source_functor": "MEPSystemNode",
+      "target_functor": "OccupancyNode",
+      "source_type": "stateless_spatial",
+      "target_type": "local_calcs",
+      "edge_type": "functor_type_link"
+    },
+    {
+      "source_functor": "MEPSystemNode",
+      "target_functor": "InvestmentNode",
+      "source_type": "stateless_spatial",
+      "target_type": "local_calcs",
+      "edge_type": "functor_type_link"
+    }
+  ],
+  "lookup_per_functor": {
+    "MEPSystemNode": {
+      "outgoing": [
+        "ProductComponent",
+        "MaterialandProfile",
+        "SystemLogicAgent",
+        "UserEconomicProfile",
+        "LandProfile",
+        "ComplianceNode",
+        "BiddingAgent",
+        "OccupancyNode",
+        "InvestmentNode"
+      ],
+      "incoming": []
+    },
+    "ProductComponent": {
+      "outgoing": [],
+      "incoming": [
+        "MEPSystemNode"
+      ]
+    },
+    "MaterialandProfile": {
+      "outgoing": [],
+      "incoming": [
+        "MEPSystemNode"
+      ]
+    },
+    "SystemLogicAgent": {
+      "outgoing": [],
+      "incoming": [
+        "MEPSystemNode"
+      ]
+    },
+    "UserEconomicProfile": {
+      "outgoing": [],
+      "incoming": [
+        "MEPSystemNode"
+      ]
+    },
+    "LandProfile": {
+      "outgoing": [],
+      "incoming": [
+        "MEPSystemNode"
+      ]
+    },
+    "ComplianceNode": {
+      "outgoing": [],
+      "incoming": [
+        "MEPSystemNode"
+      ]
+    },
+    "BiddingAgent": {
+      "outgoing": [],
+      "incoming": [
+        "MEPSystemNode"
+      ]
+    },
+    "OccupancyNode": {
+      "outgoing": [],
+      "incoming": [
+        "MEPSystemNode"
+      ]
+    },
+    "InvestmentNode": {
+      "outgoing": [],
+      "incoming": [
+        "MEPSystemNode"
+      ]
+    }
+  }
+}

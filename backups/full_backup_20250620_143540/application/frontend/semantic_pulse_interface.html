@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semantic Pulse Interface</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
+            padding-top: 60px;
+        }
+
+        .status-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4CAF50;
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        .pulse-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+            padding: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .pulse-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 30px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pulse-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .pulse-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .pulse-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .pulse-title {
+            font-size: 1.5em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        .pulse-description {
+            color: #cccccc;
+            margin-bottom: 25px;
+            line-height: 1.7;
+            font-size: 1.05em;
+        }
+
+        .pulse-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-item {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-label {
+            font-size: 0.85em;
+            color: #999;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+
+        .pulse-trigger {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pulse-trigger:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+        }
+
+        .pulse-trigger:active {
+            transform: scale(0.98);
+        }
+
+        /* Semantic Pulse Specific Styles */
+        .bid-pulse { border-left: 5px solid #FFC107; }
+        .bid-pulse .pulse-icon { background: #FFC107; color: #000; }
+        .bid-pulse .pulse-trigger { background: #FFC107; color: #000; }
+
+        .occupancy-pulse { border-left: 5px solid #2196F3; }
+        .occupancy-pulse .pulse-icon { background: #2196F3; color: #fff; }
+        .occupancy-pulse .pulse-trigger { background: #2196F3; color: #fff; }
+
+        .compliancy-pulse { border-left: 5px solid #1E3A8A; }
+        .compliancy-pulse .pulse-icon { background: #1E3A8A; color: #fff; }
+        .compliancy-pulse .pulse-trigger { background: #1E3A8A; color: #fff; }
+
+        .fit-pulse { border-left: 5px solid #4CAF50; }
+        .fit-pulse .pulse-icon { background: #4CAF50; color: #fff; }
+        .fit-pulse .pulse-trigger { background: #4CAF50; color: #fff; }
+
+        .investment-pulse { border-left: 5px solid #FF9800; }
+        .investment-pulse .pulse-icon { background: #FF9800; color: #fff; }
+        .investment-pulse .pulse-trigger { background: #FF9800; color: #fff; }
+
+        .decay-pulse { border-left: 5px solid #9E9E9E; }
+        .decay-pulse .pulse-icon { background: #9E9E9E; color: #fff; }
+        .decay-pulse .pulse-trigger { background: #9E9E9E; color: #fff; }
+
+        /* Animations */
+        @keyframes pulse-glow {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.7; }
+        }
+
+        @keyframes pulsing-amber {
+            0%, 100% { box-shadow: 0 0 30px #FFC107; }
+            50% { box-shadow: 0 0 60px #FFC107; }
+        }
+
+        .pulse-active.bid-pulse .pulse-icon {
+            animation: pulsing-amber 1s ease-in-out infinite;
+        }
+
+        .pulse-log {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 350px;
+            max-height: 250px;
+            background: rgba(0, 0, 0, 0.9);
+            border-radius: 16px;
+            padding: 20px;
+            overflow-y: auto;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .log-entry {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.95em;
+        }
+
+        .log-timestamp {
+            color: #888;
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+<body>
+    <div class="status-bar">
+        <div class="connection-status">
+            <div class="status-dot"></div>
+            <span>Connected to ECM Gateway</span>
+        </div>
+        <div>Semantic Pulse Interface v1.0</div>
+    </div>
+
+    <div class="pulse-container">
+        <!-- Bid Pulse -->
+        <div class="pulse-card bid-pulse" data-pulse-type="bid_pulse">
+            <div class="pulse-header">
+                <div class="pulse-icon">⚠️</div>
+                <div class="pulse-title">Bid Pulse</div>
+            </div>
+            <div class="pulse-description">
+                Proposal of value or demand across components or agents. Flows downward to BiddingAgent nodes for competitive evaluation.
+            </div>
+            <div class="pulse-stats">
+                <div class="stat-item">
+                    <div class="stat-label">Direction</div>
+                    <div class="stat-value">↓ Downward</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Target</div>
+                    <div class="stat-value">BiddingAgent</div>
+                </div>
+            </div>
+            <button class="pulse-trigger" onclick="triggerPulse('bid_pulse')">
+                Trigger Bid Pulse
+            </button>
+        </div>
+
+        <!-- Occupancy Pulse -->
+        <div class="pulse-card occupancy-pulse" data-pulse-type="occupancy_pulse">
+            <div class="pulse-header">
+                <div class="pulse-icon">🌊</div>
+                <div class="pulse-title">Occupancy Pulse</div>
+            </div>
+            <div class="pulse-description">
+                Spatial or functional usage request/claim. Flows upward to OccupancyNode for spatial allocation processing.
+            </div>
+            <div class="pulse-stats">
+                <div class="stat-item">
+                    <div class="stat-label">Direction</div>
+                    <div class="stat-value">↑ Upward</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Target</div>
+                    <div class="stat-value">OccupancyNode</div>
+                </div>
+            </div>
+            <button class="pulse-trigger" onclick="triggerPulse('occupancy_pulse')">
+                Trigger Occupancy Pulse
+            </button>
+        </div>
+
+        <!-- Compliancy Pulse -->
+        <div class="pulse-card compliancy-pulse" data-pulse-type="compliancy_pulse">
+            <div class="pulse-header">
+                <div class="pulse-icon">🛡️</div>
+                <div class="pulse-title">Compliancy Pulse</div>
+            </div>
+            <div class="pulse-description">
+                Enforcement or validation of regulatory or systemic rules. Cross-subtree flow to ComplianceNode for rule validation.
+            </div>
+            <div class="pulse-stats">
+                <div class="stat-item">
+                    <div class="stat-label">Direction</div>
+                    <div class="stat-value">↔ Cross-subtree</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Target</div>
+                    <div class="stat-value">ComplianceNode</div>
+                </div>
+            </div>
+            <button class="pulse-trigger" onclick="triggerPulse('compliancy_pulse')">
+                Trigger Compliancy Pulse
+            </button>
+        </div>
+
+        <!-- Fit Pulse -->
+        <div class="pulse-card fit-pulse" data-pulse-type="fit_pulse">
+            <div class="pulse-header">
+                <div class="pulse-icon">✅</div>
+                <div class="pulse-title">Fit Pulse</div>
+            </div>
+            <div class="pulse-description">
+                Evaluation of geometric, functional, or contextual suitability. Lateral flow to MEPSystemNode for system analysis.
+            </div>
+            <div class="pulse-stats">
+                <div class="stat-item">
+                    <div class="stat-label">Direction</div>
+                    <div class="stat-value">← Lateral →</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Target</div>
+                    <div class="stat-value">MEPSystemNode</div>
+                </div>
+            </div>
+            <button class="pulse-trigger" onclick="triggerPulse('fit_pulse')">
+                Trigger Fit Pulse
+            </button>
+        </div>
+
+        <!-- Investment Pulse -->
+        <div class="pulse-card investment-pulse" data-pulse-type="investment_pulse">
+            <div class="pulse-header">
+                <div class="pulse-icon">💰</div>
+                <div class="pulse-title">Investment Pulse</div>
+            </div>
+            <div class="pulse-description">
+                Capital flow or readiness to engage based on fit and returns. Broadcast to InvestmentNode for capital evaluation.
+            </div>
+            <div class="pulse-stats">
+                <div class="stat-item">
+                    <div class="stat-label">Direction</div>
+                    <div class="stat-value">📡 Broadcast</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Target</div>
+                    <div class="stat-value">InvestmentNode</div>
+                </div>
+            </div>
+            <button class="pulse-trigger" onclick="triggerPulse('investment_pulse')">
+                Trigger Investment Pulse
+            </button>
+        </div>
+
+        <!-- Decay Pulse -->
+        <div class="pulse-card decay-pulse" data-pulse-type="decay_pulse">
+            <div class="pulse-header">
+                <div class="pulse-icon">⚫</div>
+                <div class="pulse-title">Decay Pulse</div>
+            </div>
+            <div class="pulse-description">
+                Signal of system degradation, expiry, or reset readiness. Downward flow to Any node type for generic processing.
+            </div>
+            <div class="pulse-stats">
+                <div class="stat-item">
+                    <div class="stat-label">Direction</div>
+                    <div class="stat-value">↓ Downward</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Target</div>
+                    <div class="stat-value">Any</div>
+                </div>
+            </div>
+            <button class="pulse-trigger" onclick="triggerPulse('decay_pulse')">
+                Trigger Decay Pulse
+            </button>
+        </div>
+    </div>
+
+    <div class="pulse-log">
+        <div style="font-weight: bold; margin-bottom: 15px;">Pulse Activity Log</div>
+        <div id="log-content"></div>
+    </div>
+
+    <script>
+        // WebSocket connection to ECM Gateway
+        let ws = null;
+        let pulseCount = 0;
+
+        function connectToECM() {
+            try {
+                ws = new WebSocket('ws://localhost:8765');
+                
+                ws.onopen = function() {
+                    console.log('Connected to ECM Gateway');
+                    updateConnectionStatus(true);
+                };
+                
+                ws.onmessage = function(event) {
+                    const message = JSON.parse(event.data);
+                    console.log('Received from ECM:', message);
+                    logPulseActivity('Received', message.type || 'unknown');
+                };
+                
+                ws.onclose = function() {
+                    console.log('Disconnected from ECM Gateway');
+                    updateConnectionStatus(false);
+                    setTimeout(connectToECM, 3000);
+                };
+                
+                ws.onerror = function(error) {
+                    console.error('WebSocket error:', error);
+                    updateConnectionStatus(false);
+                };
+            } catch (error) {
+                console.error('Failed to connect to ECM Gateway:', error);
+                updateConnectionStatus(false);
+                setTimeout(connectToECM, 3000);
+            }
+        }
+
+        function updateConnectionStatus(connected) {
+            const statusDot = document.querySelector('.status-dot');
+            const statusText = document.querySelector('.connection-status span');
+            
+            if (connected) {
+                statusDot.style.background = '#4CAF50';
+                statusText.textContent = 'Connected to ECM Gateway';
+            } else {
+                statusDot.style.background = '#f44336';
+                statusText.textContent = 'Disconnected - Attempting to reconnect...';
+            }
+        }
+
+        function triggerPulse(pulseType) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                alert('Not connected to ECM Gateway');
+                return;
+            }
+
+            const pulseMessage = {
+                type: pulseType,
+                timestamp: new Date().toISOString(),
+                payload: {
+                    source: 'semantic_pulse_interface',
+                    pulse_id: ++pulseCount,
+                    visual_trigger: true
+                }
+            };
+
+            ws.send(JSON.stringify(pulseMessage));
+            
+            // Visual feedback
+            const card = document.querySelector(`[data-pulse-type="${pulseType}"]`);
+            card.classList.add('pulse-active');
+            setTimeout(() => card.classList.remove('pulse-active'), 3000);
+            
+            logPulseActivity('Sent', pulseType);
+        }
+
+        function logPulseActivity(direction, pulseType) {
+            const logContent = document.getElementById('log-content');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.innerHTML = `
+                <div>${direction}: ${pulseType}</div>
+                <div class="log-timestamp">${timestamp}</div>
+            `;
+            
+            logContent.insertBefore(logEntry, logContent.firstChild);
+            
+            // Keep only last 10 entries
+            while (logContent.children.length > 10) {
+                logContent.removeChild(logContent.lastChild);
+            }
+        }
+
+        // Initialize connection when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            connectToECM();
+        });
+    </script>
+</body>
+</html> 

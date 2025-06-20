@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Neon CAD Parser - Component Management</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen" x-data="componentApp()">
+  
+  <!-- Navigation -->
+  <nav class="bg-white shadow-sm border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between h-16">
+        <div class="flex items-center">
+          <h1 class="text-xl font-semibold text-gray-900">
+            <i class="fas fa-cube text-indigo-600 mr-2"></i>
+            Neon CAD Parser
+          </h1>
+        </div>
+        <div class="flex items-center space-x-4">
+          <button @click="showView = 'dashboard'" 
+                  :class="showView === 'dashboard' ? 'text-indigo-600' : 'text-gray-600'"
+                  class="px-3 py-2 text-sm font-medium hover:text-indigo-600">
+            <i class="fas fa-chart-dashboard mr-1"></i> Dashboard
+          </button>
+          <button @click="showView = 'components'" 
+                  :class="showView === 'components' ? 'text-indigo-600' : 'text-gray-600'"
+                  class="px-3 py-2 text-sm font-medium hover:text-indigo-600">
+            <i class="fas fa-list mr-1"></i> Components
+          </button>
+          <button @click="showView = 'upload'" 
+                  :class="showView === 'upload' ? 'text-indigo-600' : 'text-gray-600'"
+                  class="px-3 py-2 text-sm font-medium hover:text-indigo-600">
+            <i class="fas fa-upload mr-1"></i> Upload
+          </button>
+          <button @click="showView = 'agent-signup'" 
+                  :class="showView === 'agent-signup' ? 'text-indigo-600' : 'text-gray-600'"
+                  class="px-3 py-2 text-sm font-medium hover:text-indigo-600">
+            <i class="fas fa-user-plus mr-1"></i> Agent Sign-Up
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    
+    <!-- Dashboard View -->
+    <div x-show="showView === 'dashboard'" class="space-y-6">
+      <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-6">
+          <h2 class="text-lg font-medium text-gray-900 mb-4">
+            <i class="fas fa-chart-bar text-indigo-600 mr-2"></i>
+            Dashboard Overview
+          </h2>
+          
+          <!-- Statistics Cards -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-4 text-white">
+              <div class="flex items-center">
+                <div class="flex-shrink-0">
+                  <i class="fas fa-cubes text-2xl opacity-80"></i>
+                </div>
+                <div class="ml-4">
+                  <p class="text-sm opacity-90">Total Components</p>
+                  <p class="text-2xl font-semibold" x-text="stats.totalComponents">0</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-4 text-white">
+              <div class="flex items-center">
+                <div class="flex-shrink-0">
+                  <i class="fas fa-file-upload text-2xl opacity-80"></i>
+                </div>
+                <div class="ml-4">
+                  <p class="text-sm opacity-90">Files Processed</p>
+                  <p class="text-2xl font-semibold" x-text="stats.totalFiles">0</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-4 text-white">
+              <div class="flex items-center">
+                <div class="flex-shrink-0">
+                  <i class="fas fa-map-marker-alt text-2xl opacity-80"></i>
+                </div>
+                <div class="ml-4">
+                  <p class="text-sm opacity-90">Spatial Components</p>
+                  <p class="text-2xl font-semibold" x-text="stats.spatialComponents">0</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg p-4 text-white">
+              <div class="flex items-center">
+                <div class="flex-shrink-0">
+                  <i class="fas fa-industry text-2xl opacity-80"></i>
+                </div>
+                <div class="ml-4">
+                  <p class="text-sm opacity-90">Materials</p>
+                  <p class="text-2xl font-semibold" x-text="stats.materialComponents">0</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Component Types Chart -->
+          <div class="bg-gray-50 rounded-lg p-4">
+            <h3 class="text-md font-medium text-gray-900 mb-3">Components by Type</h3>
+            <div class="space-y-2">
+              <template x-for="[type, count] in Object.entries(stats.componentsByType)" :key="type">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm text-gray-600 capitalize" x-text="type"></span>
+                  <div class="flex items-center">
+                    <div class="w-32 bg-gray-200 rounded-full h-2 mr-2">
+                      <div class="bg-indigo-600 h-2 rounded-full" 
+                           :style="`width: ${(count / Math.max(...Object.values(stats.componentsByType))) * 100}%`"></div>
+                    </div>
+                    <span class="text-sm font-medium text-gray-900" x-text="count"></span>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Components View -->
+    <div x-show="showView === 'components'" class="space-y-6">
+      <div class="bg-white shadow rounded-lg">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-medium text-gray-900">
+              <i class="fas fa-list text-indigo-600 mr-2"></i>
+              Component Library
+            </h2>
+            <button @click="refreshComponents()" 
+                    class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700">
+              <i class="fas fa-refresh mr-1"></i> Refresh
+            </button>
+          </div>
+
+          <!-- Search and Filters -->
+          <div class="mb-4 space-y-3">
+            <div class="flex space-x-3">
+              <div class="flex-1">
+                <input type="text" 
+                       x-model="searchQuery" 
+                       @input="searchComponents()"
+                       placeholder="Search components..."
+                       class="w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+              </div>
+              <select x-model="filterType" 
+                      @change="searchComponents()"
+                      class="rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                <option value="">All Types</option>
+                <option value="structural">Structural</option>
+                <option value="mep">MEP</option>
+                <option value="architectural">Architectural</option>
+                <option value="civil">Civil</option>
+              </select>
+            </div>
+            
+            <div class="flex space-x-3 text-sm">
+              <label class="flex items-center">
+                <input type="checkbox" x-model="filterSpatial" @change="searchComponents()" class="mr-2">
+                Has Spatial Data
+              </label>
+              <label class="flex items-center">
+                <input type="checkbox" x-model="filterMaterials" @change="searchComponents()" class="mr-2">
+                Has Materials
+              </label>
+            </div>
+          </div>
+
+          <!-- Components Table -->
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Component</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Spatial</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Materials</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <template x-for="component in components" :key="component.component_id">
+                  <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div class="text-sm font-medium text-gray-900" x-text="component.component_name"></div>
+                        <div class="text-sm text-gray-500" x-text="component.description"></div>
+                      </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
+                            :class="getTypeColor(component.component_type)"
+                            x-text="component.component_type"></span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <i :class="component.has_spatial_data ? 'fas fa-check text-green-500' : 'fas fa-times text-red-500'"></i>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <span x-text="component.material_count + ' materials'"></span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <span x-text="formatDate(component.created_at)"></span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <button @click="viewComponent(component.component_id)"
+                              class="text-indigo-600 hover:text-indigo-900 mr-3">
+                        <i class="fas fa-eye"></i> View
+                      </button>
+                      <button @click="editComponent(component.component_id)"
+                              class="text-green-600 hover:text-green-900">
+                        <i class="fas fa-edit"></i> Edit
+                      </button>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div class="flex items-center justify-between mt-4" x-show="pagination.totalPages > 1">
+            <div class="text-sm text-gray-700">
+              Showing <span x-text="((pagination.page - 1) * pagination.pageSize) + 1"></span> to 
+              <span x-text="Math.min(pagination.page * pagination.pageSize, pagination.totalCount)"></span> of 
+              <span x-text="pagination.totalCount"></span> results
+            </div>
+            <div class="flex space-x-2">
+              <button @click="changePage(pagination.page - 1)" 
+                      :disabled="pagination.page <= 1"
+                      class="px-3 py-1 text-sm border rounded disabled:opacity-50">
+                Previous
+              </button>
+              <template x-for="page in Array.from({length: pagination.totalPages}, (_, i) => i + 1)" :key="page">
+                <button @click="changePage(page)"
+                        :class="page === pagination.page ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700'"
+                        class="px-3 py-1 text-sm border rounded hover:bg-gray-50"
+                        x-text="page"></button>
+              </template>
+              <button @click="changePage(pagination.page + 1)" 
+                      :disabled="pagination.page >= pagination.totalPages"
+                      class="px-3 py-1 text-sm border rounded disabled:opacity-50">
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- File Upload View -->
+    <div x-show="showView === 'upload'" class="space-y-6">
+      <div class="bg-white shadow rounded-lg">
+        <div class="p-6">
+          <h2 class="text-lg font-medium text-gray-900 mb-4">
+            <i class="fas fa-upload text-indigo-600 mr-2"></i>
+            File Upload & Processing
+          </h2>
+
+          <!-- Upload Form -->
+          <form @submit.prevent="uploadFile()" class="space-y-4">
+            <div>
+              <label for="uploadFile" class="block text-sm font-medium text-gray-700">
+                Select CAD File (DWG, IFC, DXF, PDF)
+              </label>
+              <input type="file" 
+                     id="uploadFile" 
+                     @change="handleFileSelect($event)"
+                     accept=".dwg,.ifc,.dxf,.pdf,.obj,.step"
+                     class="mt-1 block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+            </div>
+            
+            <div x-show="selectedFile">
+              <div class="bg-gray-50 rounded-lg p-4">
+                <div class="flex items-center">
+                  <i class="fas fa-file text-indigo-600 mr-2"></i>
+                  <span class="text-sm text-gray-900" x-text="selectedFile?.name"></span>
+                  <span class="text-sm text-gray-500 ml-2" x-text="formatFileSize(selectedFile?.size)"></span>
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" 
+                    :disabled="!selectedFile || uploading"
+                    class="w-full py-2 px-4 bg-indigo-600 text-white font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50">
+              <template x-if="uploading">
+                <span><i class="fas fa-spinner fa-spin mr-2"></i>Processing...</span>
+              </template>
+              <template x-if="!uploading">
+                <span><i class="fas fa-upload mr-2"></i>Upload & Process</span>
+              </template>
+            </button>
+          </form>
+
+          <!-- Upload Progress -->
+          <div x-show="uploadProgress.show" class="mt-4">
+            <div class="bg-gray-200 rounded-full h-2">
+              <div class="bg-indigo-600 h-2 rounded-full transition-all duration-300" 
+                   :style="`width: ${uploadProgress.percentage}%`"></div>
+            </div>
+            <p class="text-sm text-gray-600 mt-1" x-text="uploadProgress.message"></p>
+          </div>
+
+          <!-- Recent Uploads -->
+          <div x-show="recentUploads.length > 0" class="mt-6">
+            <h3 class="text-md font-medium text-gray-900 mb-3">Recent Uploads</h3>
+            <div class="space-y-2">
+              <template x-for="upload in recentUploads" :key="upload.file_id">
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div class="flex items-center">
+                    <i :class="getFileIcon(upload.file_type)" class="text-indigo-600 mr-3"></i>
+                    <div>
+                      <p class="text-sm font-medium text-gray-900" x-text="upload.filename"></p>
+                      <p class="text-xs text-gray-500">
+                        <span x-text="upload.components_extracted"></span> components extracted
+                      </p>
+                    </div>
+                  </div>
+                  <div class="flex items-center">
+                    <span :class="getStatusColor(upload.status)" 
+                          class="px-2 py-1 text-xs font-semibold rounded-full mr-2"
+                          x-text="upload.status"></span>
+                    <span class="text-xs text-gray-500" x-text="formatDate(upload.created_at)"></span>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Agent Sign-Up View -->
+    <div x-show="showView === 'agent-signup'" class="flex items-center justify-center min-h-[60vh] p-4">
+      <form @submit.prevent="submitAgentSignup()" class="bg-white shadow-lg rounded-xl p-6 w-full max-w-md space-y-4">
+        <h2 class="text-2xl font-semibold text-gray-800">
+          <i class="fas fa-user-plus text-indigo-600 mr-2"></i>
+          Agent Sign-Up
+        </h2>
+
+        <div>
+          <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
+          <input type="text" 
+                 id="name" 
+                 x-model="agentForm.name" 
+                 required
+                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"/>
+        </div>
+
+        <div>
+          <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+          <input type="email" 
+                 id="email" 
+                 x-model="agentForm.email" 
+                 required
+                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"/>
+        </div>
+
+        <div>
+          <label for="agentType" class="block text-sm font-medium text-gray-700">Agent Class</label>
+          <select id="agentType" 
+                  x-model="agentForm.agentType" 
+                  required
+                  class="mt-1 block w-full rounded-md border-gray-300 bg-white shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+            <option value="">Select one…</option>
+            <option value="Agent1">Agent 1 (Product)</option>
+            <option value="Agent2">Agent 2 (User)</option>
+            <option value="Agent3">Agent 3 (Spatial)</option>
+            <option value="Agent4">Agent 4 (Material)</option>
+            <option value="Agent5">Agent 5 (Structural)</option>
+            <option value="Agent6">Agent 6 (MEP)</option>
+            <option value="Agent7">Agent 7 (Cost)</option>
+            <option value="Agent8">Agent 8 (Time)</option>
+            <option value="Agent9">Agent 9 (Quality)</option>
+            <option value="Agent10">Agent 10 (Integration)</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="ingestFile" class="block text-sm font-medium text-gray-700">Initial Data (JSON/CSV)</label>
+          <input type="file" 
+                 id="ingestFile" 
+                 @change="handleAgentFileSelect($event)"
+                 accept=".json,.csv"
+                 class="mt-1 block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
+        </div>
+
+        <button type="submit"
+                :disabled="agentSubmitting"
+                class="w-full py-2 px-4 bg-indigo-600 text-white font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50">
+          <template x-if="agentSubmitting">
+            <span><i class="fas fa-spinner fa-spin mr-2"></i>Creating Agent...</span>
+          </template>
+          <template x-if="!agentSubmitting">
+            <span><i class="fas fa-user-plus mr-2"></i>Sign Up & Ingest</span>
+          </template>
+        </button>
+
+        <!-- Success Message -->
+        <div x-show="agentSuccess" class="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
+          <div class="flex">
+            <i class="fas fa-check-circle text-green-400 mr-2 mt-0.5"></i>
+            <div class="text-sm text-green-700">
+              Agent successfully created and data ingested!
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <!-- Loading Overlay -->
+  <div x-show="loading" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
+      <i class="fas fa-spinner fa-spin text-indigo-600 text-xl"></i>
+      <span class="text-gray-900">Loading...</span>
+    </div>
+  </div>
+
+  <!-- Notifications -->
+  <div x-show="notification.show" 
+       x-transition:enter="transition ease-out duration-300"
+       x-transition:enter-start="opacity-0 transform translate-y-2"
+       x-transition:enter-end="opacity-100 transform translate-y-0"
+       x-transition:leave="transition ease-in duration-200"
+       x-transition:leave-start="opacity-100 transform translate-y-0"
+       x-transition:leave-end="opacity-0 transform translate-y-2"
+       class="fixed top-4 right-4 z-50">
+    <div :class="notification.type === 'error' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-green-50 border-green-200 text-green-700'"
+         class="max-w-sm w-full shadow-lg rounded-lg pointer-events-auto border p-4">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <i :class="notification.type === 'error' ? 'fas fa-exclamation-circle text-red-400' : 'fas fa-check-circle text-green-400'"></i>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm font-medium" x-text="notification.message"></p>
+        </div>
+        <div class="ml-4 flex-shrink-0 flex">
+          <button @click="notification.show = false" class="inline-flex text-gray-400 hover:text-gray-500">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function componentApp() {
+      return {
+        // View Management
+        showView: 'agent-signup', // Start with your Agent Sign-Up form
+        loading: false,
+        
+        // Dashboard Data
+        stats: {
+          totalComponents: 0,
+          totalFiles: 0,
+          spatialComponents: 0,
+          materialComponents: 0,
+          componentsByType: {}
+        },
+        
+        // Components Data
+        components: [],
+        searchQuery: '',
+        filterType: '',
+        filterSpatial: false,
+        filterMaterials: false,
+        pagination: {
+          page: 1,
+          pageSize: 10,
+          totalCount: 0,
+          totalPages: 0
+        },
+        
+        // Upload Data
+        selectedFile: null,
+        uploading: false,
+        uploadProgress: {
+          show: false,
+          percentage: 0,
+          message: ''
+        },
+        recentUploads: [],
+        
+        // Agent Form Data
+        agentForm: {
+          name: '',
+          email: '',
+          agentType: ''
+        },
+        agentFile: null,
+        agentSubmitting: false,
+        agentSuccess: false,
+        
+        // Notifications
+        notification: {
+          show: false,
+          type: 'success',
+          message: ''
+        },
+        
+        // API Base URL - Will connect to your Neon backend
+        apiBaseUrl: '/api/v1',
+        
+        init() {
+          this.loadDashboardStats();
+          this.loadComponents();
+          this.loadRecentUploads();
+        },
+        
+        async loadDashboardStats() {
+          try {
+            const response = await fetch(`${this.apiBaseUrl}/dashboard/statistics`);
+            const data = await response.json();
+            
+            if (data.success) {
+              this.stats = data.data || this.stats;
+            }
+          } catch (error) {
+            console.error('Error loading dashboard stats:', error);
+            // Use mock data for demo - shows your existing 5 components
+            this.stats = {
+              totalComponents: 5,
+              totalFiles: 3,
+              spatialComponents: 4,
+              materialComponents: 3,
+              componentsByType: {
+                structural: 3,
+                mep: 2
+              }
+            };
+          }
+        },
+        
+        async loadComponents() {
+          this.loading = true;
+          try {
+            const params = new URLSearchParams({
+              page: this.pagination.page,
+              page_size: this.pagination.pageSize,
+              ...(this.searchQuery && { query: this.searchQuery }),
+              ...(this.filterType && { component_type: this.filterType }),
+              ...(this.filterSpatial && { has_spatial_data: true }),
+              ...(this.filterMaterials && { has_materials: true })
+            });
+            
+            const response = await fetch(`${this.apiBaseUrl}/components?${params}`);
+            const data = await response.json();
+            
+            if (data.success) {
+              this.components = data.data || [];
+              this.pagination.totalCount = data.total_count || 0;
+              this.pagination.totalPages = data.total_pages || 0;
+            }
+          } catch (error) {
+            console.error('Error loading components:', error);
+            // Use mock data matching your current database
+            this.components = [
+              {
+                component_id: '1',
+                component_name: 'Steel Beam H400',
+                component_type: 'structural',
+                description: 'Primary load-bearing beam',
+                has_spatial_data: true,
+                has_materials: true,
+                material_count: 2,
+                created_at: new Date().toISOString()
+              },
+              {
+                component_id: '2',
+                component_name: 'Concrete Column C30',
+                component_type: 'structural',
+                description: 'Reinforced concrete column',
+                has_spatial_data: true,
+                has_materials: true,
+                material_count: 1,
+                created_at: new Date().toISOString()
+              },
+              {
+                component_id: '3',
+                component_name: 'HVAC Duct 600mm',
+                component_type: 'mep',
+                description: 'Main HVAC distribution duct',
+                has_spatial_data: true,
+                has_materials: false,
+                material_count: 0,
+                created_at: new Date().toISOString()
+              }
+            ];
+          } finally {
+            this.loading = false;
+          }
+        },
+        
+        async loadRecentUploads() {
+          try {
+            const response = await fetch(`${this.apiBaseUrl}/files?page_size=5`);
+            const data = await response.json();
+            
+            if (data.success) {
+              this.recentUploads = data.data || [];
+            }
+          } catch (error) {
+            console.error('Error loading recent uploads:', error);
+          }
+        },
+        
+        async searchComponents() {
+          this.pagination.page = 1;
+          await this.loadComponents();
+        },
+        
+        async changePage(page) {
+          if (page >= 1 && page <= this.pagination.totalPages) {
+            this.pagination.page = page;
+            await this.loadComponents();
+          }
+        },
+        
+        async refreshComponents() {
+          await this.loadComponents();
+          this.showNotification('Components refreshed successfully');
+        },
+        
+        handleFileSelect(event) {
+          this.selectedFile = event.target.files[0];
+        },
+        
+        async uploadFile() {
+          if (!this.selectedFile) return;
+          
+          this.uploading = true;
+          this.uploadProgress.show = true;
+          this.uploadProgress.percentage = 0;
+          this.uploadProgress.message = 'Uploading file...';
+          
+          try {
+            const formData = new FormData();
+            formData.append('file', this.selectedFile);
+            formData.append('file_type', this.selectedFile.name.split('.').pop().toUpperCase());
+            
+            // Simulate upload progress
+            const progressInterval = setInterval(() => {
+              if (this.uploadProgress.percentage < 90) {
+                this.uploadProgress.percentage += 10;
+              }
+            }, 200);
+            
+            // This will connect to your Neon backend file processor
+            const response = await fetch(`${this.apiBaseUrl}/files/upload`, {
+              method: 'POST',
+              body: formData
+            });
+            
+            clearInterval(progressInterval);
+            this.uploadProgress.percentage = 100;
+            this.uploadProgress.message = 'Processing complete!';
+            
+            const data = await response.json();
+            
+            if (data.success) {
+              this.showNotification(`File processed successfully! ${data.components_created} components extracted.`);
+              this.selectedFile = null;
+              document.getElementById('uploadFile').value = '';
+              await this.loadRecentUploads();
+              await this.loadDashboardStats();
+            } else {
+              throw new Error(data.message || 'Upload failed');
+            }
+          } catch (error) {
+            console.error('Upload error:', error);
+            this.showNotification('Upload failed: ' + error.message, 'error');
+          } finally {
+            this.uploading = false;
+            setTimeout(() => {
+              this.uploadProgress.show = false;
+            }, 2000);
+          }
+        },
+        
+        handleAgentFileSelect(event) {
+          this.agentFile = event.target.files[0];
+        },
+        
+        async submitAgentSignup() {
+          this.agentSubmitting = true;
+          this.agentSuccess = false;
+          
+          try {
+            const formData = new FormData();
+            formData.append('name', this.agentForm.name);
+            formData.append('email', this.agentForm.email);
+            formData.append('agent_type', this.agentForm.agentType);
+            
+            if (this.agentFile) {
+              formData.append('ingest_file', this.agentFile);
+            }
+            
+            // This will connect to your Phase 2 microservices
+            const response = await fetch(`${this.apiBaseUrl}/agents/signup`, {
+              method: 'POST',
+              body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+              this.agentSuccess = true;
+              this.showNotification('Agent created successfully!');
+              
+              // Reset form
+              this.agentForm = { name: '', email: '', agentType: '' };
+              this.agentFile = null;
+              document.getElementById('ingestFile').value = '';
+              
+              // Show the dashboard to see results
+              setTimeout(() => {
+                this.showView = 'dashboard';
+              }, 2000);
+            } else {
+              throw new Error(data.message || 'Agent creation failed');
+            }
+          } catch (error) {
+            console.error('Agent signup error:', error);
+            this.showNotification('Agent creation failed: ' + error.message, 'error');
+          } finally {
+            this.agentSubmitting = false;
+          }
+        },
+        
+        viewComponent(componentId) {
+          // TODO: Implement component detail view
+          this.showNotification('Component detail view coming soon...');
+        },
+        
+        editComponent(componentId) {
+          // TODO: Implement component editing
+          this.showNotification('Component editing coming soon...');
+        },
+        
+        showNotification(message, type = 'success') {
+          this.notification = {
+            show: true,
+            type,
+            message
+          };
+          
+          setTimeout(() => {
+            this.notification.show = false;
+          }, 5000);
+        },
+        
+        getTypeColor(type) {
+          const colors = {
+            structural: 'bg-blue-100 text-blue-800',
+            mep: 'bg-green-100 text-green-800',
+            architectural: 'bg-purple-100 text-purple-800',
+            civil: 'bg-orange-100 text-orange-800',
+            unknown: 'bg-gray-100 text-gray-800'
+          };
+          return colors[type] || colors.unknown;
+        },
+        
+        getStatusColor(status) {
+          const colors = {
+            success: 'bg-green-100 text-green-800',
+            processing: 'bg-yellow-100 text-yellow-800',
+            error: 'bg-red-100 text-red-800',
+            pending: 'bg-gray-100 text-gray-800'
+          };
+          return colors[status] || colors.pending;
+        },
+        
+        getFileIcon(fileType) {
+          const icons = {
+            DWG: 'fas fa-file-code',
+            IFC: 'fas fa-file-alt',
+            DXF: 'fas fa-file-image',
+            PDF: 'fas fa-file-pdf',
+            OBJ: 'fas fa-cube',
+            STEP: 'fas fa-cog'
+          };
+          return icons[fileType] || 'fas fa-file';
+        },
+        
+        formatDate(dateString) {
+          return new Date(dateString).toLocaleDateString();
+        },
+        
+        formatFileSize(bytes) {
+          if (!bytes) return '';
+          const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+          const i = Math.floor(Math.log(bytes) / Math.log(1024));
+          return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+        }
+      }
+    }
+  </script>
+</body>
+</html> 

@@ -1,0 +1,667 @@
+{
+  "anchor_name": {
+    "value": "['Product_Base_Center']",
+    "type": "string",
+    "default": 0.0
+  },
+  "anchor_type": {
+    "value": "['topologic_vertex_anchor']",
+    "type": "string",
+    "default": 0.0
+  },
+  "anchor_id": {
+    "value": "['ANCH_001']",
+    "type": "string",
+    "default": 0.0
+  },
+  "octree_level": {
+    "value": "['2', '3']",
+    "type": "integer",
+    "default": 0.0
+  },
+  "topologic_role": {
+    "value": "['Face']",
+    "type": "string",
+    "default": 0.0
+  },
+  "subpart_family": {
+    "value": "['Panel']",
+    "type": "string",
+    "default": 0.0
+  },
+  "bbox_x_mm": {
+    "value": "['120']",
+    "type": "integer",
+    "default": 0.0
+  },
+  "bbox_y_mm": {
+    "value": "['60']",
+    "type": "integer",
+    "default": 0.0
+  },
+  "bbox_z_mm": {
+    "value": "['10']",
+    "type": "integer",
+    "default": 0.0
+  },
+  "nodeid_id": {
+    "value": "['V01']",
+    "type": "string",
+    "default": 0.0
+  },
+  "topologic_vertex_anchor": {
+    "value": "['Product_Base_Center']",
+    "type": "string",
+    "default": 0.0
+  },
+  "octree_size_anchor": {
+    "value": "['Product_Default_Footprint']",
+    "type": "string",
+    "default": 0.0
+  },
+  "octree_depth_anchor": {
+    "value": "['Product_Level']",
+    "type": "string",
+    "default": 0.0
+  },
+  "source_component_id": {
+    "value": "['CPT_001']",
+    "type": "string",
+    "default": 0.0
+  },
+  "target_component_name": {
+    "value": "['Floor Beam A1']",
+    "type": "string",
+    "default": 0.0
+  },
+  "product_family": {
+    "value": "['beam_structural', 'structure']",
+    "type": "string",
+    "default": 0.0
+  },
+  "variant_id": {
+    "value": "['VAR_001']",
+    "type": "string",
+    "default": 0.0
+  },
+  "is_root_node": {
+    "value": "['TRUE']",
+    "type": "boolean",
+    "default": 0.0
+  },
+  "subpart_ids_id": {
+    "value": "['SBP_05,SBP_06']",
+    "type": "string",
+    "default": 0.0
+  },
+  "subpart_id": {
+    "value": "['SUB_0001']",
+    "type": "string",
+    "default": 0.0
+  },
+  "point_type": {
+    "value": "['bolt_pass', 'flange_face']",
+    "type": "string",
+    "default": 0.0
+  },
+  "anchor_reference": {
+    "value": "['top_face_center']",
+    "type": "string",
+    "default": 0.0
+  },
+  "tolerance_mm": {
+    "value": "['0.2']",
+    "type": "float",
+    "default": 0.0
+  },
+  "phase": {
+    "value": "['Alpha']",
+    "type": "string",
+    "default": 0.0
+  },
+  "edge_type": {
+    "value": "['DAG (Directed Acyclic Graph)']",
+    "type": "string",
+    "default": 0.0
+  },
+  "edge_value": {
+    "value": "['None (edge is purely structural)']",
+    "type": "string",
+    "default": 0.0
+  },
+  "source_subpart_id_list_id": {
+    "value": "['SP_001, SP_004, SP_007']",
+    "type": "string",
+    "default": 0.0
+  },
+  "target_topologic_candidate_id": {
+    "value": "['Cell']",
+    "type": "string",
+    "default": 0.0
+  },
+  "anchor_configuration": {
+    "value": "['face-to-face, edge-closed']",
+    "type": "string",
+    "default": 0.0
+  },
+  "assign_component_id": {
+    "value": "['TRUE']",
+    "type": "boolean",
+    "default": 0.0
+  },
+  "component_id": {
+    "value": "['CMP_A12']",
+    "type": "string",
+    "default": 0.0
+  },
+  "field_name": {
+    "value": "['anchor_match_type']",
+    "type": "string",
+    "default": 0.0
+  },
+  "source_inventory_id": {
+    "value": "['INV001']",
+    "type": "string",
+    "default": 0.0
+  },
+  "target_item_id": {
+    "value": "['ITM001']",
+    "type": "string",
+    "default": 0.0
+  },
+  "item_type": {
+    "value": "['sub_part']",
+    "type": "string",
+    "default": 0.0
+  },
+  "location": {
+    "value": "['warehouse_A']",
+    "type": "string",
+    "default": 0.0
+  },
+  "quantity_available": {
+    "value": "['Integer']",
+    "type": "string",
+    "default": 0.0
+  },
+  "lead_time_days": {
+    "value": "['days']",
+    "type": "string",
+    "default": 0.0
+  },
+  "last_updated": {
+    "value": "['2025-06-08']",
+    "type": "string",
+    "default": 0.0
+  },
+  "requirement_id": {
+    "value": "['ASM001']",
+    "type": "string",
+    "default": 0.0
+  },
+  "contract_id": {
+    "value": "['on_contract']",
+    "type": "string",
+    "default": 0.0
+  },
+  "source_withdrawal_id": {
+    "value": "['WD001']",
+    "type": "string",
+    "default": 0.0
+  },
+  "quantity": {
+    "value": "['Integer']",
+    "type": "string",
+    "default": 0.0
+  },
+  "timestamp": {
+    "value": "['2025-06-08']",
+    "type": "string",
+    "default": 0.0
+  },
+  "source_item_id": {
+    "value": "['ITM001']",
+    "type": "string",
+    "default": 0.0
+  },
+  "target_item_type": {
+    "value": "['sub_part']",
+    "type": "string",
+    "default": 0.0
+  },
+  "material_id": {
+    "value": "['MAT001']",
+    "type": "string",
+    "default": 0.0
+  },
+  "description": {
+    "value": "['L-angled beam, 1.2m']",
+    "type": "string",
+    "default": 0.0
+  },
+  "supplier_id": {
+    "value": "['SUP001', 'SUP_A001']",
+    "type": "string",
+    "default": 0.0
+  },
+  "is_reusable": {
+    "value": "['FALSE']",
+    "type": "boolean",
+    "default": 0.0
+  },
+  "unit_cost": {
+    "value": "['Integer']",
+    "type": "string",
+    "default": 0.0
+  },
+  "source_joint_id": {
+    "value": "['JNT_001']",
+    "type": "string",
+    "default": 0.0
+  },
+  "target_from_subpart_id": {
+    "value": "['SUB_0001']",
+    "type": "string",
+    "default": 0.0
+  },
+  "to_subpart_id": {
+    "value": "['SUB_0002']",
+    "type": "string",
+    "default": 0.0
+  },
+  "fastening_type": {
+    "value": "['bolted']",
+    "type": "string",
+    "default": 0.0
+  },
+  "load_rating_n": {
+    "value": "['value']",
+    "type": "string",
+    "default": 0.0
+  },
+  "reversible": {
+    "value": "['yes']",
+    "type": "string",
+    "default": 0.0
+  },
+  "joint_type_id": {
+    "value": "['JT01']",
+    "type": "string",
+    "default": 0.0
+  },
+  "joint_name": {
+    "value": "['Bolted']",
+    "type": "string",
+    "default": 0.0
+  },
+  "source_land_id": {
+    "value": "['LND001']",
+    "type": "string",
+    "default": 0.0
+  },
+  "target_parcel_name": {
+    "value": "['Lot A']",
+    "type": "string",
+    "default": 0.0
+  },
+  "area_m2": {
+    "value": "['1500']",
+    "type": "integer",
+    "default": 0.0
+  },
+  "zoning_class": {
+    "value": "['Residential']",
+    "type": "string",
+    "default": 0.0
+  },
+  "topologic_reference": {
+    "value": "['Vertex_101']",
+    "type": "string",
+    "default": 0.0
+  },
+  "ownership_type": {
+    "value": "['Private']",
+    "type": "string",
+    "default": 0.0
+  },
+  "location_id": {
+    "value": "['LOC001']",
+    "type": "string",
+    "default": 0.0
+  },
+  "anchor_constraints": {
+    "value": "['north-facing']",
+    "type": "string",
+    "default": 0.0
+  },
+  "soil_category": {
+    "value": "['Type A']",
+    "type": "string",
+    "default": 0.0
+  },
+  "owner_id": {
+    "value": "['OWN001']",
+    "type": "string",
+    "default": 0.0
+  },
+  "boundary_coordinates": {
+    "value": "['[[10.0, 20.0], [15.0, 25.0], [13.0, 30.0], [10.0, 20.0]]']",
+    "type": "string",
+    "default": 0.0
+  },
+  "geometry_format": {
+    "value": "['GeoJSON']",
+    "type": "string",
+    "default": 0.0
+  },
+  "crs": {
+    "value": "['EPSG:4326']",
+    "type": "string",
+    "default": 0.0
+  },
+  "avg_elevation_m": {
+    "value": "['nan']",
+    "type": "float",
+    "default": 0.0
+  },
+  "max_slope_deg": {
+    "value": "['nan']",
+    "type": "float",
+    "default": 0.0
+  },
+  "slope_class": {
+    "value": "['rolling']",
+    "type": "string",
+    "default": 0.0
+  },
+  "elevation_range": {
+    "value": "['42.0\u201355.0']",
+    "type": "string",
+    "default": 0.0
+  },
+  "terrain_notes": {
+    "value": "['Flood-prone']",
+    "type": "string",
+    "default": 0.0
+  },
+  "method_id": {
+    "value": "['MM01']",
+    "type": "string",
+    "default": 0.0
+  },
+  "method_name": {
+    "value": "['CNC Milling']",
+    "type": "string",
+    "default": 0.0
+  },
+  "source_material_variant_id": {
+    "value": "['MV01']",
+    "type": "string",
+    "default": 0.0
+  },
+  "target_material_variant_code_id": {
+    "value": "['Aluminum_5052-H32']",
+    "type": "string",
+    "default": 0.0
+  },
+  "base_material": {
+    "value": "['Aluminum']",
+    "type": "string",
+    "default": 0.0
+  },
+  "variant_name": {
+    "value": "['5052-H32']",
+    "type": "string",
+    "default": 0.0
+  },
+  "source_product_family_id": {
+    "value": "['PF01']",
+    "type": "string",
+    "default": 0.0
+  },
+  "product_family_type": {
+    "value": "['BoltType']",
+    "type": "string",
+    "default": 0.0
+  },
+  "length_mm": {
+    "value": "['120.0']",
+    "type": "float",
+    "default": 0.0
+  },
+  "width_mm_id": {
+    "value": "['40.0']",
+    "type": "float",
+    "default": 0.0
+  },
+  "height_mm": {
+    "value": "['20.0']",
+    "type": "float",
+    "default": 0.0
+  },
+  "bounding_box_volume_cm3": {
+    "value": "['96.0']",
+    "type": "float",
+    "default": 0.0
+  },
+  "bounding_box_type": {
+    "value": "['flat']",
+    "type": "string",
+    "default": 0.0
+  },
+  "target_bbox_x_mm": {
+    "value": "['150']",
+    "type": "integer",
+    "default": 0.0
+  },
+  "centroid_x_id": {
+    "value": "['75']",
+    "type": "integer",
+    "default": 0.0
+  },
+  "centroid_y_id": {
+    "value": "['40']",
+    "type": "integer",
+    "default": 0.0
+  },
+  "centroid_z_id": {
+    "value": "['20']",
+    "type": "integer",
+    "default": 0.0
+  },
+  "supplier_type": {
+    "value": "['direct', 'oem']",
+    "type": "string",
+    "default": 0.0
+  },
+  "supplier_name": {
+    "value": "['Precision Machining Co.']",
+    "type": "string",
+    "default": 0.0
+  },
+  "contact_person": {
+    "value": "['Juan Dela Cruz']",
+    "type": "string",
+    "default": 0.0
+  },
+  "email": {
+    "value": "['juan@precisionmachining.ph']",
+    "type": "string",
+    "default": 0.0
+  },
+  "phone": {
+    "value": "['+63-917-123-4567']",
+    "type": "string",
+    "default": 0.0
+  },
+  "tolerance_label": {
+    "value": "['Fine']",
+    "type": "string",
+    "default": 0.0
+  },
+  "range_mm": {
+    "value": "['\u00b10.01']",
+    "type": "string",
+    "default": 0.0
+  },
+  "standard_reference": {
+    "value": "['ISO 2768-fH']",
+    "type": "string",
+    "default": 0.0
+  },
+  "agent_class": {
+    "value": "['Agent 1']",
+    "type": "string",
+    "default": 0.0
+  },
+  "agent_subclass": {
+    "value": "['systemadmin']",
+    "type": "string",
+    "default": 0.0
+  },
+  "property_name": {
+    "value": "['density']",
+    "type": "string",
+    "default": 0.0
+  },
+  "value": {
+    "value": "['7130']",
+    "type": "integer",
+    "default": 0.0
+  },
+  "unit": {
+    "value": "['kg/m3']",
+    "type": "string",
+    "default": 0.0
+  },
+  "coefficient_name": {
+    "value": "['component_id']",
+    "type": "string",
+    "default": 0.0
+  },
+  "axis": {
+    "value": "['x-axis']",
+    "type": "string",
+    "default": 0.0
+  },
+  "family_id": {
+    "value": "['F01']",
+    "type": "string",
+    "default": 0.0
+  },
+  "family_name": {
+    "value": "['Structural Components']",
+    "type": "string",
+    "default": 0.0
+  },
+  "node_name": {
+    "value": "['productcomponent']",
+    "type": "string",
+    "default": 0.0
+  },
+  "functor_name": {
+    "value": "['evaluate_manufacturing']",
+    "type": "string",
+    "default": 0.0
+  },
+  "functor_type": {
+    "value": "['callback']",
+    "type": "string",
+    "default": 0.0
+  },
+  "input_field_ids_id": {
+    "value": "['c02,_c03,_c04,_b01']",
+    "type": "string",
+    "default": 0.0
+  },
+  "input_field_names": {
+    "value": "['geometry,_performance_score,_connection_zones,_material_id']",
+    "type": "string",
+    "default": 0.0
+  },
+  "functor_id": {
+    "value": "['f01']",
+    "type": "string",
+    "default": 0.0
+  },
+  "output_fields": {
+    "value": "['manufacturing_score']",
+    "type": "string",
+    "default": 0.0
+  },
+  "output_type": {
+    "value": "['float']",
+    "type": "string",
+    "default": 0.0
+  },
+  "variable_name": {
+    "value": "['component_id']",
+    "type": "string",
+    "default": 0.0
+  },
+  "variable_domain": {
+    "value": "['component']",
+    "type": "string",
+    "default": 0.0
+  },
+  "source_type": {
+    "value": "['input']",
+    "type": "string",
+    "default": 0.0
+  },
+  "formula": {
+    "value": "['valid = performance_score >= threshold']",
+    "type": "string",
+    "default": 0.0
+  },
+  "ac_property_label": {
+    "value": "['agent_class']",
+    "type": "string",
+    "default": 0.0
+  },
+  "property_key": {
+    "value": "['agent_class']",
+    "type": "string",
+    "default": 0.0
+  },
+  "data_type": {
+    "value": "['enum']",
+    "type": "string",
+    "default": 0.0
+  },
+  "is_required": {
+    "value": "['TRUE']",
+    "type": "boolean",
+    "default": 0.0
+  },
+  "subpart_name": {
+    "value": "['Bolt M6']",
+    "type": "string",
+    "default": 0.0
+  },
+  "spec_level": {
+    "value": "['High']",
+    "type": "string",
+    "default": 0.0
+  },
+  "function_id": {
+    "value": "['SF01']",
+    "type": "string",
+    "default": 0.0
+  },
+  "function_name": {
+    "value": "['Fastening']",
+    "type": "string",
+    "default": 0.0
+  },
+  "vertex_property": {
+    "value": "['vertex_id']",
+    "type": "string",
+    "default": 0.0
+  },
+  "purpose": {
+    "value": "['Unique identifier']",
+    "type": "string",
+    "default": 0.0
+  }
+}

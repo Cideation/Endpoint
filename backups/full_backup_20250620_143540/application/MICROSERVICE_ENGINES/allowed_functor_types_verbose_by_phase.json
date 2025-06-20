@@ -1,0 +1,23 @@
+{
+  "Alpha": [
+    {
+      "functor_type": "stateless_spatial",
+      "label": "Stateless Spatial",
+      "description": "Operates purely on geometric/spatial data without internal state or memory."
+    }
+  ],
+  "Beta": [
+    {
+      "functor_type": "local_calcs",
+      "label": "Local Calculations",
+      "description": "Performs localized numeric or node-based evaluations without aggregation."
+    }
+  ],
+  "Gamma": [
+    {
+      "functor_type": "aggregator",
+      "label": "Aggregator",
+      "description": "Combines data from multiple nodes or sources to produce a unified output or decision."
+    }
+  ]
+}
