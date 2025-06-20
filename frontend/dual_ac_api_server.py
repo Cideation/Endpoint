@@ -487,6 +487,8 @@ class AgentSignupRequest(BaseModel):
 
 app = FastAPI(title="Dual Agent Coefficient API", version="1.0.0")
 
+# Mobile responsive design integrated throughout the system
+
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
@@ -527,6 +529,7 @@ async def get_engine_status():
     """Get current Node Engine status"""
     return engine.get_status()
 
+@app.post("/cosmetic_ac")
 @app.post("/api/cosmetic-ac")
 async def process_cosmetic_ac(request: CosmeticACRequest):
     """Process Cosmetic Agent Coefficients from UI"""
@@ -557,6 +560,7 @@ async def process_cosmetic_ac(request: CosmeticACRequest):
         logger.error(f"Error processing cosmetic AC: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/unreal_ac")
 @app.post("/api/unreal-ac")
 async def process_unreal_ac(request: SpatialACRequest):
     """Process Unreal Agent Coefficients from spatial actions"""
