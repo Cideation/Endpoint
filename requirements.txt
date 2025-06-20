@@ -45,4 +45,9 @@ numpy==1.26.4
 pandas==2.2.1
 dgl==2.0.0
 torch==2.2.1
-tqdm==4.66.2 
+tqdm==4.66.2
+
+# Focused Validation Tests
+pytest==7.4.4 
+# Focused Validation Tests
+pytest==7.4.4
