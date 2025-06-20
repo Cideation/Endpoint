@@ -63,6 +63,34 @@ def generate_bid_score(price, delivery_time, performance_score, weight_factors):
     score = (performance_score * perf_w) - (price * price_w) - (delivery_time * time_w)
     return score
 
+def calculate_irr(cash_flows, guess=0.1, max_iterations=1000, tolerance=1e-6):
+    """
+    Calculate the Internal Rate of Return (IRR) for a list of cash flows.
+
+    Parameters:
+        cash_flows (list of float): Cash flows per period. First is typically negative (investment).
+        guess (float): Initial guess for IRR (default 10%).
+        max_iterations (int): Maximum number of iterations for convergence.
+        tolerance (float): Acceptable difference from zero NPV.
+
+    Returns:
+        float: Estimated IRR as a decimal (e.g. 0.12 for 12%), or None if it doesn't converge.
+    """
+    rate = guess
+    for _ in range(max_iterations):
+        npv = sum(cf / ((1 + rate) ** i) for i, cf in enumerate(cash_flows))
+        d_npv = sum(-i * cf / ((1 + rate) ** (i + 1)) for i, cf in enumerate(cash_flows))
+
+        if abs(npv) < tolerance:
+            return rate
+
+        if d_npv == 0:
+            return None  # Avoid division by zero
+
+        rate -= npv / d_npv
+
+    return None  # Did not converge
+
 
 # ==== electrical_utils.py ====
 
@@ -248,5 +276,5 @@ def check_bearing_area(load_kN, bearing_stress_kPa):
     Check if bearing area is sufficient for applied load.
     """
     required_area_m2 = (load_kN * 1000) / bearing_stress_kPa
-
+    return required_area_m2
 </rewritten_file> 
