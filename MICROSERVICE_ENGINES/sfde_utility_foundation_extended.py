@@ -260,11 +260,9 @@ def get_cell_centroid(cell):
 def extract_edges_from_cell(cell):
     return cell.Edges()
 
-aggregate_runner.py
-Performs a weighted average aggregation using defined scalar inputs and weights.
-"""
+# ==== aggregate_runner.py ====
+# Performs a weighted average aggregation using defined scalar inputs and weights.
 
-"""
 def aggregate_scalar_values(data):
     """
     Expects:
@@ -393,3 +391,44 @@ def productivity_rate(output_units, total_time):
 
 def gantt_overlap(tasks_parallel, duration_each):
     return duration_each / tasks_parallel  # reduced duration if parallel
+
+# ==== FABRICATION FORMULAS ====
+
+def generate_gcode_path(
+    path,
+    tool_radius=1.0,
+    cut_depth=-1.0,
+    travel_height=5.0,
+    feed_rate=1000
+):
+    """
+    Generate G-code from a 2D XY path for fabrication.
+    
+    Args:
+        path: List of (x, y) coordinate tuples
+        tool_radius (float): Radius of cutting/extruding tool
+        cut_depth (float): Z-depth of cut (negative value)
+        travel_height (float): Z-height when moving safely above workpiece
+        feed_rate (int): Movement speed
+        
+    Returns:
+        str: G-code string ready for CNC/3D printer
+    """
+    if not path:
+        return ""
+
+    gcode = [
+        "G21 ; Set units to mm",
+        "G90 ; Absolute positioning", 
+        f"G1 Z{travel_height:.2f} F{feed_rate} ; Move up before travel",
+        f"G1 X{path[0][0]:.2f} Y{path[0][1]:.2f} F{feed_rate} ; Move to start",
+        f"G1 Z{cut_depth:.2f} F{feed_rate} ; Move down to cut"
+    ]
+
+    for x, y in path[1:]:
+        gcode.append(f"G1 X{x:.2f} Y{y:.2f} F{feed_rate}")
+
+    gcode.append(f"G1 Z{travel_height:.2f} ; Lift up after cut")
+    gcode.append("M2 ; End of program")
+
+    return "\n".join(gcode)
