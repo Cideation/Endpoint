@@ -10,160 +10,164 @@ from datetime import datetime
 from typing import Dict, List, Any, Optional, Union
 from enum import Enum
 
-try:
-    from .json_transformer import JSONTransformer
-except ImportError:
-    from json_transformer import JSONTransformer
+from .schemas import ExecutionPhase
+from .json_transformer import JSONTransformer
+from .container_client import ContainerClient, ContainerType
 
-class ContainerType(str, Enum):
-    """Phase 2 container types"""
-    DAG_ALPHA = "ne-dag-alpha"
-    FUNCTOR_TYPES = "ne-functor-types"
-    CALLBACK_ENGINE = "ne-callback-engine"
-    SFDE_ENGINE = "sfde-engine"
-    GRAPH_RUNTIME = "ne-graph-runtime-engine"
-    DGL_TRAINING = "dgl-training-engine"  # Future container
-    API_GATEWAY = "api-gateway"
-
-class ExecutionPhase(str, Enum):
-    """Execution phases"""
-    ALPHA = "alpha"
-    BETA = "beta"
-    GAMMA = "gamma"
-    CROSS_PHASE = "cross_phase"
+logger = logging.getLogger(__name__)
 
 class Orchestrator:
     """
-    Orchestrates data flow between database and Phase 2 microservice containers
+    Production Orchestrator with Real Container Communication
+    
+    Coordinates execution across microservice containers using HTTP communication.
+    Replaces simulation with actual container calls.
     """
     
     def __init__(self):
         self.transformer = JSONTransformer()
-        self.logger = logging.getLogger(__name__)
         self.execution_history = []
+        self.container_client = ContainerClient()
         
-    async def orchestrate_full_pipeline(
+    async def execute_pipeline(
         self, 
-        components: List[Dict[str, Any]],
-        affinity_types: List[str] = None,
-        execution_phases: List[ExecutionPhase] = None
+        components: List[Dict[str, Any]], 
+        phase: ExecutionPhase = ExecutionPhase.CROSS_PHASE
     ) -> Dict[str, Any]:
         """
-        Orchestrate the complete pipeline from database to all containers
+        Execute complete pipeline with real container communication
         """
-        if affinity_types is None:
-            affinity_types = ["spatial", "structural", "cost", "energy", "mep", "time"]
-        
-        if execution_phases is None:
-            execution_phases = [ExecutionPhase.ALPHA, ExecutionPhase.BETA, ExecutionPhase.GAMMA]
-        
-        pipeline_results = {
-            "pipeline_id": f"pipeline_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
-            "start_time": datetime.now().isoformat(),
-            "components_count": len(components),
-            "results": {}
-        }
+        pipeline_start = datetime.now()
+        logger.info(f"Starting pipeline execution with {len(components)} components")
         
         try:
-            # 1. Transform for DAG Alpha (Alpha phase)
-            if ExecutionPhase.ALPHA in execution_phases:
-                self.logger.info("Executing DAG Alpha phase...")
-                dag_result = await self._execute_dag_alpha(components)
-                pipeline_results["results"]["dag_alpha"] = dag_result
-            
-            # 2. Transform for Functor Types (Cross-phase)
-            if ExecutionPhase.CROSS_PHASE in execution_phases:
-                self.logger.info("Executing Functor Types...")
-                functor_result = await self._execute_functor_types(components)
-                pipeline_results["results"]["functor_types"] = functor_result
-            
-            # 3. Transform for Callback Engine (Beta & Gamma phases)
-            for phase in [ExecutionPhase.BETA, ExecutionPhase.GAMMA]:
-                if phase in execution_phases:
-                    self.logger.info(f"Executing Callback Engine for {phase.value} phase...")
+            # Initialize container client
+            async with self.container_client:
+                # Check container health before starting
+                health_status = await self.container_client.get_all_health_status()
+                logger.info(f"Container health status: {health_status}")
+                
+                # Execute pipeline stages
+                results = {
+                    "pipeline_id": f"pipeline_{int(pipeline_start.timestamp())}",
+                    "start_time": pipeline_start.isoformat(),
+                    "phase": phase.value,
+                    "components_count": len(components),
+                    "container_health": health_status,
+                    "results": []
+                }
+                
+                # Stage 1: DAG Alpha (if container available)
+                if health_status.get(ContainerType.DAG_ALPHA.value, False):
+                    dag_result = await self._execute_dag_alpha(components)
+                    results["results"].append(dag_result)
+                
+                # Stage 2: Functor Types (if container available)
+                if health_status.get(ContainerType.FUNCTOR_TYPES.value, False):
+                    functor_result = await self._execute_functor_types(components)
+                    results["results"].append(functor_result)
+                
+                # Stage 3: Callback Engine (if container available)
+                if health_status.get(ContainerType.CALLBACK_ENGINE.value, False):
                     callback_result = await self._execute_callback_engine(components, phase)
-                    pipeline_results["results"][f"callback_{phase.value}"] = callback_result
-            
-            # 4. Transform for SFDE Engine (Cross-phase)
-            if ExecutionPhase.CROSS_PHASE in execution_phases:
-                self.logger.info("Executing SFDE Engine...")
-                sfde_result = await self._execute_sfde_engine(components, affinity_types)
-                pipeline_results["results"]["sfde_engine"] = sfde_result
-            
-            # 5. Transform for Graph Runtime (Cross-phase)
-            if ExecutionPhase.CROSS_PHASE in execution_phases:
-                self.logger.info("Executing Graph Runtime Engine...")
-                graph_result = await self._execute_graph_runtime(components)
-                pipeline_results["results"]["graph_runtime"] = graph_result
-            
-            # 6. Future: DGL Training Engine
-            # if ExecutionPhase.CROSS_PHASE in execution_phases:
-            #     self.logger.info("Executing DGL Training Engine...")
-            #     dgl_result = await self._execute_dgl_training(components)
-            #     pipeline_results["results"]["dgl_training"] = dgl_result
-            
-            pipeline_results["end_time"] = datetime.now().isoformat()
-            pipeline_results["status"] = "success"
-            
-            # Store execution history
-            self.execution_history.append(pipeline_results)
-            
+                    results["results"].append(callback_result)
+                
+                # Stage 4: SFDE Engine (if container available)
+                if health_status.get(ContainerType.SFDE_ENGINE.value, False):
+                    sfde_result = await self._execute_sfde_engine(components, ["structural", "cost", "energy"])
+                    results["results"].append(sfde_result)
+                
+                # Stage 5: Graph Runtime (if container available)
+                if health_status.get(ContainerType.GRAPH_RUNTIME.value, False):
+                    graph_result = await self._execute_graph_runtime(components)
+                    results["results"].append(graph_result)
+                
+                # Stage 6: DGL Training (if container available and enabled)
+                if health_status.get(ContainerType.DGL_TRAINING.value, False):
+                    dgl_result = await self._execute_dgl_training(components)
+                    results["results"].append(dgl_result)
+                
+                # Calculate execution summary
+                execution_time = (datetime.now() - pipeline_start).total_seconds()
+                results.update({
+                    "end_time": datetime.now().isoformat(),
+                    "execution_time_seconds": execution_time,
+                    "containers_executed": len(results["results"]),
+                    "status": "completed" if results["results"] else "no_containers_available"
+                })
+                
+                # Store in execution history
+                self.execution_history.append(results)
+                
+                logger.info(f"Pipeline completed in {execution_time:.2f}s with {len(results['results'])} containers")
+                return results
+                
         except Exception as e:
-            self.logger.error(f"Pipeline execution failed: {str(e)}")
-            pipeline_results["status"] = "error"
-            pipeline_results["error"] = str(e)
-            pipeline_results["end_time"] = datetime.now().isoformat()
-        
-        return pipeline_results
+            logger.error(f"Pipeline execution failed: {e}")
+            return {
+                "status": "failed",
+                "error": str(e),
+                "execution_time_seconds": (datetime.now() - pipeline_start).total_seconds()
+            }
     
     async def _execute_dag_alpha(self, components: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Execute DAG Alpha container"""
+        """Execute DAG Alpha container with real communication"""
         try:
             # Transform components for DAG Alpha
             dag_data = self.transformer.transform_for_dag_alpha(components)
             
-            # Simulate container execution (replace with actual container call)
-            result = await self._call_container(ContainerType.DAG_ALPHA, dag_data)
+            # Call real container
+            result = await self.container_client.call_container(ContainerType.DAG_ALPHA, dag_data)
             
             return {
                 "container": ContainerType.DAG_ALPHA.value,
-                "phase": ExecutionPhase.ALPHA.value,
+                "phase": ExecutionPhase.CROSS_PHASE.value,
                 "input_data": dag_data,
                 "output_data": result,
-                "execution_time": datetime.now().isoformat()
+                "execution_time": datetime.now().isoformat(),
+                "status": result.get("status", "completed")
             }
             
         except Exception as e:
-            self.logger.error(f"DAG Alpha execution failed: {str(e)}")
-            return {"error": str(e), "status": "failed"}
+            logger.error(f"DAG Alpha execution failed: {str(e)}")
+            return {
+                "container": ContainerType.DAG_ALPHA.value,
+                "error": str(e), 
+                "status": "failed"
+            }
     
     async def _execute_functor_types(self, components: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Execute Functor Types container"""
+        """Execute Functor Types container with real communication"""
         try:
             # Transform components for Functor Types
             functor_data = self.transformer.transform_for_functor_types(components)
             
-            # Simulate container execution
-            result = await self._call_container(ContainerType.FUNCTOR_TYPES, functor_data)
+            # Call real container
+            result = await self.container_client.call_container(ContainerType.FUNCTOR_TYPES, functor_data)
             
             return {
                 "container": ContainerType.FUNCTOR_TYPES.value,
                 "phase": ExecutionPhase.CROSS_PHASE.value,
                 "input_data": functor_data,
                 "output_data": result,
-                "execution_time": datetime.now().isoformat()
+                "execution_time": datetime.now().isoformat(),
+                "status": result.get("status", "completed")
             }
             
         except Exception as e:
-            self.logger.error(f"Functor Types execution failed: {str(e)}")
-            return {"error": str(e), "status": "failed"}
+            logger.error(f"Functor Types execution failed: {str(e)}")
+            return {
+                "container": ContainerType.FUNCTOR_TYPES.value,
+                "error": str(e), 
+                "status": "failed"
+            }
     
     async def _execute_callback_engine(
         self, 
         components: List[Dict[str, Any]], 
         phase: ExecutionPhase
     ) -> Dict[str, Any]:
-        """Execute Callback Engine container"""
+        """Execute Callback Engine container with real communication"""
         try:
             # Transform components for Callback Engine
             callback_data = self.transformer.transform_for_callback_engine(
@@ -171,177 +175,177 @@ class Orchestrator:
                 phase=phase.value
             )
             
-            # Simulate container execution
-            result = await self._call_container(ContainerType.CALLBACK_ENGINE, callback_data)
+            # Call real container
+            result = await self.container_client.call_container(ContainerType.CALLBACK_ENGINE, callback_data)
             
             return {
                 "container": ContainerType.CALLBACK_ENGINE.value,
                 "phase": phase.value,
                 "input_data": callback_data,
                 "output_data": result,
-                "execution_time": datetime.now().isoformat()
+                "execution_time": datetime.now().isoformat(),
+                "status": result.get("status", "completed")
             }
             
         except Exception as e:
-            self.logger.error(f"Callback Engine execution failed: {str(e)}")
-            return {"error": str(e), "status": "failed"}
+            logger.error(f"Callback Engine execution failed: {str(e)}")
+            return {
+                "container": ContainerType.CALLBACK_ENGINE.value,
+                "error": str(e), 
+                "status": "failed"
+            }
     
     async def _execute_sfde_engine(
         self, 
         components: List[Dict[str, Any]], 
         affinity_types: List[str]
     ) -> Dict[str, Any]:
-        """Execute SFDE Engine container"""
+        """Execute SFDE Engine container with real communication"""
         try:
             # Transform components for SFDE Engine
             sfde_data = self.transformer.transform_for_sfde_engine(components, affinity_types)
             
-            # Simulate container execution
-            result = await self._call_container(ContainerType.SFDE_ENGINE, sfde_data)
+            # Call real container
+            result = await self.container_client.call_container(ContainerType.SFDE_ENGINE, sfde_data)
             
             return {
                 "container": ContainerType.SFDE_ENGINE.value,
                 "phase": ExecutionPhase.CROSS_PHASE.value,
                 "input_data": sfde_data,
                 "output_data": result,
-                "execution_time": datetime.now().isoformat()
+                "execution_time": datetime.now().isoformat(),
+                "status": result.get("status", "completed")
             }
             
         except Exception as e:
-            self.logger.error(f"SFDE Engine execution failed: {str(e)}")
-            return {"error": str(e), "status": "failed"}
+            logger.error(f"SFDE Engine execution failed: {str(e)}")
+            return {
+                "container": ContainerType.SFDE_ENGINE.value,
+                "error": str(e), 
+                "status": "failed"
+            }
     
     async def _execute_graph_runtime(self, components: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Execute Graph Runtime Engine container"""
+        """Execute Graph Runtime Engine container with real communication"""
         try:
             # Transform components for Graph Runtime
             graph_data = self.transformer.transform_for_graph_runtime(components)
             
-            # Simulate container execution
-            result = await self._call_container(ContainerType.GRAPH_RUNTIME, graph_data)
+            # Call real container
+            result = await self.container_client.call_container(ContainerType.GRAPH_RUNTIME, graph_data)
             
             return {
                 "container": ContainerType.GRAPH_RUNTIME.value,
                 "phase": ExecutionPhase.CROSS_PHASE.value,
                 "input_data": graph_data,
                 "output_data": result,
-                "execution_time": datetime.now().isoformat()
+                "execution_time": datetime.now().isoformat(),
+                "status": result.get("status", "completed")
             }
             
         except Exception as e:
-            self.logger.error(f"Graph Runtime execution failed: {str(e)}")
-            return {"error": str(e), "status": "failed"}
+            logger.error(f"Graph Runtime execution failed: {str(e)}")
+            return {
+                "container": ContainerType.GRAPH_RUNTIME.value,
+                "error": str(e), 
+                "status": "failed"
+            }
     
     async def _execute_dgl_training(self, components: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Execute DGL Training Engine container (future)"""
+        """Execute DGL Training Engine container with real communication"""
         try:
-            # Future implementation for DGL training
+            # Prepare DGL training data
             dgl_data = {
                 "components": components,
                 "training_mode": "postgresql_based",
                 "embedding_type": "node_edge",
-                "optimization_targets": ["roi", "occupancy", "spec_fit"]
+                "optimization_targets": ["roi", "occupancy", "spec_fit"],
+                "graph_data": self.transformer.transform_for_graph_runtime(components)
             }
             
-            # Simulate container execution
-            result = await self._call_container(ContainerType.DGL_TRAINING, dgl_data)
+            # Call real container
+            result = await self.container_client.call_container(ContainerType.DGL_TRAINING, dgl_data)
             
             return {
                 "container": ContainerType.DGL_TRAINING.value,
                 "phase": ExecutionPhase.CROSS_PHASE.value,
                 "input_data": dgl_data,
                 "output_data": result,
-                "execution_time": datetime.now().isoformat()
+                "execution_time": datetime.now().isoformat(),
+                "status": result.get("status", "completed")
             }
             
         except Exception as e:
-            self.logger.error(f"DGL Training execution failed: {str(e)}")
-            return {"error": str(e), "status": "failed"}
+            logger.error(f"DGL Training execution failed: {str(e)}")
+            return {
+                "container": ContainerType.DGL_TRAINING.value,
+                "error": str(e), 
+                "status": "failed"
+            }
     
-    async def _call_container(self, container_type: ContainerType, data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Call a specific container with data
-        This is a placeholder - replace with actual container communication
-        """
-        # Simulate async container call
-        await asyncio.sleep(0.1)  # Simulate processing time
-        
-        # Return mock response based on container type
-        if container_type == ContainerType.DAG_ALPHA:
-            return {
-                "dag_execution_status": "completed",
-                "nodes_processed": len(data.get("node_sequence", [])),
-                "execution_time_ms": 150,
-                "results": {
-                    "structural_evaluation": "passed",
-                    "spatial_evaluation": "passed",
-                    "manufacturing_score": 0.85
+    async def get_container_health(self) -> Dict[str, Any]:
+        """Get current health status of all containers"""
+        try:
+            async with self.container_client:
+                health_status = await self.container_client.get_all_health_status()
+                available_containers = await self.container_client.discover_containers()
+                
+                return {
+                    "timestamp": datetime.now().isoformat(),
+                    "health_status": health_status,
+                    "available_containers": available_containers,
+                    "total_containers": len(self.container_client.endpoints),
+                    "healthy_containers": len(available_containers)
                 }
-            }
-        
-        elif container_type == ContainerType.FUNCTOR_TYPES:
+                
+        except Exception as e:
+            logger.error(f"Health check failed: {e}")
             return {
-                "functor_execution_status": "completed",
-                "spatial_calculations": len(data.get("spatial_calculations", [])),
-                "aggregation_calculations": len(data.get("aggregation_calculations", [])),
-                "results": {
-                    "spatial_metrics": {"centroid_distances": [1.2, 0.8, 1.5]},
-                    "aggregation_metrics": {"total_volume": 1250.5, "total_area": 45.2}
-                }
+                "timestamp": datetime.now().isoformat(),
+                "error": str(e),
+                "health_status": {},
+                "available_containers": []
             }
-        
-        elif container_type == ContainerType.CALLBACK_ENGINE:
-            return {
-                "callback_execution_status": "completed",
-                "callbacks_processed": len(data.get("callbacks", [])),
-                "phase": data.get("phase"),
-                "results": {
-                    "compliance_check": "passed",
-                    "relational_score": 0.92,
-                    "combinatorial_score": 0.78
-                }
-            }
-        
-        elif container_type == ContainerType.SFDE_ENGINE:
-            return {
-                "sfde_execution_status": "completed",
-                "formulas_executed": len(data.get("sfde_requests", [])),
-                "affinity_types": data.get("affinity_types"),
-                "results": {
-                    "cost_calculations": {"total_cost": 125000, "unit_cost": 250},
-                    "energy_calculations": {"total_energy": 4500, "efficiency": 0.85},
-                    "structural_calculations": {"safety_factor": 1.8, "load_capacity": 2500}
-                }
-            }
-        
-        elif container_type == ContainerType.GRAPH_RUNTIME:
-            return {
-                "graph_execution_status": "completed",
-                "nodes_built": len(data.get("graph_data", {}).get("nodes", [])),
-                "edges_built": len(data.get("graph_data", {}).get("edges", [])),
-                "results": {
-                    "graph_metrics": {"density": 0.45, "diameter": 3, "clustering": 0.67},
-                    "execution_path": ["V01", "V02", "V03", "V04"]
-                }
-            }
-        
-        elif container_type == ContainerType.DGL_TRAINING:
-            return {
-                "dgl_training_status": "completed",
-                "training_epochs": 100,
-                "optimization_targets": data.get("optimization_targets"),
-                "results": {
-                    "model_accuracy": 0.89,
-                    "optimized_coefficients": {"roi_weight": 0.35, "occupancy_weight": 0.28},
-                    "graph_embeddings": {"node_embeddings": 64, "edge_embeddings": 32}
-                }
-            }
-        
-        return {"status": "unknown_container", "data": data}
     
     def get_execution_history(self) -> List[Dict[str, Any]]:
         """Get execution history"""
         return self.execution_history
+    
+    async def validate_containers(self) -> Dict[str, Any]:
+        """Validate all container endpoints and configurations"""
+        validation_results = {
+            "timestamp": datetime.now().isoformat(),
+            "validations": []
+        }
+        
+        try:
+            async with self.container_client:
+                for container_type, endpoint in self.container_client.endpoints.items():
+                    validation = {
+                        "container": container_type.value,
+                        "endpoint": endpoint.url,
+                        "health_url": endpoint.health_url,
+                        "configured": True,
+                        "reachable": False,
+                        "healthy": False
+                    }
+                    
+                    # Test reachability and health
+                    try:
+                        healthy = await self.container_client._check_container_health(endpoint)
+                        validation["reachable"] = True
+                        validation["healthy"] = healthy
+                        
+                    except Exception as e:
+                        validation["error"] = str(e)
+                    
+                    validation_results["validations"].append(validation)
+                    
+        except Exception as e:
+            logger.error(f"Container validation failed: {e}")
+            validation_results["error"] = str(e)
+        
+        return validation_results
     
     def export_pipeline_config(self) -> Dict[str, Any]:
         """Export pipeline configuration"""
