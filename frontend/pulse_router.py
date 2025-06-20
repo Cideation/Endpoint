@@ -51,6 +51,7 @@ class SemanticPulseType(str, Enum):
     FIT_PULSE = "fit_pulse"                   # Geometric, contextual match
     INVESTMENT_PULSE = "investment_pulse"     # Capital signal, resource allocation
     DECAY_PULSE = "decay_pulse"               # Decline, obsolescence, reset readiness
+    REJECT_PULSE = "reject_pulse"             # Immediate denial of proposal/interaction
 
 # Complete pulse definitions with directional flow and node targeting
 PULSE_DEFINITIONS = {
@@ -95,6 +96,13 @@ PULSE_DEFINITIONS = {
         "direction": "downward",
         "target_node_type": "Any",
         "visual_label": "Decay"
+    },
+    "reject_pulse": {
+        "description": "Immediate denial of a proposal or interaction",
+        "color": "#F44336",  # Red (Material Red 500)
+        "direction": "reflexive",
+        "target_node_type": "Any",
+        "visual_label": "Rejected"
     }
 }
 
@@ -109,7 +117,8 @@ PULSE_COLORS = {
     SemanticPulseType.COMPLIANCY_PULSE: PULSE_DEFINITIONS["compliancy_pulse"]["color"],
     SemanticPulseType.FIT_PULSE: PULSE_DEFINITIONS["fit_pulse"]["color"],
     SemanticPulseType.INVESTMENT_PULSE: PULSE_DEFINITIONS["investment_pulse"]["color"],
-    SemanticPulseType.DECAY_PULSE: PULSE_DEFINITIONS["decay_pulse"]["color"]
+    SemanticPulseType.DECAY_PULSE: PULSE_DEFINITIONS["decay_pulse"]["color"],
+    SemanticPulseType.REJECT_PULSE: PULSE_DEFINITIONS["reject_pulse"]["color"]
 }
 
 class PulseRouter:
@@ -401,6 +410,12 @@ class PulseRouter:
                 'propagation_limit': 'all_matching_nodes',
                 'visual_flow': 'radial_expansion'
             })
+        elif direction == "reflexive":
+            directional_response.update({
+                'traversal_method': 'immediate_response',
+                'propagation_limit': 'originating_node_only',
+                'visual_flow': 'instant_rejection'
+            })
         
         return directional_response
     
@@ -411,7 +426,8 @@ class PulseRouter:
             'upward': 'reporting_chain',
             'cross-subtree': 'peer_coordination', 
             'lateral': 'parallel_processing',
-            'broadcast': 'global_notification'
+            'broadcast': 'global_notification',
+            'reflexive': 'immediate_denial'
         }
         return strategies.get(direction, 'default_routing')
     
