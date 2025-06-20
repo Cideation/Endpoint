@@ -8,6 +8,7 @@ import subprocess
 import time
 import sys
 import logging
+import websockets.exceptions
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -53,10 +54,15 @@ def start_simple_websocket_server():
                         "type": data.get("type", "unknown")
                     }
                     await websocket.send(json.dumps(response))
-                except:
+                except json.JSONDecodeError:
                     await websocket.send('{"status": "error", "message": "Invalid JSON"}')
-        except:
+                except Exception as e:
+                    print(f"ECM Message processing error: {e}")
+                    await websocket.send('{"status": "error", "message": "Processing error"}')
+        except websockets.exceptions.ConnectionClosed:
             pass
+        except Exception as e:
+            print(f"ECM Handler error: {e}")
     
     logger.info("🌐 Starting Simple ECM Gateway on port 8765")
     start_server = websockets.serve(ecm_handler, "localhost", 8765)
@@ -72,10 +78,22 @@ def start_simple_pulse_server():
         """Simple pulse message handler"""
         try:
             async for message in websocket:
-                response = {"status": "pulse_received", "timestamp": "2024-01-01T00:00:00"}
-                await websocket.send(json.dumps(response))
-        except:
+                try:
+                    # Parse message for better pulse handling
+                    data = json.loads(message) if message.strip() else {}
+                    response = {"status": "pulse_received", "timestamp": "2024-01-01T00:00:00"}
+                    await websocket.send(json.dumps(response))
+                except json.JSONDecodeError:
+                    response = {"status": "pulse_error", "message": "Invalid pulse format"}
+                    await websocket.send(json.dumps(response))
+                except Exception as e:
+                    print(f"Pulse processing error: {e}")
+                    response = {"status": "pulse_error", "message": "Processing error"}
+                    await websocket.send(json.dumps(response))
+        except websockets.exceptions.ConnectionClosed:
             pass
+        except Exception as e:
+            print(f"Pulse Handler error: {e}")
     
     logger.info("🔄 Starting Simple Pulse System on port 8766")
     start_server = websockets.serve(pulse_handler, "localhost", 8766)
