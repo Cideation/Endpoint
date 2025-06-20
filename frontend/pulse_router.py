@@ -52,14 +52,64 @@ class SemanticPulseType(str, Enum):
     INVESTMENT_PULSE = "investment_pulse"     # Capital signal, resource allocation
     DECAY_PULSE = "decay_pulse"               # Decline, obsolescence, reset readiness
 
-# Modern UX color coding for pulse types
+# Complete pulse definitions with directional flow and node targeting
+PULSE_DEFINITIONS = {
+    "bid_pulse": {
+        "description": "Proposal of value or demand across components or agents",
+        "color": "#FFC107",  # Amber
+        "direction": "downward",
+        "target_node_type": "BiddingAgent",
+        "visual_label": "Bid"
+    },
+    "occupancy_pulse": {
+        "description": "Spatial or functional usage request/claim",
+        "color": "#2196F3",  # Sky Blue
+        "direction": "upward",
+        "target_node_type": "OccupancyNode",
+        "visual_label": "Occupancy"
+    },
+    "compliancy_pulse": {
+        "description": "Enforcement or validation of regulatory or systemic rules",
+        "color": "#1E3A8A",  # Indigo
+        "direction": "cross-subtree",
+        "target_node_type": "ComplianceNode",
+        "visual_label": "Compliance"
+    },
+    "fit_pulse": {
+        "description": "Evaluation of geometric, functional, or contextual suitability",
+        "color": "#4CAF50",  # Green
+        "direction": "lateral",
+        "target_node_type": "MEPSystemNode",
+        "visual_label": "Fit Check"
+    },
+    "investment_pulse": {
+        "description": "Capital flow or readiness to engage based on fit and returns",
+        "color": "#FF9800",  # Deep Orange
+        "direction": "broadcast",
+        "target_node_type": "InvestmentNode",
+        "visual_label": "Investment"
+    },
+    "decay_pulse": {
+        "description": "Signal of system degradation, expiry, or reset readiness",
+        "color": "#9E9E9E",  # Gray
+        "direction": "downward",
+        "target_node_type": "Any",
+        "visual_label": "Decay"
+    }
+}
+
+def get_pulse_properties(pulse_type: str):
+    """Get complete pulse properties including direction and target node type"""
+    return PULSE_DEFINITIONS.get(pulse_type, {"error": "Unknown pulse type"})
+
+# Legacy color mapping for backward compatibility
 PULSE_COLORS = {
-    SemanticPulseType.BID_PULSE: "#FFC107",        # ⚠️ Amber - Attention-grabbing, action-oriented
-    SemanticPulseType.OCCUPANCY_PULSE: "#2196F3",  # 🌊 Sky Blue - Movement, presence
-    SemanticPulseType.COMPLIANCY_PULSE: "#1E3A8A", # 🛡️ Indigo - Trustworthy, serious, institutional
-    SemanticPulseType.FIT_PULSE: "#4CAF50",        # ✅ Green - Success, confirmation
-    SemanticPulseType.INVESTMENT_PULSE: "#FF9800", # 💰 Deep Orange - Warm, motivating, urgency
-    SemanticPulseType.DECAY_PULSE: "#9E9E9E"       # ⚫ Neutral Gray - Low visibility, subtle decay
+    SemanticPulseType.BID_PULSE: PULSE_DEFINITIONS["bid_pulse"]["color"],
+    SemanticPulseType.OCCUPANCY_PULSE: PULSE_DEFINITIONS["occupancy_pulse"]["color"],
+    SemanticPulseType.COMPLIANCY_PULSE: PULSE_DEFINITIONS["compliancy_pulse"]["color"],
+    SemanticPulseType.FIT_PULSE: PULSE_DEFINITIONS["fit_pulse"]["color"],
+    SemanticPulseType.INVESTMENT_PULSE: PULSE_DEFINITIONS["investment_pulse"]["color"],
+    SemanticPulseType.DECAY_PULSE: PULSE_DEFINITIONS["decay_pulse"]["color"]
 }
 
 class PulseRouter:
@@ -272,93 +322,110 @@ class PulseRouter:
     # Default Handlers (can be evolved/replaced)
     
     async def _handle_pulse_trigger(self, message: Dict[str, Any]) -> Dict[str, Any]:
-        """Handle pulse trigger interactions with semantic pulse type support"""
+        """Handle pulse trigger interactions with complete pulse definition support"""
         payload = message.get('payload', {})
         semantic_pulse = self._determine_semantic_pulse_type(message)
         
         logger.info(f"PULSE-TRIGGER: Type: {semantic_pulse} | Payload: {payload}")
         
-        # Trigger specific graph node or functor
-        target = message.get('target', 'default')
+        # Get complete pulse properties
+        pulse_props = get_pulse_properties(semantic_pulse.value if semantic_pulse else "unknown")
         
-        # Enhanced pulse processing with semantic meaning
+        # Trigger specific graph node or functor with directional routing
+        target = message.get('target', pulse_props.get('target_node_type', 'default'))
+        
+        # Enhanced pulse processing with complete pulse definition
         pulse_response = {
             'action': 'pulse_triggered',
             'target': target,
             'payload': payload,
             'semantic_pulse_type': semantic_pulse.value if semantic_pulse else None,
-            'pulse_color': PULSE_COLORS.get(semantic_pulse) if semantic_pulse else None,
+            'pulse_properties': pulse_props,
             'timestamp': datetime.now().isoformat()
         }
         
-        # Semantic-specific processing (can evolve)
-        if semantic_pulse:
-            pulse_response.update(await self._process_semantic_pulse(semantic_pulse, message))
+        # Directional pulse routing (can evolve)
+        if semantic_pulse and 'error' not in pulse_props:
+            pulse_response.update(await self._process_directional_pulse(semantic_pulse, pulse_props, message))
         
-        # TODO: Interface with Node Engine to trigger specific functors
-        # TODO: Send visual pulse to Unreal Engine with color coding
+        # TODO: Interface with Node Engine for directional graph traversal
+        # TODO: Send visual pulse to Unreal Engine with directional flow animation
         
         return pulse_response
     
-    async def _process_semantic_pulse(self, pulse_type: SemanticPulseType, message: Dict[str, Any]) -> Dict[str, Any]:
-        """Process semantic pulse with type-specific logic"""
+    async def _process_directional_pulse(self, pulse_type: SemanticPulseType, pulse_props: Dict[str, Any], message: Dict[str, Any]) -> Dict[str, Any]:
+        """Process pulse with directional flow and node targeting"""
         payload = message.get('payload', {})
+        direction = pulse_props.get('direction', 'broadcast')
+        target_node_type = pulse_props.get('target_node_type', 'Any')
+        visual_label = pulse_props.get('visual_label', pulse_type.value)
         
-        if pulse_type == SemanticPulseType.BID_PULSE:
-            # Competitive intent, pricing, offers
-            return {
-                'semantic_action': 'competitive_analysis',
-                'urgency_level': 'high',
-                'visual_effect': 'pulsing_amber',
-                'expected_response': 'bid_evaluation'
-            }
+        # Directional flow processing
+        directional_response = {
+            'directional_action': f'{direction}_pulse_routing',
+            'target_node_type': target_node_type,
+            'visual_label': visual_label,
+            'pulse_direction': direction,
+            'routing_strategy': self._get_routing_strategy(direction),
+            'expected_node_activation': self._get_expected_activation(pulse_type, target_node_type)
+        }
         
-        elif pulse_type == SemanticPulseType.OCCUPANCY_PULSE:
-            # Spatial request, usage claim
-            return {
-                'semantic_action': 'spatial_allocation',
-                'urgency_level': 'medium',
-                'visual_effect': 'flowing_blue',
-                'expected_response': 'occupancy_update'
-            }
+        # Direction-specific logic (can evolve)
+        if direction == "downward":
+            directional_response.update({
+                'traversal_method': 'depth_first_descendant',
+                'propagation_limit': 'immediate_children',
+                'visual_flow': 'cascading_down'
+            })
+        elif direction == "upward":
+            directional_response.update({
+                'traversal_method': 'breadth_first_ancestor',
+                'propagation_limit': 'root_nodes',
+                'visual_flow': 'rising_up'
+            })
+        elif direction == "cross-subtree":
+            directional_response.update({
+                'traversal_method': 'lateral_cross_reference',
+                'propagation_limit': 'sibling_subtrees',
+                'visual_flow': 'horizontal_spread'
+            })
+        elif direction == "lateral":
+            directional_response.update({
+                'traversal_method': 'same_level_peers',
+                'propagation_limit': 'current_depth',
+                'visual_flow': 'lateral_wave'
+            })
+        elif direction == "broadcast":
+            directional_response.update({
+                'traversal_method': 'global_distribution',
+                'propagation_limit': 'all_matching_nodes',
+                'visual_flow': 'radial_expansion'
+            })
         
-        elif pulse_type == SemanticPulseType.COMPLIANCY_PULSE:
-            # Enforcement, constraints, violations
-            return {
-                'semantic_action': 'compliance_check',
-                'urgency_level': 'critical',
-                'visual_effect': 'steady_indigo',
-                'expected_response': 'compliance_report'
-            }
-        
-        elif pulse_type == SemanticPulseType.FIT_PULSE:
-            # Geometric, contextual match
-            return {
-                'semantic_action': 'fit_analysis',
-                'urgency_level': 'low',
-                'visual_effect': 'confirming_green',
-                'expected_response': 'fit_validation'
-            }
-        
-        elif pulse_type == SemanticPulseType.INVESTMENT_PULSE:
-            # Capital signal, resource allocation
-            return {
-                'semantic_action': 'investment_evaluation',
-                'urgency_level': 'high',
-                'visual_effect': 'warming_orange',
-                'expected_response': 'investment_decision'
-            }
-        
-        elif pulse_type == SemanticPulseType.DECAY_PULSE:
-            # Decline, obsolescence, reset readiness
-            return {
-                'semantic_action': 'decay_processing',
-                'urgency_level': 'low',
-                'visual_effect': 'fading_gray',
-                'expected_response': 'cleanup_initiated'
-            }
-        
-        return {}
+        return directional_response
+    
+    def _get_routing_strategy(self, direction: str) -> str:
+        """Get routing strategy based on pulse direction"""
+        strategies = {
+            'downward': 'hierarchical_cascade',
+            'upward': 'reporting_chain',
+            'cross-subtree': 'peer_coordination', 
+            'lateral': 'parallel_processing',
+            'broadcast': 'global_notification'
+        }
+        return strategies.get(direction, 'default_routing')
+    
+    def _get_expected_activation(self, pulse_type: SemanticPulseType, target_node_type: str) -> Dict[str, Any]:
+        """Get expected node activation pattern"""
+        activations = {
+            'BiddingAgent': {'activation_type': 'competitive_evaluation', 'response_time': 'immediate'},
+            'OccupancyNode': {'activation_type': 'spatial_allocation', 'response_time': 'deferred'},
+            'ComplianceNode': {'activation_type': 'rule_validation', 'response_time': 'priority'},
+            'MEPSystemNode': {'activation_type': 'system_analysis', 'response_time': 'calculated'},
+            'InvestmentNode': {'activation_type': 'capital_evaluation', 'response_time': 'immediate'},
+            'Any': {'activation_type': 'generic_processing', 'response_time': 'normal'}
+        }
+        return activations.get(target_node_type, activations['Any'])
     
     async def _handle_spatial_event(self, message: Dict[str, Any]) -> Dict[str, Any]:
         """Handle spatial events from Unreal"""
