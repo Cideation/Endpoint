@@ -1,38 +1,183 @@
-services:
-  - type: web
-    name: cad-parser-api
-    env: python
-    rootDir: src
-    buildCommand: pip install -r requirements.txt
-    startCommand: python app.py
-    plan: free
-    envVars:
-      - key: FLASK_ENV
-        value: production
-      - key: PYTHONPATH
-        value: ${PWD}
-      - key: PORT
-        value: 10000
-      - key: FLASK_APP
-        value: app.py
-      - key: OPENAI_API_KEY
-        sync: false
-      - key: DATABASE_URL
-        fromDatabase:
-          name: cad-parser-db
-          property: connectionString
-      - key: DB_HOST
-        value: ep-white-waterfall-a85g0dgx-pooler.eastus2.azure.neon.tech
-      - key: DB_NAME
-        value: neondb
-      - key: DB_USER
-        value: neondb_owner
-      - key: DB_PASSWORD
-        value: npg_CcgA0kKeYVU2
-    healthCheckPath: /health
+# Render.com Official Deployment Configuration
+# BEM System - Git-Powered CI/CD
+# Auto-deploys on Git push to main branch
 
 databases:
-  - name: cad-parser-db
-    databaseName: cad_parser
-    user: cad_parser_user
-    plan: free 
+  - name: bem-postgresql
+    databaseName: bem_production
+    user: bem_user
+    plan: starter
+    region: oregon
+
+services:
+  # Automated Admin (AA) - Behavior Classification Service
+  - type: web
+    name: bem-automated-admin
+    env: python
+    repo: https://github.com/Cideation/Endpoint.git
+    buildCommand: pip install -r requirements.txt
+    startCommand: python frontend/behavior_driven_ac.py
+    plan: starter
+    region: oregon
+    autoDeploy: true
+    branch: main
+    healthCheckPath: /behavior_analytics
+    envVars:
+      - key: PORT
+        value: 8003
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bem-postgresql
+          property: connectionString
+      - key: ENVIRONMENT
+        value: production
+      - key: AA_CLASSIFICATION_ENABLED
+        value: true
+
+  # ECM (Environmental Computation Matrix) - WebSocket Infrastructure
+  - type: web
+    name: bem-ecm-gateway
+    env: python
+    repo: https://github.com/Cideation/Endpoint.git
+    buildCommand: pip install -r requirements.txt
+    startCommand: python start_services.py websockets
+    plan: standard  # Always-on requirement for solid backend pipe
+    region: oregon
+    autoDeploy: true
+    branch: main
+    healthCheckPath: /health
+    envVars:
+      - key: ECM_PORT
+        value: 8765
+      - key: PULSE_PORT
+        value: 8766
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bem-postgresql
+          property: connectionString
+      - key: WEBSOCKET_TIMEOUT
+        value: 300
+      - key: ECM_PERSISTENT_MODE
+        value: true
+
+  # Cytoscape.js UI - Agent Console & Graph Visualization
+  - type: static
+    name: bem-cytoscape-ui
+    repo: https://github.com/Cideation/Endpoint.git
+    buildCommand: |
+      mkdir -p build
+      # Copy main interfaces
+      cp frontend/dynamic_ac_interface.html build/index.html
+      cp frontend/agent_console.html build/
+      cp frontend/realtime_viewer.html build/
+      cp frontend/realtime_data_viewer.html build/
+      cp frontend/data_structure_viewer.html build/
+      # Copy static assets if they exist
+      if [ -d "frontend/static" ]; then
+        cp -r frontend/static/* build/
+      fi
+      # Create configuration file for production URLs
+      cat > build/config.js << EOF
+      window.BEM_CONFIG = {
+        AA_URL: 'https://bem-automated-admin.onrender.com',
+        ECM_WEBSOCKET_URL: 'wss://bem-ecm-gateway.onrender.com',
+        API_BASE_URL: 'https://bem-automated-admin.onrender.com/api',
+        ENVIRONMENT: 'production'
+      };
+      EOF
+    publishPath: build
+    pullRequestPreviewsEnabled: true
+    autoDeploy: true
+    branch: main
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: Access-Control-Allow-Origin
+        value: "*"
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://bem-automated-admin.onrender.com/*
+      - type: rewrite
+        source: /ws/*
+        destination: https://bem-ecm-gateway.onrender.com/*
+
+  # DGL Training Engine (CPU version for Render)
+  - type: web
+    name: bem-dgl-training
+    env: python
+    repo: https://github.com/Cideation/Endpoint.git
+    buildCommand: |
+      pip install -r requirements.txt
+      pip install -r Final_Phase/dgl_requirements.txt
+    startCommand: python Final_Phase/dgl_trainer.py
+    plan: standard
+    region: oregon
+    autoDeploy: true
+    branch: main
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 8004
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bem-postgresql
+          property: connectionString
+      - key: TRAINING_MODE
+        value: cpu
+      - key: BATCH_SIZE
+        value: 64
+      - key: LEARNING_RATE
+        value: 0.001
+      - key: DGL_BACKEND
+        value: pytorch
+
+# Environment Variables (set in Render dashboard):
+# POSTGRES_PASSWORD - Generated automatically
+# SECRET_KEY - Generate secure random string
+# ALLOWED_HOSTS - Set to your custom domain
+# GPU_CLOUD_URL - URL of GPU cloud instance for Unreal Engine
+# UNREAL_PIXEL_STREAM_URL - Pixel streaming endpoint
+
+# Custom Domains (configure in Render dashboard):
+# - bem-automated-admin.your-domain.com
+# - bem-ecm-gateway.your-domain.com  
+# - bem-ui.your-domain.com
+# - bem-dgl.your-domain.com
+
+# Deployment Flow:
+# 1. Git push to main → Triggers Render auto-deploy
+# 2. Services build and deploy automatically
+# 3. Database migrations run (if configured)
+# 4. Health checks verify deployment
+# 5. Traffic routes to new version
+# 6. Old version terminated
+
+# Scaling Configuration:
+# - AA Service: Auto-scale 1-3 instances based on traffic
+# - ECM Gateway: Always-on 1-2 instances (persistent WebSocket)
+# - Static UI: CDN-cached, unlimited scaling
+# - DGL Training: 1 instance (can scale manually for training jobs)
+
+# Cost Breakdown (Monthly):
+# - PostgreSQL: $7/month (Starter)
+# - AA Service: $7/month (Starter) 
+# - ECM Gateway: $25/month (Standard - always-on)
+# - Static Site: Free
+# - DGL Training: $25/month (Standard)
+# Total: $64/month
+
+# Production Scaling (higher plans):
+# - PostgreSQL: $20/month (Standard)
+# - AA Service: $25/month (Standard)
+# - ECM Gateway: $25/month (Standard)  
+# - DGL Training: $85/month (Pro - more CPU/memory)
+# Total: $155/month 

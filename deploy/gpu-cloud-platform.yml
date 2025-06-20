@@ -1,0 +1,208 @@
+# GPU Cloud Platform Configuration  
+# BEM System - Unreal Engine + DGL Training
+# Platforms: AWS G5 / Paperspace GPU VMs
+
+# AWS EC2 G5 Instance Configuration
+aws_g5_config:
+  instance_type: g5.xlarge # 1x NVIDIA A10G GPU, 4 vCPUs, 16GB RAM
+  ami: ami-0c94855ba95b798c7 # Ubuntu 22.04 LTS with GPU drivers
+  region: us-west-2
+  security_groups:
+    - name: bem-unreal-sg
+      rules:
+        - protocol: tcp
+          port: 80
+          source: 0.0.0.0/0  # Pixel Streaming HTTP
+        - protocol: tcp  
+          port: 443
+          source: 0.0.0.0/0  # Pixel Streaming HTTPS
+        - protocol: tcp
+          port: 8888
+          source: 0.0.0.0/0  # Unreal Engine Signaling Server
+        - protocol: udp
+          port: 7777-7780
+          source: 0.0.0.0/0  # WebRTC data channels
+        - protocol: tcp
+          port: 8004
+          source: 0.0.0.0/0  # DGL Training API
+        - protocol: tcp
+          port: 22
+          source: 0.0.0.0/0  # SSH access
+
+# Paperspace Gradient Configuration (Alternative)
+paperspace_config:
+  machine_type: P5000 # NVIDIA Quadro P5000, 8 vCPUs, 30GB RAM
+  base_container: nvidia/cuda:11.8-devel-ubuntu22.04
+  disk_size: 100GB
+  region: East Coast (NY2)
+  
+# Docker Compose for GPU Cloud Deployment
+version: '3.8'
+
+services:
+  # Unreal Engine Pixel Streaming Server
+  unreal-pixel-streaming:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.unreal
+    container_name: bem-unreal-engine
+    runtime: nvidia # GPU runtime
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - DISPLAY=:99
+      - ECM_WEBSOCKET_URL=wss://bem-ecm-gateway.onrender.com
+      - DATABASE_URL=${DATABASE_URL}
+      - PIXEL_STREAMING_PORT=80
+      - SIGNALING_PORT=8888
+    ports:
+      - "80:80"     # Pixel Streaming HTTP
+      - "443:443"   # Pixel Streaming HTTPS  
+      - "8888:8888" # Signaling Server
+      - "7777-7780:7777-7780/udp" # WebRTC
+    volumes:
+      - unreal_content:/app/content
+      - unreal_logs:/app/logs
+      - ./ssl:/app/ssl:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # DGL Training Engine (GPU-Accelerated)
+  dgl-training-gpu:
+    build:
+      context: ./Final_Phase
+      dockerfile: ../deploy/Dockerfile.dgl-gpu
+    container_name: bem-dgl-training-gpu
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - CUDA_VISIBLE_DEVICES=0
+      - DATABASE_URL=${DATABASE_URL}
+      - TRAINING_MODE=gpu
+      - BATCH_SIZE=256
+      - LEARNING_RATE=0.001
+    ports:
+      - "8004:8004" # DGL Training API
+    volumes:
+      - dgl_models:/app/models
+      - dgl_datasets:/app/datasets
+      - dgl_logs:/app/logs
+    restart: unless-stopped
+    depends_on:
+      - unreal-pixel-streaming
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu, compute]
+
+  # Virtual Display Server (for Unreal Engine)
+  xvfb:
+    image: jlesage/docker-baseimage:ubuntu-22.04
+    container_name: bem-xvfb
+    environment:
+      - DISPLAY_WIDTH=1920
+      - DISPLAY_HEIGHT=1080
+      - DISPLAY=:99
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    restart: unless-stopped
+
+volumes:
+  unreal_content:
+    driver: local
+  unreal_logs:
+    driver: local
+  dgl_models:
+    driver: local
+  dgl_datasets:
+    driver: local
+  dgl_logs:
+    driver: local
+
+# Launch Script for AWS G5 Instance
+launch_script: |
+  #!/bin/bash
+  # AWS G5 Instance Launch Script
+  
+  # Update system
+  sudo apt update && sudo apt upgrade -y
+  
+  # Install NVIDIA drivers and Docker
+  sudo apt install -y nvidia-driver-520 docker.io docker-compose-plugin
+  
+  # Install NVIDIA Container Toolkit
+  distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+  curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
+  curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+  sudo apt update && sudo apt install -y nvidia-docker2
+  sudo systemctl restart docker
+  
+  # Clone repository
+  git clone https://github.com/Cideation/Endpoint.git
+  cd Endpoint-1
+  
+  # Set environment variables
+  export DATABASE_URL="postgresql://bem_user:password@bem-postgresql.onrender.com:5432/bem_production"
+  
+  # Start GPU services
+  docker-compose -f deploy/gpu-cloud-platform.yml up -d
+  
+  # Configure firewall
+  sudo ufw enable
+  sudo ufw allow 80/tcp
+  sudo ufw allow 443/tcp
+  sudo ufw allow 8888/tcp
+  sudo ufw allow 7777:7780/udp
+  sudo ufw allow 8004/tcp
+  sudo ufw allow 22/tcp
+
+# Paperspace Launch Script (Alternative)
+paperspace_launch: |
+  #!/bin/bash
+  # Paperspace Gradient Launch Script
+  
+  # Install dependencies
+  apt update && apt install -y git curl docker.io
+  
+  # Clone repository  
+  git clone https://github.com/Cideation/Endpoint.git
+  cd Endpoint-1
+  
+  # Set Paperspace-specific environment
+  export PAPERSPACE_DEPLOYMENT=true
+  export DATABASE_URL="postgresql://bem_user:password@bem-postgresql.onrender.com:5432/bem_production"
+  
+  # Start services
+  docker-compose -f deploy/gpu-cloud-platform.yml up -d
+
+# Cost Estimation:
+# AWS G5.xlarge: ~$1.00/hour (~$720/month continuous)
+# Paperspace P5000: ~$0.78/hour (~$562/month continuous) 
+# Spot instances can reduce costs by 60-80%
+
+# Production Optimization:
+# - Use spot instances for cost savings
+# - Auto-scaling based on demand
+# - Scheduled shutdown during low usage
+# - Container image caching for faster startup
+
+# Monitoring Commands:
+# nvidia-smi - GPU utilization
+# docker stats - Container resource usage
+# curl http://localhost/health - Health check
+# docker logs bem-unreal-engine - Unreal Engine logs
+# docker logs bem-dgl-training-gpu - DGL training logs 
