@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BEM Dynamic Agent Console (AC) Interface</title>
+    <script src="https://unpkg.com/cytoscape@3.26.0/dist/cytoscape.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/uuid@9.0.0/dist/umd/uuid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            overflow: hidden;
+        }
+
+        .interface-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            height: 100vh;
+            gap: 2px;
+        }
+
+        .view-panel {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .view-header {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .view-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .view-content {
+            height: calc(100% - 60px);
+            position: relative;
+        }
+
+        /* Cytoscape Graph View */
+        #cytoscape-container {
+            width: 100%;
+            height: 100%;
+            background: #0a0a0a;
+        }
+
+        /* Unreal Environment View */
+        .unreal-environment {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #1a1a1a 25%, transparent 25%), 
+                        linear-gradient(-45deg, #1a1a1a 25%, transparent 25%), 
+                        linear-gradient(45deg, transparent 75%, #1a1a1a 75%), 
+                        linear-gradient(-45deg, transparent 75%, #1a1a1a 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .environment-placeholder {
+            text-align: center;
+            opacity: 0.7;
+        }
+
+        /* Dynamic AC Panels */
+        .ac-panels-container {
+            position: absolute;
+            top: 70px;
+            right: 10px;
+            z-index: 1000;
+            max-width: 300px;
+        }
+
+        .ac-panel {
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+            transform: translateX(320px);
+            transition: transform 0.3s ease;
+        }
+
+        .ac-panel.active {
+            transform: translateX(0);
+        }
+
+        .ac-panel-header {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #4FC3F7;
+        }
+
+        /* Behavior Detection */
+        .behavior-indicator {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 1001;
+        }
+
+        .role-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+
+        .role-investor { background: #4CAF50; }
+        .role-contributor { background: #2196F3; }
+        .role-validator { background: #FF9800; }
+        .role-analyst { background: #9C27B0; }
+        .role-observer { background: #757575; }
+
+        /* Action Buttons */
+        .action-buttons {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 12px;
+        }
+
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Status Bar */
+        .status-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Pulse Visualization (Unreal Only) */
+        .pulse-visualization {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .pulse-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+            opacity: 0.8;
+        }
+
+        .pulse-bid { background: #E3F2FD; }
+        .pulse-occupancy { background: #FFF3E0; }
+        .pulse-compliancy { background: #E8F5E8; }
+        .pulse-fit { background: #FCE4EC; }
+        .pulse-investment { background: #F3E5F5; }
+        .pulse-decay { background: #9E9E9E; }
+        .pulse-reject { background: #F44336; }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.2); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="interface-container">
+        <!-- Cytoscape Graph View -->
+        <div class="view-panel">
+            <div class="view-header">
+                <span class="view-title">🧠 Graph View (Logic)</span>
+                <span>Cytoscape.js → PostgreSQL Direct</span>
+            </div>
+            <div class="view-content">
+                <div id="cytoscape-container"></div>
+                <div class="behavior-indicator">
+                    <div>AA Classification:</div>
+                    <span id="current-role" class="role-badge role-observer">Observer</span>
+                    <span id="confidence">50%</span>
+                </div>
+                <div class="action-buttons">
+                    <button class="action-btn" onclick="simulateAction('view_graph', 'cytoscape')">View Graph</button>
+                    <button class="action-btn" onclick="simulateAction('analyze_metrics', 'dashboard')">Analyze Metrics</button>
+                    <button class="action-btn" onclick="simulateAction('create_node', 'node_editor')">Create Node</button>
+                    <button class="action-btn" onclick="simulateAction('validate_compliance', 'compliance_checker')">Validate</button>
+                    <button class="action-btn" onclick="simulateAction('view_investment', 'irr_calculator')">Investment</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Unreal Environment View -->
+        <div class="view-panel">
+            <div class="view-header">
+                <span class="view-title">🏗️ IRL View (Visual + Spatial)</span>
+                <span>Unreal Engine Render</span>
+            </div>
+            <div class="view-content">
+                <div class="unreal-environment">
+                    <div class="environment-placeholder">
+                        <h3>🎮 Unreal Engine Environment</h3>
+                        <p>Spatial/Visual outcomes rendering</p>
+                        <p>Housing, decay, spatial decisions</p>
+                        <p><em>No internal logic computation</em></p>
+                    </div>
+                </div>
+                
+                <!-- Pulse Visualization (Only in Unreal) -->
+                <div class="pulse-visualization">
+                    <div class="pulse-indicator pulse-bid" title="Bid Pulse"></div>
+                    <div class="pulse-indicator pulse-occupancy" title="Occupancy Pulse"></div>
+                    <div class="pulse-indicator pulse-compliancy" title="Compliancy Pulse"></div>
+                    <div class="pulse-indicator pulse-fit" title="Fit Pulse"></div>
+                    <div class="pulse-indicator pulse-investment" title="Investment Pulse"></div>
+                    <div class="pulse-indicator pulse-decay" title="Decay Pulse"></div>
+                    <div class="pulse-indicator pulse-reject" title="Reject Pulse"></div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="action-btn" onclick="triggerPulse('bid')">Trigger Bid</button>
+                    <button class="action-btn" onclick="triggerPulse('investment')">Investment Pulse</button>
+                    <button class="action-btn" onclick="triggerPulse('decay')">Decay Pulse</button>
+                    <button class="action-btn" onclick="simulateAction('spatial_view', 'unreal_camera')">Camera Control</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dynamic AC Panels Container -->
+    <div class="ac-panels-container" id="ac-panels"></div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <span>Session: <span id="session-id"></span></span>
+        <span>Actions: <span id="action-count">0</span></span>
+        <span>WebSocket: <span id="ws-status">Disconnected</span></span>
+    </div>
+
+    <script>
+        // Session management
+        const sessionId = uuid.v4();
+        document.getElementById('session-id').textContent = sessionId.substr(0, 8);
+        
+        let actionCount = 0;
+        let currentRole = 'observer';
+        let wsConnection = null;
+
+        // Initialize Cytoscape
+        const cy = cytoscape({
+            container: document.getElementById('cytoscape-container'),
+            elements: [
+                // Sample nodes
+                { data: { id: 'node1', label: 'Housing Unit A', type: 'housing' } },
+                { data: { id: 'node2', label: 'Compliance Check', type: 'validation' } },
+                { data: { id: 'node3', label: 'Investment Node', type: 'finance' } },
+                { data: { id: 'node4', label: 'Decay Monitor', type: 'monitoring' } },
+                
+                // Sample edges
+                { data: { source: 'node1', target: 'node2', type: 'compliance' } },
+                { data: { source: 'node1', target: 'node3', type: 'investment' } },
+                { data: { source: 'node4', target: 'node1', type: 'monitoring' } }
+            ],
+            style: [
+                {
+                    selector: 'node',
+                    style: {
+                        'background-color': '#4FC3F7',
+                        'label': 'data(label)',
+                        'text-valign': 'center',
+                        'text-halign': 'center',
+                        'color': 'white',
+                        'text-outline-width': 2,
+                        'text-outline-color': '#000',
+                        'font-size': 12,
+                        'width': 60,
+                        'height': 60
+                    }
+                },
+                {
+                    selector: 'edge',
+                    style: {
+                        'width': 3,
+                        'line-color': '#666',
+                        'target-arrow-color': '#666',
+                        'target-arrow-shape': 'triangle',
+                        'curve-style': 'bezier'
+                    }
+                },
+                {
+                    selector: 'node[type="finance"]',
+                    style: { 'background-color': '#4CAF50' }
+                },
+                {
+                    selector: 'node[type="validation"]',
+                    style: { 'background-color': '#FF9800' }
+                },
+                {
+                    selector: 'node[type="monitoring"]',
+                    style: { 'background-color': '#9C27B0' }
+                }
+            ],
+            layout: {
+                name: 'circle',
+                radius: 100
+            }
+        });
+
+        // Behavior logging function
+        async function logAction(actionType, target, context = {}) {
+            actionCount++;
+            document.getElementById('action-count').textContent = actionCount;
+
+            const action = {
+                session_id: sessionId,
+                action_type: actionType,
+                target: target,
+                context: context,
+                timestamp: Date.now() / 1000
+            };
+
+            try {
+                const response = await fetch('http://localhost:8003/log_action', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(action)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    updateRoleDisplay(result);
+                    updateACPanels(result.ac_panels);
+                }
+            } catch (error) {
+                console.log('Behavior service offline - using local simulation');
+                simulateLocalClassification(actionType, target);
+            }
+        }
+
+        // Update role display
+        function updateRoleDisplay(result) {
+            const roleElement = document.getElementById('current-role');
+            const confidenceElement = document.getElementById('confidence');
+            
+            roleElement.textContent = result.agent_role.charAt(0).toUpperCase() + result.agent_role.slice(1);
+            roleElement.className = `role-badge role-${result.agent_role}`;
+            confidenceElement.textContent = `${Math.round(result.confidence * 100)}%`;
+            
+            currentRole = result.agent_role;
+        }
+
+        // Dynamic AC Panel System
+        function updateACPanels(panels) {
+            const container = document.getElementById('ac-panels');
+            container.innerHTML = '';
+
+            panels.forEach(panel => {
+                const panelElement = createACPanel(panel);
+                container.appendChild(panelElement);
+                
+                // Animate in
+                setTimeout(() => {
+                    panelElement.classList.add('active');
+                }, 100);
+            });
+        }
+
+        function createACPanel(panelType) {
+            const panel = document.createElement('div');
+            panel.className = 'ac-panel';
+            
+            const panelConfigs = {
+                'investment_ac': {
+                    title: '💰 Investment AC',
+                    content: 'IRR Calculator<br>ROI Dashboard<br>Financial Metrics'
+                },
+                'contributor_ac': {
+                    title: '🔧 Contributor AC',
+                    content: 'Node Editor<br>Graph Modifier<br>Upload Tools'
+                },
+                'validator_ac': {
+                    title: '✅ Validator AC',
+                    content: 'Compliance Checker<br>Audit Tools<br>Approval Workflow'
+                },
+                'analyst_ac': {
+                    title: '📊 Analyst AC',
+                    content: 'Metrics Dashboard<br>Report Generator<br>Data Export'
+                },
+                'basic_view': {
+                    title: '👀 Observer AC',
+                    content: 'Read-only View<br>Basic Navigation<br>System Status'
+                },
+                'irr_calculator': {
+                    title: '🧮 IRR Calculator',
+                    content: 'Investment Rate<br>Cash Flow Analysis<br>Risk Assessment'
+                },
+                'node_editor': {
+                    title: '⚙️ Node Editor',
+                    content: 'Create Nodes<br>Edit Properties<br>Manage Connections'
+                },
+                'compliance_checker': {
+                    title: '🛡️ Compliance Checker',
+                    content: 'Building Codes<br>Safety Standards<br>Regulatory Compliance'
+                },
+                'metrics_dashboard': {
+                    title: '📈 Metrics Dashboard',
+                    content: 'Performance KPIs<br>System Health<br>Usage Analytics'
+                }
+            };
+
+            const config = panelConfigs[panelType] || {
+                title: '❓ Unknown Panel',
+                content: 'Panel configuration not found'
+            };
+
+            panel.innerHTML = `
+                <div class="ac-panel-header">${config.title}</div>
+                <div class="ac-panel-content">${config.content}</div>
+            `;
+
+            return panel;
+        }
+
+        // Action simulation
+        function simulateAction(actionType, target) {
+            logAction(actionType, target, { 
+                simulated: true, 
+                timestamp: new Date().toISOString() 
+            });
+        }
+
+        // Pulse triggering (Unreal only)
+        function triggerPulse(pulseType) {
+            logAction(`trigger_pulse_${pulseType}`, 'unreal_engine', { 
+                pulse_type: pulseType,
+                view: 'unreal' 
+            });
+            
+            // Visual pulse effect
+            const pulseElement = document.querySelector(`.pulse-${pulseType}`);
+            if (pulseElement) {
+                pulseElement.style.transform = 'scale(2)';
+                pulseElement.style.opacity = '1';
+                setTimeout(() => {
+                    pulseElement.style.transform = 'scale(1)';
+                    pulseElement.style.opacity = '0.8';
+                }, 300);
+            }
+        }
+
+        // Local classification fallback
+        function simulateLocalClassification(actionType, target) {
+            let role = 'observer';
+            
+            if (actionType.includes('investment') || target.includes('irr')) {
+                role = 'investor';
+            } else if (actionType.includes('create') || actionType.includes('modify')) {
+                role = 'contributor';
+            } else if (actionType.includes('validate') || actionType.includes('compliance')) {
+                role = 'validator';
+            } else if (actionType.includes('analyze') || actionType.includes('metrics')) {
+                role = 'analyst';
+            }
+
+            updateRoleDisplay({
+                agent_role: role,
+                confidence: 0.75
+            });
+
+            const panelMap = {
+                'investor': ['investment_ac', 'irr_calculator'],
+                'contributor': ['contributor_ac', 'node_editor'],
+                'validator': ['validator_ac', 'compliance_checker'],
+                'analyst': ['analyst_ac', 'metrics_dashboard'],
+                'observer': ['basic_view']
+            };
+
+            updateACPanels(panelMap[role] || ['basic_view']);
+        }
+
+        // WebSocket initialization attempt
+        function initWebSocket() {
+            try {
+                wsConnection = new WebSocket('ws://localhost:8765');
+                
+                wsConnection.onopen = () => {
+                    document.getElementById('ws-status').textContent = 'Connected';
+                    console.log('WebSocket connected to ECM Gateway');
+                };
+                
+                wsConnection.onclose = () => {
+                    document.getElementById('ws-status').textContent = 'Disconnected';
+                };
+                
+                wsConnection.onerror = () => {
+                    document.getElementById('ws-status').textContent = 'Error';
+                };
+            } catch (error) {
+                console.log('WebSocket unavailable - running in standalone mode');
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initWebSocket();
+            updateACPanels(['basic_view']);
+            
+            // Simulate initial observer behavior
+            setTimeout(() => {
+                simulateAction('initial_view', 'interface');
+            }, 1000);
+        });
+
+        // Cytoscape interaction logging
+        cy.on('tap', 'node', function(evt) {
+            const node = evt.target;
+            logAction('node_interaction', `node_${node.id()}`, {
+                node_type: node.data('type'),
+                node_label: node.data('label')
+            });
+        });
+
+        cy.on('tap', 'edge', function(evt) {
+            const edge = evt.target;
+            logAction('edge_interaction', `edge_${edge.id()}`, {
+                edge_type: edge.data('type'),
+                source: edge.source().id(),
+                target: edge.target().id()
+            });
+        });
+    </script>
+</body>
+</html> 
