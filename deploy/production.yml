@@ -1,0 +1,212 @@
+version: '3.8'
+
+# BEM System Production Deployment
+# Git-powered CI/CD ready configuration
+
+services:
+  # Core Database
+  postgres:
+    image: postgres:13-alpine
+    container_name: bem-postgres
+    environment:
+      POSTGRES_DB: bem_production
+      POSTGRES_USER: bem_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/postgresql_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+      - ./Final_Phase/training_database_schema.sql:/docker-entrypoint-initdb.d/02_training.sql
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bem_user -d bem_production"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Behavior-Driven AC System
+  behavior-ac:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.behavior-ac
+    container_name: bem-behavior-ac
+    environment:
+      - PORT=8003
+      - DATABASE_URL=postgresql://bem_user:${POSTGRES_PASSWORD}@postgres:5432/bem_production
+    ports:
+      - "8003:8003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/behavior_analytics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ECM Gateway (WebSocket Infrastructure)
+  ecm-gateway:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.ecm
+    container_name: bem-ecm-gateway
+    environment:
+      - ECM_PORT=8765
+      - PULSE_PORT=8766
+    ports:
+      - "8765:8765"
+      - "8766:8766"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "8765"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Dual AC API Server
+  dual-ac-api:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.api
+    container_name: bem-dual-ac-api
+    environment:
+      - PORT=8002
+      - DATABASE_URL=postgresql://bem_user:${POSTGRES_PASSWORD}@postgres:5432/bem_production
+      - BEHAVIOR_AC_URL=http://behavior-ac:8003
+      - ECM_WEBSOCKET_URL=ws://ecm-gateway:8765
+    ports:
+      - "8002:8002"
+    depends_on:
+      - postgres
+      - behavior-ac
+      - ecm-gateway
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend Web Server
+  frontend:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.frontend
+    container_name: bem-frontend
+    environment:
+      - API_URL=http://dual-ac-api:8002
+      - BEHAVIOR_AC_URL=http://behavior-ac:8003
+      - ECM_WEBSOCKET_URL=ws://ecm-gateway:8765
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - dual-ac-api
+      - behavior-ac
+    volumes:
+      - ./ssl:/etc/ssl/certs:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Microservice: DGL Training Engine
+  dgl-training:
+    build:
+      context: ./Final_Phase
+      dockerfile: ../deploy/Dockerfile.dgl
+    container_name: bem-dgl-training
+    environment:
+      - DATABASE_URL=postgresql://bem_user:${POSTGRES_PASSWORD}@postgres:5432/bem_production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - dgl_models:/app/models
+
+  # Microservice: Graph Runtime Engine
+  graph-runtime:
+    build:
+      context: ./MICROSERVICE_ENGINES/ne-graph-runtime-engine
+    container_name: bem-graph-runtime
+    environment:
+      - DATABASE_URL=postgresql://bem_user:${POSTGRES_PASSWORD}@postgres:5432/bem_production
+    ports:
+      - "8004:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Microservice: Functor Types Engine
+  functor-types:
+    build:
+      context: ./MICROSERVICE_ENGINES/ne-functor-types
+    container_name: bem-functor-types
+    ports:
+      - "8005:8000"
+    restart: unless-stopped
+
+  # Microservice: Callback Engine
+  callback-engine:
+    build:
+      context: ./MICROSERVICE_ENGINES/ne-callback-engine
+    container_name: bem-callback-engine
+    ports:
+      - "8006:8000"
+    restart: unless-stopped
+
+  # Monitoring & Logging
+  monitoring:
+    image: prom/prometheus:latest
+    container_name: bem-monitoring
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    restart: unless-stopped
+
+  # Reverse Proxy & Load Balancer
+  nginx:
+    image: nginx:alpine
+    container_name: bem-nginx
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/ssl/certs:ro
+    depends_on:
+      - frontend
+      - dual-ac-api
+      - behavior-ac
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  dgl_models:
+    driver: local
+  prometheus_data:
+    driver: local
+
+networks:
+  default:
+    name: bem-network
+    driver: bridge
+
+# Production Environment Variables (use .env file)
+# POSTGRES_PASSWORD=your_secure_password
+# SSL_CERT_PATH=/path/to/ssl/cert.pem
+# SSL_KEY_PATH=/path/to/ssl/key.pem 

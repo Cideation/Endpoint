@@ -1,0 +1,34 @@
+FROM python:3.9-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    netcat-openbsd \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY Final_Phase/ecm_gateway.py .
+COPY Final_Phase/pulse_router.py .
+COPY Final_Phase/fsm_runtime.py .
+COPY Final_Phase/agent_state.json .
+COPY start_services.py .
+
+# Create non-root user
+RUN useradd -m -u 1000 bemuser && chown -R bemuser:bemuser /app
+USER bemuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD nc -z localhost 8765 && nc -z localhost 8766 || exit 1
+
+# Expose ports
+EXPOSE 8765 8766
+
+# Start WebSocket services
+CMD ["python", "start_services.py", "websockets"] 
