@@ -1,0 +1,383 @@
+name: BEM System CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+  RENDER_SERVICE_ID_AA: ${{ secrets.RENDER_SERVICE_ID_AA }}
+  RENDER_SERVICE_ID_ECM: ${{ secrets.RENDER_SERVICE_ID_ECM }}
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+jobs:
+  # Step 1: Code Quality & Security Checks
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black isort bandit safety
+          
+      - name: Run Black formatter check
+        run: black --check .
+        
+      - name: Run isort import checker
+        run: isort --check-only .
+        
+      - name: Run Flake8 linter
+        run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        
+      - name: Run Bandit security linter
+        run: bandit -r . -f json -o bandit-report.json
+        
+      - name: Check dependencies for vulnerabilities
+        run: safety check --json
+
+  # Step 2: Run Tests
+  test:
+    name: Run Test Suite
+    runs-on: ubuntu-latest
+    needs: code-quality
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_USER: testuser
+          POSTGRES_DB: testdb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+          
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+          
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-cov
+          
+      - name: Run unit tests
+        env:
+          DATABASE_URL: postgresql://testuser:testpass@localhost:5432/testdb
+          REDIS_URL: redis://localhost:6379/0
+        run: |
+          pytest -v --cov=. --cov-report=xml
+          
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+
+  # Step 3: Build Backend Containers
+  build-containers:
+    name: Build Backend Containers
+    runs-on: ubuntu-latest
+    needs: test
+    strategy:
+      matrix:
+        service: [aa, ecm]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+            
+      - name: Build and push AA container
+        if: matrix.service == 'aa'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: deploy/Dockerfile.behavior-ac
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          
+      - name: Build and push ECM container
+        if: matrix.service == 'ecm'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: deploy/Dockerfile.ecm
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Step 4: Database Schema Migration
+  migrate-database:
+    name: Sync Schema Updates
+    runs-on: ubuntu-latest
+    needs: build-containers
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install psycopg2
+        run: |
+          pip install psycopg2-binary
+          
+      - name: Run database migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          python -c "
+          import psycopg2
+          import os
+          from urllib.parse import urlparse
+          
+          # Parse DATABASE_URL
+          url = urlparse(os.environ['DATABASE_URL'])
+          
+          # Connect to database
+          conn = psycopg2.connect(
+              host=url.hostname,
+              port=url.port,
+              database=url.path[1:],
+              user=url.username,
+              password=url.password,
+              sslmode='require'
+          )
+          
+          # Run migrations
+          with conn.cursor() as cur:
+              # Create tables if not exists
+              with open('neon/postgresql_schema.sql', 'r') as f:
+                  cur.execute(f.read())
+              
+              # Add interaction_logs table for flow tracking
+              cur.execute('''
+                  CREATE TABLE IF NOT EXISTS interaction_logs (
+                      id SERIAL PRIMARY KEY,
+                      user_id VARCHAR(255) NOT NULL,
+                      action_type VARCHAR(50) NOT NULL,
+                      source VARCHAR(20) NOT NULL,
+                      classification VARCHAR(20) NOT NULL,
+                      pulse_type VARCHAR(50) NOT NULL,
+                      target_nodes JSONB,
+                      timestamp TIMESTAMP NOT NULL,
+                      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                  );
+                  
+                  CREATE INDEX IF NOT EXISTS idx_interaction_user_id ON interaction_logs(user_id);
+                  CREATE INDEX IF NOT EXISTS idx_interaction_timestamp ON interaction_logs(timestamp);
+              ''')
+              
+              # Add user_sessions table
+              cur.execute('''
+                  CREATE TABLE IF NOT EXISTS user_sessions (
+                      user_id VARCHAR(255) PRIMARY KEY,
+                      classification VARCHAR(20) NOT NULL,
+                      last_action TIMESTAMP NOT NULL,
+                      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                  );
+              ''')
+              
+              conn.commit()
+              print('✅ Database schema updated successfully')
+          
+          conn.close()
+          "
+
+  # Step 5: Deploy to Render
+  deploy-render:
+    name: Deploy to Render
+    runs-on: ubuntu-latest
+    needs: [build-containers, migrate-database]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Deploy AA Service to Render
+        run: |
+          curl -X POST "https://api.render.com/v1/services/${{ env.RENDER_SERVICE_ID_AA }}/deploys" \
+            -H "Authorization: Bearer ${{ env.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "clearCache": "clear",
+              "imageUrl": "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-aa:${{ github.sha }}"
+            }'
+            
+      - name: Deploy ECM Service to Render
+        run: |
+          curl -X POST "https://api.render.com/v1/services/${{ env.RENDER_SERVICE_ID_ECM }}/deploys" \
+            -H "Authorization: Bearer ${{ env.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "clearCache": "clear",
+              "imageUrl": "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-ecm:${{ github.sha }}"
+            }'
+            
+      - name: Wait for deployments
+        run: |
+          echo "⏳ Waiting for deployments to complete..."
+          sleep 60
+          
+      - name: Health check AA
+        run: |
+          curl -f https://bem-aa.onrender.com/health || exit 1
+          
+      - name: Health check ECM
+        run: |
+          curl -f https://bem-ecm.onrender.com/health || exit 1
+
+  # Step 6: Optional DGL Retraining (triggered by label)
+  dgl-retrain:
+    name: Trigger DGL Retraining
+    runs-on: ubuntu-latest
+    needs: deploy-render
+    if: contains(github.event.head_commit.message, '[retrain]') || contains(github.event.pull_request.labels.*.name, 'retrain-model')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Python with CUDA
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install DGL and dependencies
+        run: |
+          pip install dgl torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+          pip install -r Final_Phase/dgl_requirements.txt
+          
+      - name: Download training data
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          python -c "
+          import psycopg2
+          import pickle
+          from urllib.parse import urlparse
+          
+          url = urlparse('$DATABASE_URL')
+          conn = psycopg2.connect(
+              host=url.hostname,
+              port=url.port,
+              database=url.path[1:],
+              user=url.username,
+              password=url.password,
+              sslmode='require'
+          )
+          
+          # Export training data
+          with conn.cursor() as cur:
+              cur.execute('SELECT * FROM training_data')
+              data = cur.fetchall()
+              
+          with open('training_data.pkl', 'wb') as f:
+              pickle.dump(data, f)
+              
+          conn.close()
+          "
+          
+      - name: Run DGL training
+        run: |
+          cd Final_Phase
+          python dgl_trainer.py --epochs 50 --batch-size 32
+          
+      - name: Upload trained model
+        uses: actions/upload-artifact@v3
+        with:
+          name: trained-model-${{ github.sha }}
+          path: Final_Phase/trained_model.pt
+          
+      - name: Deploy model to production
+        run: |
+          echo "📦 Deploying trained model to production..."
+          # In a real scenario, this would upload to S3/GCS and update model serving
+
+  # Step 7: Post-deployment notifications
+  notify:
+    name: Send Notifications
+    runs-on: ubuntu-latest
+    needs: [deploy-render]
+    if: always()
+    steps:
+      - name: Send Slack notification
+        if: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          if [ "${{ needs.deploy-render.result }}" == "success" ]; then
+            STATUS="✅ Success"
+            COLOR="good"
+          else
+            STATUS="❌ Failed"
+            COLOR="danger"
+          fi
+          
+          curl -X POST ${{ secrets.SLACK_WEBHOOK_URL }} \
+            -H 'Content-type: application/json' \
+            -d '{
+              "attachments": [{
+                "color": "'$COLOR'",
+                "title": "BEM System Deployment '$STATUS'",
+                "text": "Deployment of commit ${{ github.sha }} by ${{ github.actor }}",
+                "fields": [
+                  {"title": "Branch", "value": "${{ github.ref_name }}", "short": true},
+                  {"title": "Commit", "value": "${{ github.event.head_commit.message }}", "short": false}
+                ]
+              }]
+            }' 

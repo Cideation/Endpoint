@@ -3,92 +3,75 @@
 # Auto-deploys on Git push to main branch
 
 databases:
-  - name: bem-postgresql
+  - name: bem-db
     databaseName: bem_production
     user: bem_user
-    plan: starter
-    region: oregon
+    postgresMajorVersion: 15
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: Allow all connections (use more restrictive in production)
 
 services:
   # Automated Admin (AA) - Behavior Classification Service
   - type: web
-    name: bem-automated-admin
-    env: python
-    repo: https://github.com/Cideation/Endpoint.git
-    buildCommand: pip install -r requirements.txt
-    startCommand: python frontend/behavior_driven_ac.py
-    plan: starter
-    region: oregon
-    autoDeploy: true
-    branch: main
-    healthCheckPath: /behavior_analytics
+    name: bem-aa
+    runtime: docker
+    dockerfilePath: ./deploy/Dockerfile.behavior-ac
+    dockerContext: .
     envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bem-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: bem-redis
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
       - key: PORT
         value: 8003
-      - key: DATABASE_URL
-        fromDatabase:
-          name: bem-postgresql
-          property: connectionString
-      - key: ENVIRONMENT
-        value: production
-      - key: AA_CLASSIFICATION_ENABLED
-        value: true
-
-  # ECM (Environmental Computation Matrix) - WebSocket Infrastructure
-  - type: web
-    name: bem-ecm-gateway
-    env: python
-    repo: https://github.com/Cideation/Endpoint.git
-    buildCommand: pip install -r requirements.txt
-    startCommand: python start_services.py websockets
-    plan: standard  # Always-on requirement for solid backend pipe
-    region: oregon
-    autoDeploy: true
-    branch: main
     healthCheckPath: /health
+    initialDeployHook: |
+      echo "Running AA service initialization..."
+      python -m neon.database_integration --init-tables
+    autoDeploy: true
+    
+  # ECM Gateway - WebSocket Handler
+  - type: web
+    name: bem-ecm
+    runtime: docker
+    dockerfilePath: ./deploy/Dockerfile.ecm
+    dockerContext: .
     envVars:
-      - key: ECM_PORT
-        value: 8765
-      - key: PULSE_PORT
-        value: 8766
       - key: DATABASE_URL
         fromDatabase:
-          name: bem-postgresql
+          name: bem-db
           property: connectionString
-      - key: WEBSOCKET_TIMEOUT
-        value: 300
-      - key: ECM_PERSISTENT_MODE
-        value: true
-
-  # Cytoscape.js UI - Agent Console & Graph Visualization
-  - type: static
-    name: bem-cytoscape-ui
-    repo: https://github.com/Cideation/Endpoint.git
-    buildCommand: |
-      mkdir -p build
-      # Copy main interfaces
-      cp frontend/dynamic_ac_interface.html build/index.html
-      cp frontend/agent_console.html build/
-      cp frontend/realtime_viewer.html build/
-      cp frontend/realtime_data_viewer.html build/
-      cp frontend/data_structure_viewer.html build/
-      # Copy static assets if they exist
-      if [ -d "frontend/static" ]; then
-        cp -r frontend/static/* build/
-      fi
-      # Create configuration file for production URLs
-      cat > build/config.js << EOF
-      window.BEM_CONFIG = {
-        AA_URL: 'https://bem-automated-admin.onrender.com',
-        ECM_WEBSOCKET_URL: 'wss://bem-ecm-gateway.onrender.com',
-        API_BASE_URL: 'https://bem-automated-admin.onrender.com/api',
-        ENVIRONMENT: 'production'
-      };
-      EOF
-    publishPath: build
-    pullRequestPreviewsEnabled: true
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: bem-redis
+          property: connectionString
+      - key: AUDIT_LOG_PATH
+        value: /logs/ecm_audit.log
+      - key: SSL_CERT_PATH
+        value: /certs/cert.pem
+      - key: SSL_KEY_PATH
+        value: /certs/key.pem
+      - key: PORT
+        value: 8765
+    healthCheckPath: /health
     autoDeploy: true
-    branch: main
+    
+  # Frontend Static Site
+  - type: static
+    name: bem-frontend
+    staticPublishPath: ./frontend
+    buildCommand: |
+      echo "Building frontend assets..."
+      # If using a build tool, add commands here
     headers:
       - path: /*
         name: X-Frame-Options
@@ -97,48 +80,13 @@ services:
         name: X-Content-Type-Options
         value: nosniff
       - path: /*
-        name: Referrer-Policy
-        value: strict-origin-when-cross-origin
-      - path: /*
-        name: Access-Control-Allow-Origin
-        value: "*"
+        name: X-XSS-Protection
+        value: 1; mode=block
     routes:
       - type: rewrite
-        source: /api/*
-        destination: https://bem-automated-admin.onrender.com/*
-      - type: rewrite
-        source: /ws/*
-        destination: https://bem-ecm-gateway.onrender.com/*
-
-  # DGL Training Engine (CPU version for Render)
-  - type: web
-    name: bem-dgl-training
-    env: python
-    repo: https://github.com/Cideation/Endpoint.git
-    buildCommand: |
-      pip install -r requirements.txt
-      pip install -r Final_Phase/dgl_requirements.txt
-    startCommand: python Final_Phase/dgl_trainer.py
-    plan: standard
-    region: oregon
+        source: /*
+        destination: /index.html
     autoDeploy: true
-    branch: main
-    healthCheckPath: /health
-    envVars:
-      - key: PORT
-        value: 8004
-      - key: DATABASE_URL
-        fromDatabase:
-          name: bem-postgresql
-          property: connectionString
-      - key: TRAINING_MODE
-        value: cpu
-      - key: BATCH_SIZE
-        value: 64
-      - key: LEARNING_RATE
-        value: 0.001
-      - key: DGL_BACKEND
-        value: pytorch
 
 # Environment Variables (set in Render dashboard):
 # POSTGRES_PASSWORD - Generated automatically
@@ -180,4 +128,30 @@ services:
 # - AA Service: $25/month (Standard)
 # - ECM Gateway: $25/month (Standard)  
 # - DGL Training: $85/month (Pro - more CPU/memory)
-# Total: $155/month 
+# Total: $155/month
+
+# Redis for Sessions and Rate Limiting
+- name: bem-redis
+  type: redis
+  ipAllowList:
+    - source: 0.0.0.0/0
+      description: Allow all connections
+
+# Background Jobs (Optional)
+jobs:
+  # DGL Training Job
+  - type: cron
+    name: bem-dgl-training
+    runtime: docker
+    dockerfilePath: ./deploy/Dockerfile.dgl-trainer
+    dockerContext: .
+    schedule: "0 2 * * *"  # Run at 2 AM daily
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bem-db
+          property: connectionString
+      - key: MODEL_STORAGE_PATH
+        value: /models
+      - key: TRAINING_EPOCHS
+        value: 50 
