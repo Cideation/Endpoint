@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  # Performance Testing Service
+  performance-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    environment:
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_URL=redis://redis:6379/0
+      - ECM_WS_URL=ws://ecm-gateway:8765
+      - API_BASE_URL=http://api:8000
+    volumes:
+      - ./test_results:/app/test_results
+    depends_on:
+      - ecm-gateway
+      - api
+      - training-db
+      - redis
+
+  # ECM Gateway for WebSocket Testing
+  ecm-gateway:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.ecm
+    ports:
+      - "8765:8765"
+    environment:
+      - DB_HOST=training-db
+      - REDIS_HOST=redis
+    depends_on:
+      - training-db
+      - redis
+
+  # API Service
+  api:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.behavior-ac
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_HOST=training-db
+      - REDIS_HOST=redis
+    depends_on:
+      - training-db
+      - redis
+
+  # Training Database
+  training-db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=bem_training
+      - POSTGRES_USER=bem_user
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - training-db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  # Redis for Rate Limiting and Session Management
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+volumes:
+  training-db-data:
+  redis-data: 
