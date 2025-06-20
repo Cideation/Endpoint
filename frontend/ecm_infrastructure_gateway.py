@@ -2,6 +2,10 @@
 """
 ECM (Event Coordination Module) - Infrastructure Gateway
 
+🎯 CRITICAL ARCHITECTURE: ECM-Pulse Separation
+✅ ECM = Pure relay (no pulse execution, no decisions)
+✅ Pulse = Post-ECM delivery (interprets, triggers, decides)
+
 Pure computational infrastructure for spatial computation bridging.
 - Fixed, reliable, persistent gateway
 - No functor logic, dynamic routing, or emergent behavior
@@ -11,8 +15,11 @@ Pure computational infrastructure for spatial computation bridging.
 - Audit-safe with full message logging and traceability
 
 Architecture Position:
-Unreal Engine ←→ ECM Gateway ←→ Node Engine
+Unreal Engine ←→ ECM Gateway ←→ Node Engine / Pulse Handler
               (infrastructure)    (computation)
+              
+ECM Role: Log, validate structure, timestamp, relay downstream
+Pulse Role: Interpret content, trigger functors, update state
 """
 
 import asyncio
