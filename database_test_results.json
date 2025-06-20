@@ -1,0 +1,923 @@
+{
+  "pipeline_id": "pipeline_20250620_093841",
+  "start_time": "2025-06-20T09:38:41.250308",
+  "components_count": 5,
+  "results": {
+    "dag_alpha": {
+      "container": "ne-dag-alpha",
+      "phase": "alpha",
+      "input_data": {
+        "dag_id": "3695544e-9a2a-4cdc-8398-1e54988d66f4",
+        "input_data": {
+          "components_count": 5,
+          "spatial_components": 0,
+          "structural_components": 2,
+          "total_volume": 0,
+          "total_area": 0
+        },
+        "node_sequence": [
+          "V01",
+          "V02",
+          "V03",
+          "V04",
+          "V05"
+        ],
+        "callback_type": "dag",
+        "parameters": {
+          "phase": "alpha",
+          "execution_mode": "deterministic"
+        }
+      },
+      "output_data": {
+        "dag_execution_status": "completed",
+        "nodes_processed": 5,
+        "execution_time_ms": 150,
+        "results": {
+          "structural_evaluation": "passed",
+          "spatial_evaluation": "passed",
+          "manufacturing_score": 0.85
+        }
+      },
+      "execution_time": "2025-06-20T09:38:41.351792"
+    },
+    "functor_types": {
+      "container": "ne-functor-types",
+      "phase": "cross_phase",
+      "input_data": {
+        "spatial_calculations": [],
+        "aggregation_calculations": [],
+        "functor_type": "stateless",
+        "execution_mode": "cross_phase"
+      },
+      "output_data": {
+        "functor_execution_status": "completed",
+        "spatial_calculations": 0,
+        "aggregation_calculations": 0,
+        "results": {
+          "spatial_metrics": {
+            "centroid_distances": [
+              1.2,
+              0.8,
+              1.5
+            ]
+          },
+          "aggregation_metrics": {
+            "total_volume": 1250.5,
+            "total_area": 45.2
+          }
+        }
+      },
+      "execution_time": "2025-06-20T09:38:41.453358"
+    },
+    "sfde_engine": {
+      "container": "sfde-engine",
+      "phase": "cross_phase",
+      "input_data": {
+        "sfde_requests": [
+          {
+            "component_id": "06ea1507-6e77-4ecf-9ef5-240690050b78",
+            "affinity_type": "structural",
+            "input_parameters": {},
+            "formula_context": {
+              "component_type": "envelope",
+              "has_spatial_data": false,
+              "has_geometry": false,
+              "has_dimensions": false,
+              "materials_count": 0
+            }
+          },
+          {
+            "component_id": "06ea1507-6e77-4ecf-9ef5-240690050b78",
+            "affinity_type": "cost",
+            "input_parameters": {},
+            "formula_context": {
+              "component_type": "envelope",
+              "has_spatial_data": false,
+              "has_geometry": false,
+              "has_dimensions": false,
+              "materials_count": 0
+            }
+          },
+          {
+            "component_id": "06ea1507-6e77-4ecf-9ef5-240690050b78",
+            "affinity_type": "energy",
+            "input_parameters": {},
+            "formula_context": {
+              "component_type": "envelope",
+              "has_spatial_data": false,
+              "has_geometry": false,
+              "has_dimensions": false,
+              "materials_count": 0
+            }
+          },
+          {
+            "component_id": "2fc54c6b-90ad-452a-b2a6-1f4de55f029f",
+            "affinity_type": "structural",
+            "input_parameters": {},
+            "formula_context": {
+              "component_type": "electrical",
+              "has_spatial_data": false,
+              "has_geometry": false,
+              "has_dimensions": false,
+              "materials_count": 0
+            }
+          },
+          {
+            "component_id": "2fc54c6b-90ad-452a-b2a6-1f4de55f029f",
+            "affinity_type": "cost",
+            "input_parameters": {},
+            "formula_context": {
+              "component_type": "electrical",
+              "has_spatial_data": false,
+              "has_geometry": false,
+              "has_dimensions": false,
+              "materials_count": 0
+            }
+          },
+          {
+            "component_id": "2fc54c6b-90ad-452a-b2a6-1f4de55f029f",
+            "affinity_type": "energy",
+            "input_parameters": {},
+            "formula_context": {
+              "component_type": "electrical",
+              "has_spatial_data": false,
+              "has_geometry": false,
+              "has_dimensions": false,
+              "materials_count": 0
+            }
+          },
+          {
+            "component_id": "1030fa1d-9e85-4154-9e88-9a1d387eaeed",
+            "affinity_type": "structural",
+            "input_parameters": {},
+            "formula_context": {
+              "component_type": "mep",
+              "has_spatial_data": false,
+              "has_geometry": false,
+              "has_dimensions": false,
+              "materials_count": 0
+            }
+          },
+          {
+            "component_id": "1030fa1d-9e85-4154-9e88-9a1d387eaeed",
+            "affinity_type": "cost",
+            "input_parameters": {},
+            "formula_context": {
+              "component_type": "mep",
+              "has_spatial_data": false,
+              "has_geometry": false,
+              "has_dimensions": false,
+              "materials_count": 0
+            }
+          },
+          {
+            "component_id": "1030fa1d-9e85-4154-9e88-9a1d387eaeed",
+            "affinity_type": "energy",
+            "input_parameters": {},
+            "formula_context": {
+              "component_type": "mep",
+              "has_spatial_data": false,
+              "has_geometry": false,
+              "has_dimensions": false,
+              "materials_count": 0
+            }
+          },
+          {
+            "component_id": "ba80d0a0-ea0f-4c26-bbbd-ff1f780594ef",
+            "affinity_type": "structural",
+            "input_parameters": {},
+            "formula_context": {
+              "component_type": "structural",
+              "has_spatial_data": false,
+              "has_geometry": false,
+              "has_dimensions": false,
+              "materials_count": 0
+            }
+          },
+          {
+            "component_id": "ba80d0a0-ea0f-4c26-bbbd-ff1f780594ef",
+            "affinity_type": "cost",
+            "input_parameters": {},
+            "formula_context": {
+              "component_type": "structural",
+              "has_spatial_data": false,
+              "has_geometry": false,
+              "has_dimensions": false,
+              "materials_count": 0
+            }
+          },
+          {
+            "component_id": "ba80d0a0-ea0f-4c26-bbbd-ff1f780594ef",
+            "affinity_type": "energy",
+            "input_parameters": {},
+            "formula_context": {
+              "component_type": "structural",
+              "has_spatial_data": false,
+              "has_geometry": false,
+              "has_dimensions": false,
+              "materials_count": 0
+            }
+          },
+          {
+            "component_id": "16e657d3-de6a-4608-9030-49062c7db8f7",
+            "affinity_type": "structural",
+            "input_parameters": {},
+            "formula_context": {
+              "component_type": "structural",
+              "has_spatial_data": false,
+              "has_geometry": false,
+              "has_dimensions": false,
+              "materials_count": 0
+            }
+          },
+          {
+            "component_id": "16e657d3-de6a-4608-9030-49062c7db8f7",
+            "affinity_type": "cost",
+            "input_parameters": {},
+            "formula_context": {
+              "component_type": "structural",
+              "has_spatial_data": false,
+              "has_geometry": false,
+              "has_dimensions": false,
+              "materials_count": 0
+            }
+          },
+          {
+            "component_id": "16e657d3-de6a-4608-9030-49062c7db8f7",
+            "affinity_type": "energy",
+            "input_parameters": {},
+            "formula_context": {
+              "component_type": "structural",
+              "has_spatial_data": false,
+              "has_geometry": false,
+              "has_dimensions": false,
+              "materials_count": 0
+            }
+          }
+        ],
+        "affinity_types": [
+          "structural",
+          "cost",
+          "energy"
+        ],
+        "execution_mode": "symbolic_reasoning"
+      },
+      "output_data": {
+        "sfde_execution_status": "completed",
+        "formulas_executed": 15,
+        "affinity_types": [
+          "structural",
+          "cost",
+          "energy"
+        ],
+        "results": {
+          "cost_calculations": {
+            "total_cost": 125000,
+            "unit_cost": 250
+          },
+          "energy_calculations": {
+            "total_energy": 4500,
+            "efficiency": 0.85
+          },
+          "structural_calculations": {
+            "safety_factor": 1.8,
+            "load_capacity": 2500
+          }
+        }
+      },
+      "execution_time": "2025-06-20T09:38:41.554743"
+    },
+    "graph_runtime": {
+      "container": "ne-graph-runtime-engine",
+      "phase": "cross_phase",
+      "input_data": {
+        "operation_type": "build_and_execute",
+        "graph_data": {
+          "nodes": [
+            {
+              "node_id": "V06",
+              "node_label": "Glass Window 2x3m",
+              "phase": "alpha",
+              "agent": 1,
+              "callback_type": "dag",
+              "trigger_functor": "evaluate_manufacturing",
+              "dictionary": {
+                "component_id": "06ea1507-6e77-4ecf-9ef5-240690050b78",
+                "component_name": "Glass Window 2x3m",
+                "component_type": "envelope",
+                "description": "2x3m glass window for natural lighting"
+              },
+              "allowed_callback_types": [
+                "dag",
+                "relational",
+                "combinatorial"
+              ]
+            },
+            {
+              "node_id": "V07",
+              "node_label": "Electrical Panel 400A",
+              "phase": "alpha",
+              "agent": 1,
+              "callback_type": "dag",
+              "trigger_functor": "evaluate_manufacturing",
+              "dictionary": {
+                "component_id": "2fc54c6b-90ad-452a-b2a6-1f4de55f029f",
+                "component_name": "Electrical Panel 400A",
+                "component_type": "electrical",
+                "description": "400A electrical distribution panel"
+              },
+              "allowed_callback_types": [
+                "dag",
+                "relational",
+                "combinatorial"
+              ]
+            },
+            {
+              "node_id": "V08",
+              "node_label": "HVAC Duct 600mm",
+              "phase": "alpha",
+              "agent": 1,
+              "callback_type": "dag",
+              "trigger_functor": "evaluate_manufacturing",
+              "dictionary": {
+                "component_id": "1030fa1d-9e85-4154-9e88-9a1d387eaeed",
+                "component_name": "HVAC Duct 600mm",
+                "component_type": "mep",
+                "description": "600mm diameter HVAC duct for air distribution"
+              },
+              "allowed_callback_types": [
+                "dag",
+                "relational",
+                "combinatorial"
+              ]
+            },
+            {
+              "node_id": "V09",
+              "node_label": "Concrete Column C30",
+              "phase": "alpha",
+              "agent": 1,
+              "callback_type": "dag",
+              "trigger_functor": "evaluate_structural",
+              "dictionary": {
+                "component_id": "ba80d0a0-ea0f-4c26-bbbd-ff1f780594ef",
+                "component_name": "Concrete Column C30",
+                "component_type": "structural",
+                "description": "C30 concrete column for building support"
+              },
+              "allowed_callback_types": [
+                "dag",
+                "relational",
+                "combinatorial"
+              ]
+            },
+            {
+              "node_id": "V10",
+              "node_label": "Steel Beam H400",
+              "phase": "alpha",
+              "agent": 1,
+              "callback_type": "dag",
+              "trigger_functor": "evaluate_structural",
+              "dictionary": {
+                "component_id": "16e657d3-de6a-4608-9030-49062c7db8f7",
+                "component_name": "Steel Beam H400",
+                "component_type": "structural",
+                "description": "H400 steel beam for structural support"
+              },
+              "allowed_callback_types": [
+                "dag",
+                "relational",
+                "combinatorial"
+              ]
+            }
+          ],
+          "edges": [
+            {
+              "edge_id": "E01",
+              "source_node": "V06",
+              "target_node": "V07",
+              "edge_type": "data_flow",
+              "weight": 0.5,
+              "metadata": {
+                "created_at": "2025-06-20T09:38:41.554962"
+              }
+            },
+            {
+              "edge_id": "E02",
+              "source_node": "V06",
+              "target_node": "V08",
+              "edge_type": "data_flow",
+              "weight": 0.5,
+              "metadata": {
+                "created_at": "2025-06-20T09:38:41.554967"
+              }
+            },
+            {
+              "edge_id": "E03",
+              "source_node": "V06",
+              "target_node": "V09",
+              "edge_type": "data_flow",
+              "weight": 0.5,
+              "metadata": {
+                "created_at": "2025-06-20T09:38:41.554970"
+              }
+            },
+            {
+              "edge_id": "E04",
+              "source_node": "V06",
+              "target_node": "V10",
+              "edge_type": "data_flow",
+              "weight": 0.5,
+              "metadata": {
+                "created_at": "2025-06-20T09:38:41.554972"
+              }
+            },
+            {
+              "edge_id": "E05",
+              "source_node": "V07",
+              "target_node": "V06",
+              "edge_type": "data_flow",
+              "weight": 0.5,
+              "metadata": {
+                "created_at": "2025-06-20T09:38:41.554975"
+              }
+            },
+            {
+              "edge_id": "E06",
+              "source_node": "V07",
+              "target_node": "V08",
+              "edge_type": "data_flow",
+              "weight": 0.5,
+              "metadata": {
+                "created_at": "2025-06-20T09:38:41.554978"
+              }
+            },
+            {
+              "edge_id": "E07",
+              "source_node": "V07",
+              "target_node": "V09",
+              "edge_type": "data_flow",
+              "weight": 0.5,
+              "metadata": {
+                "created_at": "2025-06-20T09:38:41.554980"
+              }
+            },
+            {
+              "edge_id": "E08",
+              "source_node": "V07",
+              "target_node": "V10",
+              "edge_type": "data_flow",
+              "weight": 0.5,
+              "metadata": {
+                "created_at": "2025-06-20T09:38:41.554983"
+              }
+            },
+            {
+              "edge_id": "E09",
+              "source_node": "V08",
+              "target_node": "V06",
+              "edge_type": "data_flow",
+              "weight": 0.5,
+              "metadata": {
+                "created_at": "2025-06-20T09:38:41.554985"
+              }
+            },
+            {
+              "edge_id": "E10",
+              "source_node": "V08",
+              "target_node": "V07",
+              "edge_type": "data_flow",
+              "weight": 0.5,
+              "metadata": {
+                "created_at": "2025-06-20T09:38:41.554988"
+              }
+            },
+            {
+              "edge_id": "E11",
+              "source_node": "V08",
+              "target_node": "V09",
+              "edge_type": "data_flow",
+              "weight": 0.5,
+              "metadata": {
+                "created_at": "2025-06-20T09:38:41.554990"
+              }
+            },
+            {
+              "edge_id": "E12",
+              "source_node": "V08",
+              "target_node": "V10",
+              "edge_type": "data_flow",
+              "weight": 0.5,
+              "metadata": {
+                "created_at": "2025-06-20T09:38:41.554992"
+              }
+            },
+            {
+              "edge_id": "E13",
+              "source_node": "V09",
+              "target_node": "V06",
+              "edge_type": "data_flow",
+              "weight": 0.5,
+              "metadata": {
+                "created_at": "2025-06-20T09:38:41.554995"
+              }
+            },
+            {
+              "edge_id": "E14",
+              "source_node": "V09",
+              "target_node": "V07",
+              "edge_type": "data_flow",
+              "weight": 0.5,
+              "metadata": {
+                "created_at": "2025-06-20T09:38:41.554997"
+              }
+            },
+            {
+              "edge_id": "E15",
+              "source_node": "V09",
+              "target_node": "V08",
+              "edge_type": "data_flow",
+              "weight": 0.5,
+              "metadata": {
+                "created_at": "2025-06-20T09:38:41.554999"
+              }
+            },
+            {
+              "edge_id": "E16",
+              "source_node": "V09",
+              "target_node": "V10",
+              "edge_type": "data_flow",
+              "weight": 0.5,
+              "metadata": {
+                "created_at": "2025-06-20T09:38:41.555002"
+              }
+            },
+            {
+              "edge_id": "E17",
+              "source_node": "V10",
+              "target_node": "V06",
+              "edge_type": "data_flow",
+              "weight": 0.5,
+              "metadata": {
+                "created_at": "2025-06-20T09:38:41.555004"
+              }
+            },
+            {
+              "edge_id": "E18",
+              "source_node": "V10",
+              "target_node": "V07",
+              "edge_type": "data_flow",
+              "weight": 0.5,
+              "metadata": {
+                "created_at": "2025-06-20T09:38:41.555007"
+              }
+            },
+            {
+              "edge_id": "E19",
+              "source_node": "V10",
+              "target_node": "V08",
+              "edge_type": "data_flow",
+              "weight": 0.5,
+              "metadata": {
+                "created_at": "2025-06-20T09:38:41.555009"
+              }
+            },
+            {
+              "edge_id": "E20",
+              "source_node": "V10",
+              "target_node": "V09",
+              "edge_type": "data_flow",
+              "weight": 0.5,
+              "metadata": {
+                "created_at": "2025-06-20T09:38:41.555011"
+              }
+            }
+          ]
+        },
+        "node_data": [
+          {
+            "node_id": "V06",
+            "node_label": "Glass Window 2x3m",
+            "phase": "alpha",
+            "agent": 1,
+            "callback_type": "dag",
+            "trigger_functor": "evaluate_manufacturing",
+            "dictionary": {
+              "component_id": "06ea1507-6e77-4ecf-9ef5-240690050b78",
+              "component_name": "Glass Window 2x3m",
+              "component_type": "envelope",
+              "description": "2x3m glass window for natural lighting"
+            },
+            "allowed_callback_types": [
+              "dag",
+              "relational",
+              "combinatorial"
+            ]
+          },
+          {
+            "node_id": "V07",
+            "node_label": "Electrical Panel 400A",
+            "phase": "alpha",
+            "agent": 1,
+            "callback_type": "dag",
+            "trigger_functor": "evaluate_manufacturing",
+            "dictionary": {
+              "component_id": "2fc54c6b-90ad-452a-b2a6-1f4de55f029f",
+              "component_name": "Electrical Panel 400A",
+              "component_type": "electrical",
+              "description": "400A electrical distribution panel"
+            },
+            "allowed_callback_types": [
+              "dag",
+              "relational",
+              "combinatorial"
+            ]
+          },
+          {
+            "node_id": "V08",
+            "node_label": "HVAC Duct 600mm",
+            "phase": "alpha",
+            "agent": 1,
+            "callback_type": "dag",
+            "trigger_functor": "evaluate_manufacturing",
+            "dictionary": {
+              "component_id": "1030fa1d-9e85-4154-9e88-9a1d387eaeed",
+              "component_name": "HVAC Duct 600mm",
+              "component_type": "mep",
+              "description": "600mm diameter HVAC duct for air distribution"
+            },
+            "allowed_callback_types": [
+              "dag",
+              "relational",
+              "combinatorial"
+            ]
+          },
+          {
+            "node_id": "V09",
+            "node_label": "Concrete Column C30",
+            "phase": "alpha",
+            "agent": 1,
+            "callback_type": "dag",
+            "trigger_functor": "evaluate_structural",
+            "dictionary": {
+              "component_id": "ba80d0a0-ea0f-4c26-bbbd-ff1f780594ef",
+              "component_name": "Concrete Column C30",
+              "component_type": "structural",
+              "description": "C30 concrete column for building support"
+            },
+            "allowed_callback_types": [
+              "dag",
+              "relational",
+              "combinatorial"
+            ]
+          },
+          {
+            "node_id": "V10",
+            "node_label": "Steel Beam H400",
+            "phase": "alpha",
+            "agent": 1,
+            "callback_type": "dag",
+            "trigger_functor": "evaluate_structural",
+            "dictionary": {
+              "component_id": "16e657d3-de6a-4608-9030-49062c7db8f7",
+              "component_name": "Steel Beam H400",
+              "component_type": "structural",
+              "description": "H400 steel beam for structural support"
+            },
+            "allowed_callback_types": [
+              "dag",
+              "relational",
+              "combinatorial"
+            ]
+          }
+        ],
+        "edge_data": [
+          {
+            "edge_id": "E01",
+            "source_node": "V06",
+            "target_node": "V07",
+            "edge_type": "data_flow",
+            "weight": 0.5,
+            "metadata": {
+              "created_at": "2025-06-20T09:38:41.554962"
+            }
+          },
+          {
+            "edge_id": "E02",
+            "source_node": "V06",
+            "target_node": "V08",
+            "edge_type": "data_flow",
+            "weight": 0.5,
+            "metadata": {
+              "created_at": "2025-06-20T09:38:41.554967"
+            }
+          },
+          {
+            "edge_id": "E03",
+            "source_node": "V06",
+            "target_node": "V09",
+            "edge_type": "data_flow",
+            "weight": 0.5,
+            "metadata": {
+              "created_at": "2025-06-20T09:38:41.554970"
+            }
+          },
+          {
+            "edge_id": "E04",
+            "source_node": "V06",
+            "target_node": "V10",
+            "edge_type": "data_flow",
+            "weight": 0.5,
+            "metadata": {
+              "created_at": "2025-06-20T09:38:41.554972"
+            }
+          },
+          {
+            "edge_id": "E05",
+            "source_node": "V07",
+            "target_node": "V06",
+            "edge_type": "data_flow",
+            "weight": 0.5,
+            "metadata": {
+              "created_at": "2025-06-20T09:38:41.554975"
+            }
+          },
+          {
+            "edge_id": "E06",
+            "source_node": "V07",
+            "target_node": "V08",
+            "edge_type": "data_flow",
+            "weight": 0.5,
+            "metadata": {
+              "created_at": "2025-06-20T09:38:41.554978"
+            }
+          },
+          {
+            "edge_id": "E07",
+            "source_node": "V07",
+            "target_node": "V09",
+            "edge_type": "data_flow",
+            "weight": 0.5,
+            "metadata": {
+              "created_at": "2025-06-20T09:38:41.554980"
+            }
+          },
+          {
+            "edge_id": "E08",
+            "source_node": "V07",
+            "target_node": "V10",
+            "edge_type": "data_flow",
+            "weight": 0.5,
+            "metadata": {
+              "created_at": "2025-06-20T09:38:41.554983"
+            }
+          },
+          {
+            "edge_id": "E09",
+            "source_node": "V08",
+            "target_node": "V06",
+            "edge_type": "data_flow",
+            "weight": 0.5,
+            "metadata": {
+              "created_at": "2025-06-20T09:38:41.554985"
+            }
+          },
+          {
+            "edge_id": "E10",
+            "source_node": "V08",
+            "target_node": "V07",
+            "edge_type": "data_flow",
+            "weight": 0.5,
+            "metadata": {
+              "created_at": "2025-06-20T09:38:41.554988"
+            }
+          },
+          {
+            "edge_id": "E11",
+            "source_node": "V08",
+            "target_node": "V09",
+            "edge_type": "data_flow",
+            "weight": 0.5,
+            "metadata": {
+              "created_at": "2025-06-20T09:38:41.554990"
+            }
+          },
+          {
+            "edge_id": "E12",
+            "source_node": "V08",
+            "target_node": "V10",
+            "edge_type": "data_flow",
+            "weight": 0.5,
+            "metadata": {
+              "created_at": "2025-06-20T09:38:41.554992"
+            }
+          },
+          {
+            "edge_id": "E13",
+            "source_node": "V09",
+            "target_node": "V06",
+            "edge_type": "data_flow",
+            "weight": 0.5,
+            "metadata": {
+              "created_at": "2025-06-20T09:38:41.554995"
+            }
+          },
+          {
+            "edge_id": "E14",
+            "source_node": "V09",
+            "target_node": "V07",
+            "edge_type": "data_flow",
+            "weight": 0.5,
+            "metadata": {
+              "created_at": "2025-06-20T09:38:41.554997"
+            }
+          },
+          {
+            "edge_id": "E15",
+            "source_node": "V09",
+            "target_node": "V08",
+            "edge_type": "data_flow",
+            "weight": 0.5,
+            "metadata": {
+              "created_at": "2025-06-20T09:38:41.554999"
+            }
+          },
+          {
+            "edge_id": "E16",
+            "source_node": "V09",
+            "target_node": "V10",
+            "edge_type": "data_flow",
+            "weight": 0.5,
+            "metadata": {
+              "created_at": "2025-06-20T09:38:41.555002"
+            }
+          },
+          {
+            "edge_id": "E17",
+            "source_node": "V10",
+            "target_node": "V06",
+            "edge_type": "data_flow",
+            "weight": 0.5,
+            "metadata": {
+              "created_at": "2025-06-20T09:38:41.555004"
+            }
+          },
+          {
+            "edge_id": "E18",
+            "source_node": "V10",
+            "target_node": "V07",
+            "edge_type": "data_flow",
+            "weight": 0.5,
+            "metadata": {
+              "created_at": "2025-06-20T09:38:41.555007"
+            }
+          },
+          {
+            "edge_id": "E19",
+            "source_node": "V10",
+            "target_node": "V08",
+            "edge_type": "data_flow",
+            "weight": 0.5,
+            "metadata": {
+              "created_at": "2025-06-20T09:38:41.555009"
+            }
+          },
+          {
+            "edge_id": "E20",
+            "source_node": "V10",
+            "target_node": "V09",
+            "edge_type": "data_flow",
+            "weight": 0.5,
+            "metadata": {
+              "created_at": "2025-06-20T09:38:41.555011"
+            }
+          }
+        ],
+        "parameters": {
+          "graph_type": "networkx",
+          "execution_mode": "runtime"
+        }
+      },
+      "output_data": {
+        "graph_execution_status": "completed",
+        "nodes_built": 5,
+        "edges_built": 20,
+        "results": {
+          "graph_metrics": {
+            "density": 0.45,
+            "diameter": 3,
+            "clustering": 0.67
+          },
+          "execution_path": [
+            "V01",
+            "V02",
+            "V03",
+            "V04"
+          ]
+        }
+      },
+      "execution_time": "2025-06-20T09:38:41.656174"
+    }
+  },
+  "end_time": "2025-06-20T09:38:41.656191",
+  "status": "success"
+}
