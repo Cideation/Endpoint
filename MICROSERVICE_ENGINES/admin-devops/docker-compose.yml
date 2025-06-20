@@ -1,0 +1,227 @@
+version: '3.8'
+
+# Admin/DevOps Infrastructure Stack
+# Provides monitoring, management, and documentation for the BEM system
+
+networks:
+  devops-net:
+    driver: bridge
+    name: bem-devops-network
+  # Connect to main application network
+  bem-network:
+    external: true
+
+volumes:
+  portainer-data:
+  prometheus-data:
+  grafana-data:
+  loki-data:
+
+services:
+  # 1. Portainer - Visual Docker Management
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: bem-portainer
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "8000:8000"  # Edge agent port
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer-data:/data
+    networks:
+      - devops-net
+    labels:
+      - "com.bem.service=admin"
+      - "com.bem.component=portainer"
+    environment:
+      - VIRTUAL_HOST=portainer.bem.local
+      - VIRTUAL_PORT=9000
+
+  # 2. Prometheus - Metrics Collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: bem-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - devops-net
+      - bem-network
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    labels:
+      - "com.bem.service=admin"
+      - "com.bem.component=prometheus"
+
+  # 3. Grafana - Visualization Dashboards
+  grafana:
+    image: grafana/grafana:latest
+    container_name: bem-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - devops-net
+      - bem-network
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource,grafana-piechart-panel
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/bem-overview.json
+    depends_on:
+      - prometheus
+    labels:
+      - "com.bem.service=admin"
+      - "com.bem.component=grafana"
+
+  # 4. Swagger UI - API Documentation
+  swagger-ui:
+    image: swaggerapi/swagger-ui:latest
+    container_name: bem-swagger
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    networks:
+      - devops-net
+      - bem-network
+    environment:
+      - SWAGGER_JSON_URL=http://api:8000/openapi.json
+      - BASE_URL=/swagger
+      - DOM_ID=#swagger-ui
+      - DEEP_LINKING=true
+      - QUERY_CONFIG_ENABLED=true
+      - FILTER=true
+      - DISPLAY_REQUEST_DURATION=true
+      - DEFAULT_MODELS_EXPAND_DEPTH=1
+      - DEFAULT_MODEL_EXPAND_DEPTH=1
+    volumes:
+      - ./swagger/custom.css:/usr/share/nginx/html/custom.css:ro
+    labels:
+      - "com.bem.service=admin"
+      - "com.bem.component=swagger"
+
+  # 5. Loki - Log Aggregation (Optional - for deep debugging)
+  loki:
+    image: grafana/loki:latest
+    container_name: bem-loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki-data:/loki
+    networks:
+      - devops-net
+      - bem-network
+    command: -config.file=/etc/loki/local-config.yaml
+    labels:
+      - "com.bem.service=admin"
+      - "com.bem.component=loki"
+    profiles:
+      - debug  # Only starts when --profile debug is used
+
+  # Promtail - Log collector for Loki
+  promtail:
+    image: grafana/promtail:latest
+    container_name: bem-promtail
+    restart: unless-stopped
+    volumes:
+      - /var/log:/var/log:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+    networks:
+      - devops-net
+      - bem-network
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+    labels:
+      - "com.bem.service=admin"
+      - "com.bem.component=promtail"
+    profiles:
+      - debug  # Only starts when --profile debug is used
+
+  # 6. Traefik - Reverse Proxy (Optional - for public exposure)
+  traefik:
+    image: traefik:v3.0
+    container_name: bem-traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8081:8080"  # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/dynamic:/etc/traefik/dynamic:ro
+      - ./certs:/certs:ro
+    networks:
+      - devops-net
+      - bem-network
+    environment:
+      - TRAEFIK_API_DASHBOARD=true
+      - TRAEFIK_API_DEBUG=true
+    labels:
+      - "com.bem.service=admin"
+      - "com.bem.component=traefik"
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.bem.local`)"
+      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+    profiles:
+      - public  # Only starts when --profile public is used
+
+  # Additional: Node Exporter for system metrics
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: bem-node-exporter
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    networks:
+      - devops-net
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    labels:
+      - "com.bem.service=admin"
+      - "com.bem.component=node-exporter"
+
+  # Additional: Cadvisor for container metrics
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: bem-cadvisor
+    restart: unless-stopped
+    ports:
+      - "8082:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    networks:
+      - devops-net
+    privileged: true
+    devices:
+      - /dev/kmsg
+    labels:
+      - "com.bem.service=admin"
+      - "com.bem.component=cadvisor" 
