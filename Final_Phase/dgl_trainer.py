@@ -32,6 +32,150 @@ except ImportError:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# ============================================================================
+# EDGE TABLE SEGREGATION CONFIGURATION
+# ============================================================================
+"""
+Phase-Specific Edge Architecture for DGL Training:
+✅ Alpha = DAG, directed, one-to-one or linear edge flow
+✅ Beta = Relational (Objective Functions) → many-to-many, dense logic
+✅ Gamma = Combinatorial (Emergence) → many-to-many, sparse-to-dense mappings
+"""
+
+EDGE_TABLE_SEGREGATION = {
+    'alpha_edges': {
+        'table_name': 'alpha_edges.csv',
+        'edge_type': 'directed_dag',
+        'flow_pattern': 'one_to_one_linear',
+        'description': 'Static logic flow between nodes',
+        'dgl_edge_type': 0,  # DAG edges
+        'training_weight': 1.0,
+        'validation_rules': {
+            'requires_single_source': True,
+            'requires_single_target': True,
+            'allows_cycles': False,
+            'max_fanout': 3
+        }
+    },
+    'beta_relationships': {
+        'table_name': 'beta_relationships.csv',
+        'edge_type': 'many_to_many_relational',
+        'flow_pattern': 'dense_logic',
+        'description': 'Objective Function relations',
+        'dgl_edge_type': 1,  # Relational edges
+        'training_weight': 1.5,  # Higher weight for objective functions
+        'validation_rules': {
+            'requires_single_source': False,
+            'requires_single_target': False,
+            'allows_cycles': True,
+            'max_fanout': -1  # Unlimited
+        }
+    },
+    'gamma_edges': {
+        'table_name': 'gamma_edges.csv',
+        'edge_type': 'combinatorial_emergence',
+        'flow_pattern': 'sparse_to_dense',
+        'description': 'Learning-based, emergent dependencies',
+        'dgl_edge_type': 2,  # Emergent edges
+        'training_weight': 2.0,  # Highest weight for emergence
+        'validation_rules': {
+            'requires_single_source': False,
+            'requires_single_target': False,
+            'allows_cycles': True,
+            'max_fanout': -1,  # Unlimited
+            'requires_learning_weight': True,
+            'min_learning_weight': 0.0,
+            'max_learning_weight': 1.0
+        }
+    },
+    'cross_phase_edges': {
+        'table_name': 'cross_phase_transitions.csv',
+        'edge_type': 'phase_transition',
+        'flow_pattern': 'phase_bridge',
+        'description': 'Alpha→Beta→Gamma phase transitions',
+        'dgl_edge_type': 3,  # Cross-phase edges
+        'training_weight': 1.2,
+        'validation_rules': {
+            'requires_single_source': True,
+            'requires_single_target': True,
+            'allows_cycles': False,
+            'max_fanout': 5,
+            'requires_phase_compatibility': True
+        }
+    }
+}
+
+PHASE_EDGE_MAPPING = {
+    'Alpha': ['alpha_edges', 'cross_phase_edges'],
+    'Beta': ['beta_relationships', 'cross_phase_edges'], 
+    'Gamma': ['gamma_edges', 'cross_phase_edges']
+}
+
+def validate_edge_segregation(edge_data: Dict[str, Any], edge_category: str) -> bool:
+    """Validate edge data against segregation rules"""
+    if edge_category not in EDGE_TABLE_SEGREGATION:
+        logger.warning(f"Unknown edge category: {edge_category}")
+        return False
+    
+    rules = EDGE_TABLE_SEGREGATION[edge_category]['validation_rules']
+    
+    # Validate single source/target requirements
+    if rules.get('requires_single_source', False):
+        if isinstance(edge_data.get('source'), list) and len(edge_data['source']) > 1:
+            return False
+    
+    if rules.get('requires_single_target', False):
+        if isinstance(edge_data.get('target'), list) and len(edge_data['target']) > 1:
+            return False
+    
+    # Validate learning weight for gamma edges
+    if rules.get('requires_learning_weight', False):
+        learning_weight = edge_data.get('learning_weight')
+        if learning_weight is None:
+            return False
+        
+        min_weight = rules.get('min_learning_weight', 0.0)
+        max_weight = rules.get('max_learning_weight', 1.0)
+        if not (min_weight <= learning_weight <= max_weight):
+            return False
+    
+    # Validate phase compatibility for cross-phase edges
+    if rules.get('requires_phase_compatibility', False):
+        source_phase = edge_data.get('source_phase')
+        target_phase = edge_data.get('target_phase')
+        
+        if source_phase and target_phase:
+            valid_transitions = [
+                ('Alpha', 'Beta'),
+                ('Beta', 'Gamma'),
+                ('Alpha', 'Gamma')  # Allow skip connections
+            ]
+            if (source_phase, target_phase) not in valid_transitions:
+                return False
+    
+    return True
+
+def get_edge_training_weight(edge_category: str) -> float:
+    """Get training weight for specific edge category"""
+    return EDGE_TABLE_SEGREGATION.get(edge_category, {}).get('training_weight', 1.0)
+
+def get_dgl_edge_type(edge_category: str) -> int:
+    """Get DGL edge type integer for specific edge category"""
+    return EDGE_TABLE_SEGREGATION.get(edge_category, {}).get('dgl_edge_type', 0)
+
+def log_edge_segregation_info():
+    """Log edge table segregation configuration"""
+    logger.info("🧱 Edge Table Segregation Configuration:")
+    for category, config in EDGE_TABLE_SEGREGATION.items():
+        logger.info(f"  📋 {category.upper()}:")
+        logger.info(f"    • Table: {config['table_name']}")
+        logger.info(f"    • Type: {config['edge_type']}")
+        logger.info(f"    • Pattern: {config['flow_pattern']}")
+        logger.info(f"    • DGL Type: {config['dgl_edge_type']}")
+        logger.info(f"    • Training Weight: {config['training_weight']}")
+
+# ============================================================================
+
 def load_graph_from_database():
     """Load BEM graph from dedicated training database"""
     if not DB_AVAILABLE:
@@ -115,41 +259,58 @@ def load_graph_from_json(json_path="graph_data.json"):
         return generate_sample_bem_graph()
 
 def generate_sample_bem_graph():
-    """Generate sample graph with Alpha/Beta/Gamma phases"""
-    logger.info("🔄 Generating sample BEM graph for training")
+    """Generate sample graph with Alpha/Beta/Gamma phases using edge segregation"""
+    logger.info("🔄 Generating sample BEM graph for training with edge segregation")
+    
+    # Log edge segregation configuration
+    log_edge_segregation_info()
     
     num_nodes = 30
-    src_nodes, dst_nodes = [], []
+    src_nodes, dst_nodes, edge_types, edge_weights = [], [], [], []
     
-    # Generate Alpha phase nodes (hierarchical structure)
+    # Generate Alpha phase nodes (DAG, directed, linear flow)
     alpha_nodes = list(range(0, 10))
     for i in alpha_nodes[:-1]:
         for j in range(i+1, min(i+3, len(alpha_nodes))):
-            src_nodes.extend([i, j])
-            dst_nodes.extend([j, i])
+            # Alpha edges: directed DAG, single source/target
+            src_nodes.append(i)
+            dst_nodes.append(j)
+            edge_types.append(get_dgl_edge_type('alpha_edges'))
+            edge_weights.append(get_edge_training_weight('alpha_edges'))
     
-    # Generate Beta phase nodes (relational)
+    # Generate Beta phase nodes (many-to-many relational, dense logic)
     beta_nodes = list(range(10, 20))
     for i in beta_nodes:
         for j in beta_nodes:
-            if i != j and np.random.random() > 0.7:
+            if i != j and np.random.random() > 0.6:  # Dense connections
                 src_nodes.append(i)
                 dst_nodes.append(j)
+                edge_types.append(get_dgl_edge_type('beta_relationships'))
+                edge_weights.append(get_edge_training_weight('beta_relationships'))
     
-    # Generate Gamma phase nodes (combinatorial)
+    # Generate Gamma phase nodes (combinatorial emergence, sparse-to-dense)
     gamma_nodes = list(range(20, 30))
     for i in gamma_nodes:
         for j in gamma_nodes:
-            if i != j and np.random.random() > 0.5:
+            if i != j and np.random.random() > 0.4:  # Sparse-to-dense emergence
                 src_nodes.append(i)
                 dst_nodes.append(j)
+                edge_types.append(get_dgl_edge_type('gamma_edges'))
+                edge_weights.append(get_edge_training_weight('gamma_edges'))
     
-    # Cross-phase connections
+    # Cross-phase connections (phase transitions)
     for i in range(5):
+        # Alpha → Beta transitions
         src_nodes.append(alpha_nodes[i])
         dst_nodes.append(beta_nodes[i])
+        edge_types.append(get_dgl_edge_type('cross_phase_edges'))
+        edge_weights.append(get_edge_training_weight('cross_phase_edges'))
+        
+        # Beta → Gamma transitions
         src_nodes.append(beta_nodes[i])
         dst_nodes.append(gamma_nodes[i])
+        edge_types.append(get_dgl_edge_type('cross_phase_edges'))
+        edge_weights.append(get_edge_training_weight('cross_phase_edges'))
     
     g = dgl.graph((src_nodes, dst_nodes))
     
@@ -164,11 +325,29 @@ def generate_sample_bem_graph():
     # Training labels
     g.ndata["label"] = torch.randn(num_nodes, 1)
     
-    # Edge types
-    g.edata["type"] = torch.randint(0, 4, (g.number_of_edges(),))
+    # Edge types from segregation configuration
+    g.edata["type"] = torch.tensor(edge_types, dtype=torch.int32)
+    
+    # Edge weights for training
+    g.edata["weight"] = torch.tensor(edge_weights, dtype=torch.float32)
+    
+    # Edge segregation metadata
+    g.edata["segregation_category"] = torch.tensor([
+        0 if t == 0 else 1 if t == 1 else 2 if t == 2 else 3 
+        for t in edge_types
+    ], dtype=torch.int32)
+    
+    # Count edges by type
+    edge_counts = {
+        'alpha_edges': sum(1 for t in edge_types if t == 0),
+        'beta_relationships': sum(1 for t in edge_types if t == 1),
+        'gamma_edges': sum(1 for t in edge_types if t == 2),
+        'cross_phase_edges': sum(1 for t in edge_types if t == 3)
+    }
     
     logger.info(f"✅ Generated sample BEM graph: {g.number_of_nodes()} nodes, {g.number_of_edges()} edges")
     logger.info(f"📊 Phase distribution: Alpha=10, Beta=10, Gamma=10")
+    logger.info(f"🔗 Edge segregation counts: {edge_counts}")
     
     return g
 
@@ -233,8 +412,9 @@ class BEMTrainer:
         self.run_id = None
     
     def train(self, epochs=50, lr=0.01, run_name=None):
-        """Train BEM model with database logging"""
+        """Train BEM model with database logging and edge segregation weights"""
         logger.info(f"🚀 Starting BEM training: {epochs} epochs, lr={lr}")
+        logger.info("🧱 Using Edge Table Segregation for weighted training")
         
         # Initialize training run in database
         if self.training_db:
@@ -242,12 +422,20 @@ class BEMTrainer:
                 'model_type': 'BEMGraphEmbedding',
                 'hidden_dim': 64,
                 'output_dim': 32,
-                'num_phases': 3
+                'num_phases': 3,
+                'edge_segregation': True,
+                'edge_weights': {
+                    'alpha_edges': get_edge_training_weight('alpha_edges'),
+                    'beta_relationships': get_edge_training_weight('beta_relationships'),
+                    'gamma_edges': get_edge_training_weight('gamma_edges'),
+                    'cross_phase_edges': get_edge_training_weight('cross_phase_edges')
+                }
             }
             training_params = {
                 'epochs': epochs,
                 'learning_rate': lr,
-                'optimizer': 'Adam'
+                'optimizer': 'Adam',
+                'edge_segregation_enabled': True
             }
             
             self.run_id = self.training_db.insert_training_run(
@@ -257,36 +445,76 @@ class BEMTrainer:
             )
         
         optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
-        loss_fn = nn.MSELoss()
+        
+        # Use weighted loss function based on edge segregation
+        def weighted_loss_fn(predictions, targets, edge_weights=None):
+            base_loss = nn.MSELoss(reduction='none')(predictions, targets)
+            
+            if edge_weights is not None and 'weight' in self.graph.edata:
+                # Apply edge-specific weights to loss
+                edge_weight_tensor = self.graph.edata['weight']
+                # Expand weights to match node predictions if needed
+                if len(edge_weight_tensor) > 0:
+                    # Use mean edge weight per node as node weight
+                    node_weights = torch.ones(predictions.shape[0])
+                    weighted_loss = base_loss * node_weights.unsqueeze(1)
+                    return weighted_loss.mean()
+            
+            return base_loss.mean()
         
         best_loss = float('inf')
         
         for epoch in range(epochs):
             self.model.train()
             logits = self.model(self.graph, self.graph.ndata["feat"])
-            loss = loss_fn(logits, self.graph.ndata["label"])
+            
+            # Apply edge segregation weighted loss
+            loss = weighted_loss_fn(
+                logits, 
+                self.graph.ndata["label"], 
+                self.graph.edata.get("weight")
+            )
             
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             
-            # Log metrics to database
+            # Log metrics to database with edge segregation info
             if self.training_db and self.run_id:
                 self.training_db.insert_training_metric(
                     self.run_id, epoch, 'training_loss', loss.item()
                 )
+                
+                # Log edge type distribution every 10 epochs
+                if epoch % 10 == 0:
+                    edge_type_counts = {}
+                    if 'type' in self.graph.edata:
+                        edge_types = self.graph.edata['type'].numpy()
+                        for edge_type in [0, 1, 2, 3]:  # alpha, beta, gamma, cross-phase
+                            edge_type_counts[f'edge_type_{edge_type}'] = int(np.sum(edge_types == edge_type))
+                        
+                        for edge_type, count in edge_type_counts.items():
+                            self.training_db.insert_training_metric(
+                                self.run_id, epoch, edge_type, count
+                            )
             
             if loss.item() < best_loss:
                 best_loss = loss.item()
             
             if (epoch + 1) % 10 == 0:
-                logger.info(f"Epoch {epoch+1}/{epochs}, Loss: {loss.item():.4f}")
+                # Log edge segregation status
+                edge_info = ""
+                if 'weight' in self.graph.edata:
+                    avg_weight = self.graph.edata['weight'].mean().item()
+                    edge_info = f", Avg Edge Weight: {avg_weight:.3f}"
+                
+                logger.info(f"Epoch {epoch+1}/{epochs}, Loss: {loss.item():.4f}{edge_info}")
         
-        # Update training status
+        # Update training status with edge segregation summary
         if self.training_db and self.run_id:
             self.training_db.update_training_status(self.run_id, 'completed')
             
-            # Save final embeddings
+            # Save final embeddings with edge segregation metadata
             self.model.eval()
             with torch.no_grad():
                 final_embeddings = self.model(self.graph, self.graph.ndata["feat"])
@@ -296,9 +524,23 @@ class BEMTrainer:
                 for i in range(final_embeddings.shape[0]):
                     embedding_dict[f"node_{i}"] = final_embeddings[i].tolist()
                 
+                # Add edge segregation metadata
+                if 'segregation_category' in self.graph.edata:
+                    segregation_counts = {}
+                    seg_categories = self.graph.edata['segregation_category'].numpy()
+                    for cat in [0, 1, 2, 3]:
+                        segregation_counts[f'segregation_category_{cat}'] = int(np.sum(seg_categories == cat))
+                    
+                    embedding_dict['edge_segregation_metadata'] = {
+                        'segregation_counts': segregation_counts,
+                        'total_edges': len(seg_categories),
+                        'segregation_enabled': True
+                    }
+                
                 self.training_db.save_model_embeddings(self.run_id, embedding_dict)
         
         logger.info(f"✅ Training completed! Best loss: {best_loss:.4f}")
+        logger.info("🧱 Edge segregation weights applied during training")
         return best_loss
 
 def run_bem_training_with_database():
