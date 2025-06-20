@@ -2,9 +2,11 @@
 """
 ECM (Event Coordination Module) - Infrastructure Gateway
 
+💡 FUNDAMENTAL PRINCIPLE: "Infrastructure is immutable; computation is emergent."
+
 🎯 CRITICAL ARCHITECTURE: ECM-Pulse Separation
-✅ ECM = Pure relay (no pulse execution, no decisions)
-✅ Pulse = Post-ECM delivery (interprets, triggers, decides)
+✅ ECM = Immutable infrastructure (pure relay, fixed behavior, stable foundation)
+✅ Pulse = Emergent computation (interprets, triggers, decides, adapts)
 
 Pure computational infrastructure for spatial computation bridging.
 - Fixed, reliable, persistent gateway
