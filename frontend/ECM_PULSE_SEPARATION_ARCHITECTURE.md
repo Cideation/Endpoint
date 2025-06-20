@@ -153,4 +153,19 @@ This separation ensures **robust, scalable, audit-safe architecture** where **im
 
 - **ECM (Infrastructure):** Fixed patterns, predictable behavior, never changes
 - **Pulse (Computation):** Adaptive patterns, emergent behavior, always evolving
-- **Result:** Stable platform for unlimited computational innovation 
+- **Result:** Stable platform for unlimited computational innovation
+
+## 📊 **Mutability Boundaries Reference**
+
+| Layer                        | Role                           | Mutable?                  | Notes                                           |
+| ---------------------------- | ------------------------------ | ------------------------- | ----------------------------------------------- |
+| **ECM (WebSocket Gateway)**  | Persistent transport + logging | ❌ Immutable               | Audit-safe, stateless, fixed interface          |
+| **Pulse Handler**            | Event interpreter + router     | ✅ Mutable                 | Routes triggers to functors, evolves with logic |
+| **Node Engine**              | Executes graph logic/functors  | ✅ Mutable                 | Full computational model                        |
+| **Environment (Unreal/Web)** | Responds to system state       | ❌ Stateless (visual only) | Reflects, doesn't compute                       |
+
+### **Key Architectural Insights:**
+- **Immutable layers** provide stability and auditability
+- **Mutable layers** enable adaptation and computational evolution  
+- **Environment is stateless** - it reflects, doesn't compute
+- **Clear boundaries** prevent computational logic from leaking into infrastructure 
