@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: bem_production
+      POSTGRES_USER: bem_user
+      POSTGRES_PASSWORD: bem_secure_pass_2024
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgre/enhanced_schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bem_user -d bem_production"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bem-graphql-network
+
+  # Redis for real-time subscriptions
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bem-graphql-network
+
+  # GraphQL Server
+  graphql-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.graphql
+    ports:
+      - "8000:8000"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: bem_production
+      DB_USER: bem_user
+      DB_PASSWORD: bem_secure_pass_2024
+      REDIS_URL: redis://redis:6379
+      ENVIRONMENT: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./outputs:/app/outputs
+      - ./neon:/app/neon
+      - ./MICROSERVICE_ENGINES:/app/MICROSERVICE_ENGINES
+    networks:
+      - bem-graphql-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  bem-graphql-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data: 

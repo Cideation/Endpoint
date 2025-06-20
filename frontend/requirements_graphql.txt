@@ -1,0 +1,30 @@
+# BEM GraphQL Server Requirements
+# Core GraphQL framework
+strawberry-graphql[fastapi]==0.216.1
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+
+# Database connections
+asyncpg==0.29.0
+psycopg2-binary==2.9.7
+
+# Real-time and caching
+redis==5.0.1
+websockets==12.0
+
+# Utilities and typing
+pydantic==2.5.0
+python-multipart==0.0.6
+typing-extensions==4.8.0
+
+# Development and monitoring
+uvloop==0.19.0
+httpx==0.25.2
+
+# Security and auth (if needed)
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# Data processing
+numpy==1.24.3
+pandas==1.5.3 
