@@ -1,0 +1,50 @@
+# FSM Matrix - State Transition Definitions
+# ECM Gateway State Machine Configuration
+
+[STATES]
+IDLE = "idle"
+PROCESSING = "processing" 
+ROUTING = "routing"
+EXECUTING = "executing"
+WAITING = "waiting"
+ERROR = "error"
+
+[TRANSITIONS]
+# From IDLE
+idle -> processing : on_message_received
+idle -> error : on_connection_error
+
+# From PROCESSING  
+processing -> routing : on_message_validated
+processing -> error : on_validation_failed
+
+# From ROUTING
+routing -> executing : on_functor_selected
+routing -> waiting : on_external_dependency
+routing -> error : on_routing_failed
+
+# From EXECUTING
+executing -> idle : on_execution_complete
+executing -> error : on_execution_failed
+
+# From WAITING
+waiting -> executing : on_dependency_resolved
+waiting -> error : on_timeout
+
+# From ERROR
+error -> idle : on_error_resolved
+error -> error : on_error_persist
+
+[ACTIONS]
+# Actions triggered on state transitions
+on_message_received = "log_message, validate_structure"
+on_message_validated = "extract_functor_type, prepare_routing"
+on_functor_selected = "execute_functor, update_agent_state"
+on_execution_complete = "send_response, log_completion"
+on_error_resolved = "clear_error_state, notify_recovery"
+
+[TIMEOUTS]
+processing_timeout = 5000  # 5 seconds
+routing_timeout = 3000     # 3 seconds  
+executing_timeout = 30000  # 30 seconds
+waiting_timeout = 60000    # 60 seconds 
