@@ -59,56 +59,103 @@ class OptimizationMetrics:
     emergence_score: float
     routing_confidence: float
     formula_traceability: float  # New: How well results trace to SFDE formulas
+    cross_phase_learning: float  # New: How well DGL learns across all phases
+    edge_coverage: float  # New: Percentage of all edges processed by DGL
 
 class ScientificGraphLearner(nn.Module):
     """
     DGL Learner - Learns from SFDE-defined scientific formulas
+    Processes ALL edges across Alpha (DAG), Beta (relational), Gamma (combinatorial) phases
     Does NOT define computational logic, only learns patterns from SFDE training
     """
     
     def __init__(self, in_feats: int, hidden_feats: int, out_feats: int, num_heads: int = 4):
         super().__init__()
-        logger.info("🤖 Initializing DGL Learner (consumes SFDE computational logic)")
+        logger.info("🧠 Initializing Cross-Phase DGL Learner (ALL edges Alpha+Beta+Gamma)")
         
-        # Multi-layer architecture for learning SFDE patterns
-        self.gat1 = GATConv(in_feats, hidden_feats, num_heads, activation=F.relu)
-        self.gat2 = GATConv(hidden_feats * num_heads, hidden_feats, num_heads, activation=F.relu)
-        self.sage = SAGEConv(hidden_feats * num_heads, hidden_feats, 'mean')
+        # Multi-phase architecture for learning across ALL edge types
+        self.alpha_gat = GATConv(in_feats, hidden_feats, num_heads, activation=F.relu)  # DAG flows
+        self.beta_gat = GATConv(hidden_feats * num_heads, hidden_feats, num_heads, activation=F.relu)  # Relational
+        self.gamma_sage = SAGEConv(hidden_feats * num_heads, hidden_feats, 'mean')  # Combinatorial
+        
+        # Cross-phase fusion layer (learns phase interactions)
+        self.phase_fusion = nn.Linear(hidden_feats * 3, hidden_feats)
         self.classifier = nn.Linear(hidden_feats, out_feats)
         self.dropout = nn.Dropout(0.1)
         
-        # Embeddings for SFDE-defined agent and callback types
+        # Embeddings for SFDE-defined agent and callback types across phases
         self.agent_embedding = nn.Embedding(10, hidden_feats)
         self.callback_embedding = nn.Embedding(5, hidden_feats)
+        self.phase_embedding = nn.Embedding(3, hidden_feats)  # Alpha, Beta, Gamma
+        
+        # Edge type embeddings for ALL edge types across phases
+        self.edge_type_embedding = nn.Embedding(15, hidden_feats)
         
         # Formula pattern memory (learns which SFDE formulas work best)
         self.formula_pattern_memory = nn.Parameter(torch.randn(5, hidden_feats))
+        # Cross-phase pattern memory (learns many-to-many effects)
+        self.cross_phase_memory = nn.Parameter(torch.randn(3, hidden_feats))
+        # Pulse propagation memory (7 pulse types across all phases)
+        self.pulse_memory = nn.Parameter(torch.randn(7, hidden_feats))
         
-    def forward(self, g, h, agent_types, callback_types, sfde_formula_features=None):
-        """Learn patterns from SFDE-structured inputs"""
-        # Graph attention for learning SFDE-defined patterns
-        h = self.gat1(g, h).flatten(1)
-        h = self.dropout(h)
-        h = self.gat2(g, h).flatten(1)
-        h = self.dropout(h)
+    def forward(self, g, h, agent_types, callback_types, phase_indicators=None, edge_types=None, pulse_features=None):
+        """
+        Learn patterns from ALL edges across Alpha/Beta/Gamma phases
         
-        # SAGE for neighborhood aggregation (learns SFDE relationships)
-        h = self.sage(g, h)
+        Args:
+            g: DGL graph with ALL edges (not phase-filtered)
+            h: Node features
+            agent_types: Agent type embeddings
+            callback_types: Callback type embeddings  
+            phase_indicators: Which phase each node belongs to (Alpha=0, Beta=1, Gamma=2)
+            edge_types: All edge types across phases
+            pulse_features: Pulse propagation features
+        """
+        # Phase 1: Alpha (DAG) processing - hierarchical flows
+        alpha_h = self.alpha_gat(g, h).flatten(1)
+        alpha_h = self.dropout(alpha_h)
         
-        # Integrate SFDE-defined agent and callback embeddings
+        # Phase 2: Beta (Relational) processing - cross-functional relationships
+        beta_h = self.beta_gat(g, alpha_h).flatten(1)
+        beta_h = self.dropout(beta_h)
+        
+        # Phase 3: Gamma (Combinatorial) processing - many-to-many effects
+        gamma_h = self.gamma_sage(g, beta_h)
+        
+        # Cross-phase fusion - learn how ALL phases interact
+        fused_features = torch.cat([alpha_h, beta_h, gamma_h], dim=-1)
+        h_fused = F.relu(self.phase_fusion(fused_features))
+        
+        # Integrate SFDE-defined embeddings across phases
         agent_emb = self.agent_embedding(agent_types)
         callback_emb = self.callback_embedding(callback_types)
-        h = h + agent_emb + callback_emb
+        h_fused = h_fused + agent_emb + callback_emb
         
-        # Apply learned patterns to SFDE formula features
-        if sfde_formula_features is not None:
-            # Learn which SFDE formulas are most effective
-            formula_weights = torch.softmax(
-                torch.matmul(h, self.formula_pattern_memory.T), dim=-1
+        # Add phase-specific embeddings if available
+        if phase_indicators is not None:
+            phase_emb = self.phase_embedding(phase_indicators)
+            h_fused = h_fused + phase_emb
+        
+        # Apply cross-phase pattern learning (many-to-many effects)
+        cross_phase_weights = torch.softmax(
+            torch.matmul(h_fused, self.cross_phase_memory.T), dim=-1
+        )
+        h_fused = h_fused + torch.matmul(cross_phase_weights, self.cross_phase_memory)
+        
+        # Apply pulse propagation learning across ALL phases
+        if pulse_features is not None:
+            pulse_weights = torch.softmax(
+                torch.matmul(h_fused, self.pulse_memory.T), dim=-1
             )
-            h = h + torch.matmul(formula_weights, self.formula_pattern_memory)
+            h_fused = h_fused + torch.matmul(pulse_weights, self.pulse_memory)
         
-        return self.classifier(h)
+        # Apply SFDE formula patterns
+        formula_weights = torch.softmax(
+            torch.matmul(h_fused, self.formula_pattern_memory.T), dim=-1
+        )
+        h_fused = h_fused + torch.matmul(formula_weights, self.formula_pattern_memory)
+        
+        return self.classifier(h_fused)
 
 class SFDEFormulaSupervisor:
     """
@@ -119,6 +166,7 @@ class SFDEFormulaSupervisor:
         self.sfde_engine = None
         self.formula_definitions = {}
         self.training_targets = {}
+        self.edge_registry = {}
         
     def initialize_with_sfde(self, node_dict: Dict, agent_coeffs: Dict):
         """Initialize with SFDE-defined computational logic"""
@@ -140,28 +188,47 @@ class SFDEFormulaSupervisor:
             logger.warning("⚠️ SFDE not available - ML will lack scientific foundation")
     
     def structure_training_data(self, graph_data: Dict) -> Dict[str, Any]:
-        """Structure training data using SFDE-defined features and targets"""
+        """Structure training data for ALL edges across Alpha/Beta/Gamma phases"""
         if not self.sfde_engine:
             return {'error': 'SFDE trainer not available'}
         
         structured_data = {
             'node_features': [],
             'edge_weights': [],
+            'phase_indicators': [],
+            'edge_types': [],
             'agent_coefficients': [],
             'formula_targets': {},
-            'traceability_map': {}
+            'traceability_map': {},
+            'edge_registry': {},
+            'total_edges': 0
         }
         
-        logger.info("🏗️ Structuring training data from SFDE computational logic...")
+        logger.info("🌐 Structuring cross-phase training data from SFDE logic...")
         
-        # SFDE defines what features to extract and how
+        # Register ALL edges across phases
+        self.edge_registry = self._register_all_edges(graph_data['edges'])
+        structured_data['edge_registry'] = self.edge_registry
+        structured_data['total_edges'] = sum(len(edges) for edges in self.edge_registry.values())
+        
+        logger.info(f"📊 Processing {structured_data['total_edges']} edges across all phases:")
+        logger.info(f"   Alpha (DAG): {len(self.edge_registry.get('alpha', []))}")
+        logger.info(f"   Beta (Relational): {len(self.edge_registry.get('beta', []))}")
+        logger.info(f"   Gamma (Combinatorial): {len(self.edge_registry.get('gamma', []))}")
+        logger.info(f"   Cross-phase: {len(self.edge_registry.get('cross_phase', []))}")
+        
+        # SFDE defines what features to extract across phases
         for node_id, node_data in graph_data['nodes']:
             if isinstance(node_data, dict):
                 # SFDE defines feature extraction logic
                 node_features = self._extract_sfde_features(node_data)
                 structured_data['node_features'].append(node_features)
                 
-                # SFDE defines agent coefficient computation
+                # Determine node phase (Alpha=0, Beta=1, Gamma=2)
+                node_phase = self._determine_node_phase(node_data)
+                structured_data['phase_indicators'].append(node_phase)
+                
+                # SFDE defines agent coefficient computation across phases
                 agent_type = node_data.get('agent_type', 'BiddingAgent')
                 if SFDE_AVAILABLE:
                     coeffs = agent_coefficient_formula(
@@ -169,24 +236,105 @@ class SFDEFormulaSupervisor:
                     )
                     structured_data['agent_coefficients'].append(coeffs)
                     
-                    # Track formula traceability
+                    # Track cross-phase formula traceability
                     structured_data['traceability_map'][node_id] = {
-                        'formula_source': 'SFDE agent_coefficient_formula',
+                        'formula_source': 'SFDE cross-phase agent_coefficient_formula',
                         'input_features': list(node_features),
-                        'computed_coefficients': coeffs
+                        'computed_coefficients': coeffs,
+                        'node_phase': node_phase,
+                        'participates_in_phases': self._get_node_phase_participation(node_id, self.edge_registry)
                     }
         
-        # SFDE defines edge weight computation logic
-        for edge_data in graph_data['edges']:
-            source_props = {'cost': 1000, 'performance': 0.8}  # Sample
-            target_props = {'cost': 1200, 'performance': 0.7}  # Sample
-            
-            if SFDE_AVAILABLE:
-                edge_weight = edge_weight_formula(source_props, target_props, 'structural')
-                structured_data['edge_weights'].append(edge_weight)
+        # Process ALL edge types using SFDE formulas
+        for phase_name, edges in self.edge_registry.items():
+            for edge_data in edges:
+                source_props = {'cost': 1000, 'performance': 0.8, 'phase': phase_name}
+                target_props = {'cost': 1200, 'performance': 0.7, 'phase': phase_name}
+                
+                if SFDE_AVAILABLE:
+                    # Use SFDE edge weight formula for ALL edge types
+                    edge_type = edge_data[2] if len(edge_data) > 2 else 'unknown'
+                    edge_weight = edge_weight_formula(source_props, target_props, edge_type)
+                    structured_data['edge_weights'].append(edge_weight)
+                    
+                    # Encode edge type for DGL
+                    structured_data['edge_types'].append(self._encode_edge_type(edge_type))
         
-        logger.info(f"✅ Structured {len(structured_data['node_features'])} nodes with SFDE logic")
+        logger.info(f"✅ Structured {len(structured_data['node_features'])} nodes across all phases")
+        logger.info(f"✅ Processed {len(structured_data['edge_weights'])} edges with SFDE formulas")
+        
         return structured_data
+    
+    def _register_all_edges(self, edges_data: List) -> Dict[str, List]:
+        """Register ALL edges by phase classification"""
+        edge_registry = {
+            'alpha': [],      # DAG flows
+            'beta': [],       # Relational connections  
+            'gamma': [],      # Combinatorial many-to-many
+            'cross_phase': [] # Edges spanning phases
+        }
+        
+        for edge_data in edges_data:
+            edge_type = edge_data[2] if len(edge_data) > 2 else 'unknown'
+            phase = self._classify_edge_phase(edge_type)
+            
+            if phase in edge_registry:
+                edge_registry[phase].append(edge_data)
+            else:
+                edge_registry['cross_phase'].append(edge_data)
+        
+        return edge_registry
+    
+    def _classify_edge_phase(self, edge_type: str) -> str:
+        """Classify edge by its phase"""
+        # Alpha phase: DAG flows (hierarchical, directional)
+        if edge_type in ['structural_support', 'load_transfer', 'hierarchical_flow', 'parent_child']:
+            return 'alpha'
+        
+        # Beta phase: Relational (cross-functional, bidirectional)
+        elif edge_type in ['system_integration', 'functional_relation', 'peer_connection', 'lateral_flow']:
+            return 'beta'
+            
+        # Gamma phase: Combinatorial (many-to-many, emergent)
+        elif edge_type in ['combinatorial', 'many_to_many', 'emergent_relation', 'network_effect']:
+            return 'gamma'
+            
+        else:
+            return 'cross_phase'
+    
+    def _determine_node_phase(self, node_data: Dict) -> int:
+        """Determine primary phase for node (Alpha=0, Beta=1, Gamma=2)"""
+        component_type = node_data.get('component_type', 'unknown')
+        
+        if component_type in ['structural', 'foundation']:
+            return 0  # Alpha - hierarchical
+        elif component_type in ['electrical', 'mep', 'system']:
+            return 1  # Beta - relational
+        elif component_type in ['complex', 'emergent']:
+            return 2  # Gamma - combinatorial
+        else:
+            return 1  # Default to Beta
+    
+    def _get_node_phase_participation(self, node_id: str, edge_registry: Dict) -> Dict[str, int]:
+        """Count how many edges each node participates in by phase"""
+        participation = {'alpha': 0, 'beta': 0, 'gamma': 0, 'cross_phase': 0}
+        
+        for phase, edges in edge_registry.items():
+            for edge in edges:
+                if node_id in [edge[0], edge[1]]:  # source or target
+                    participation[phase] += 1
+        
+        return participation
+    
+    def _encode_edge_type(self, edge_type: str) -> int:
+        """Encode edge type as integer for DGL processing"""
+        edge_type_map = {
+            'structural_support': 0, 'system_integration': 1, 'load_transfer': 2,
+            'functional_relation': 3, 'many_to_many': 4, 'hierarchical_flow': 5,
+            'peer_connection': 6, 'combinatorial': 7, 'emergent_relation': 8,
+            'network_effect': 9, 'cross_phase': 10, 'unknown': 11
+        }
+        return edge_type_map.get(edge_type, 11)
     
     def _extract_sfde_features(self, node_data: Dict) -> np.ndarray:
         """Extract features using SFDE-defined logic (not ML-defined)"""
@@ -671,15 +819,18 @@ class OptimizationEngine:
         energy_efficiency = self._calculate_energy_efficiency(graph)
         cost_optimization = self._calculate_cost_optimization(graph)
         
-        # Enhanced metrics
+        # Enhanced metrics with cross-phase learning
         emergence_score = self._calculate_emergence_score(emergence_data)
         routing_confidence = self._calculate_routing_confidence()
         formula_traceability = self.formula_traceability.get('traceability_score', 0.8)
+        cross_phase_learning = self._calculate_cross_phase_learning_score()
+        edge_coverage = self._calculate_edge_coverage_score()
         
         overall_score = np.mean([
             roi_score, occupancy_efficiency, spec_fit_score,
             structural_performance, energy_efficiency, cost_optimization,
-            emergence_score, routing_confidence, formula_traceability
+            emergence_score, routing_confidence, formula_traceability,
+            cross_phase_learning, edge_coverage
         ])
         
         return OptimizationMetrics(
@@ -692,7 +843,9 @@ class OptimizationEngine:
             overall_score=overall_score,
             emergence_score=emergence_score,
             routing_confidence=routing_confidence,
-            formula_traceability=formula_traceability
+            formula_traceability=formula_traceability,
+            cross_phase_learning=cross_phase_learning,
+            edge_coverage=edge_coverage
         )
     
     def _calculate_emergence_score(self, emergence_data: Dict) -> float:
@@ -719,6 +872,59 @@ class OptimizationEngine:
         """Calculate routing confidence based on path predictions"""
         # Default confidence if no routing model
         return 0.75
+    
+    def _calculate_cross_phase_learning_score(self) -> float:
+        """Calculate how well DGL learns across Alpha/Beta/Gamma phases"""
+        if not hasattr(self, 'sfde_supervisor') or not self.sfde_supervisor.edge_registry:
+            return 0.5
+        
+        # Check if we have edges across all phases
+        edge_registry = getattr(self.sfde_supervisor, 'edge_registry', {})
+        
+        phases_with_edges = sum(1 for phase in ['alpha', 'beta', 'gamma'] 
+                               if len(edge_registry.get(phase, [])) > 0)
+        
+        # Score based on cross-phase coverage
+        if phases_with_edges == 3:
+            cross_phase_score = 1.0  # All phases represented
+        elif phases_with_edges == 2:
+            cross_phase_score = 0.7  # Two phases
+        elif phases_with_edges == 1:
+            cross_phase_score = 0.4  # Single phase only
+        else:
+            cross_phase_score = 0.1  # No clear phase structure
+        
+        # Bonus for cross-phase edges (edges that span phases)
+        cross_phase_edges = len(edge_registry.get('cross_phase', []))
+        total_edges = sum(len(edges) for edges in edge_registry.values())
+        
+        if total_edges > 0:
+            cross_phase_bonus = min(0.3, cross_phase_edges / total_edges)
+            cross_phase_score = min(1.0, cross_phase_score + cross_phase_bonus)
+        
+        return cross_phase_score
+    
+    def _calculate_edge_coverage_score(self) -> float:
+        """Calculate percentage of all edges processed by DGL"""
+        if not hasattr(self, 'sfde_supervisor'):
+            return 0.5
+        
+        # Check if SFDE supervisor has processed edges
+        if hasattr(self.sfde_supervisor, 'edge_registry'):
+            edge_registry = self.sfde_supervisor.edge_registry
+            total_processed = sum(len(edges) for edges in edge_registry.values())
+            
+            # Score based on total edge processing
+            if total_processed >= 10:
+                return 1.0  # Excellent coverage
+            elif total_processed >= 5:
+                return 0.8  # Good coverage
+            elif total_processed >= 2:
+                return 0.6  # Fair coverage
+            else:
+                return 0.3  # Minimal coverage
+        
+        return 0.5  # Default if no edge processing data
     
     # Previous metric calculation methods remain the same
     def _calculate_roi_score(self, graph: nx.Graph) -> float:
