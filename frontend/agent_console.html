@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BEM Agent Console - Dual Interface System</title>
+    <script src="https://unpkg.com/cytoscape@3.24.0/dist/cytoscape.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e1e2e, #2a2a3e);
+            color: #ffffff;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .console-header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .console-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            background: linear-gradient(45deg, #64b5f6, #81c784);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .interface-selector {
+            display: flex;
+            gap: 10px;
+        }
+
+        .view-button {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9em;
+        }
+
+        .view-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .view-button.active {
+            background: linear-gradient(45deg, #64b5f6, #81c784);
+            box-shadow: 0 4px 15px rgba(100, 181, 246, 0.3);
+        }
+
+        .main-container {
+            display: flex;
+            height: calc(100vh - 70px);
+        }
+
+        .view-container {
+            flex: 1;
+            position: relative;
+            display: none;
+        }
+
+        .view-container.active {
+            display: block;
+        }
+
+        /* Cytoscape Graph View */
+        #cytoscapeView {
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #1a1a2e, #16213e);
+        }
+
+        /* Unreal IRL View */
+        .unreal-container {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #0f3460, #16537e);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .unreal-viewport {
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(100, 181, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(129, 199, 132, 0.1) 0%, transparent 50%),
+                linear-gradient(135deg, #0f3460, #16537e);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .spatial-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        .building-placeholder {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(100, 181, 246, 0.5);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            backdrop-filter: blur(5px);
+            max-width: 400px;
+        }
+
+        /* Agent Console Windows */
+        .ac-window {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            min-width: 300px;
+            max-width: 500px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+        }
+
+        .graph-ac {
+            top: 20px;
+            right: 20px;
+            width: 350px;
+        }
+
+        .unreal-ac {
+            bottom: 20px;
+            left: 20px;
+            width: 400px;
+        }
+
+        .ac-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .ac-title {
+            font-weight: 600;
+            font-size: 1.1em;
+            color: #64b5f6;
+        }
+
+        .minimize-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+
+        .ac-content {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .ac-section {
+            margin-bottom: 15px;
+        }
+
+        .ac-section h4 {
+            color: #81c784;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+
+        .pulse-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 5px 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+            margin-bottom: 5px;
+            font-size: 0.85em;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulseGlow 2s infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+
+        .bid-pulse { background: #2196F3; }
+        .occupancy-pulse { background: #4CAF50; }
+        .compliancy-pulse { background: #FF9800; }
+        .fit-pulse { background: #9C27B0; }
+        .investment-pulse { background: #00BCD4; }
+        .decay-pulse { background: #9E9E9E; }
+        .reject-pulse { background: #F44336; }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .status-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 0.8em;
+        }
+
+        .status-value {
+            font-weight: 600;
+            color: #64b5f6;
+            display: block;
+            margin-top: 3px;
+        }
+
+        .control-panel {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .control-button {
+            background: linear-gradient(45deg, #64b5f6, #81c784);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.85em;
+            margin-right: 10px;
+            transition: transform 0.2s ease;
+        }
+
+        .control-button:hover {
+            transform: translateY(-2px);
+        }
+
+        .connection-status {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            z-index: 100;
+        }
+
+        .connection-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4CAF50;
+            animation: connectionPulse 2s infinite;
+        }
+
+        @keyframes connectionPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .logs-section {
+            max-height: 150px;
+            overflow-y: auto;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.75em;
+        }
+
+        .log-entry {
+            margin-bottom: 3px;
+            opacity: 0.8;
+        }
+
+        .log-timestamp {
+            color: #9E9E9E;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="console-header">
+        <div class="console-title">🎯 BEM Agent Console</div>
+        <div class="interface-selector">
+            <button class="view-button active" onclick="switchView('graph')">
+                📊 Cytoscape Graph View
+            </button>
+            <button class="view-button" onclick="switchView('unreal')">
+                🏙️ Unreal IRL View
+            </button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <!-- Cytoscape Graph View -->
+        <div id="graphView" class="view-container active">
+            <div class="connection-status">
+                <div class="connection-dot"></div>
+                Graph Engine Connected
+            </div>
+            
+            <div id="cytoscapeView"></div>
+            
+            <!-- Graph AC Window -->
+            <div class="ac-window graph-ac">
+                <div class="ac-header">
+                    <div class="ac-title">📊 Graph AC Console</div>
+                    <button class="minimize-btn" onclick="toggleAC('graph')">_</button>
+                </div>
+                <div class="ac-content">
+                    <div class="ac-section">
+                        <h4>🌊 Active Pulses</h4>
+                        <div class="pulse-indicator">
+                            <div class="pulse-dot bid-pulse"></div>
+                            Bid Pulse: 2.3k nodes
+                        </div>
+                        <div class="pulse-indicator">
+                            <div class="pulse-dot occupancy-pulse"></div>
+                            Occupancy Pulse: 1.8k nodes
+                        </div>
+                        <div class="pulse-indicator">
+                            <div class="pulse-dot compliancy-pulse"></div>
+                            Compliancy Pulse: 945 nodes
+                        </div>
+                        <div class="pulse-indicator">
+                            <div class="pulse-dot investment-pulse"></div>
+                            Investment Pulse: 567 nodes
+                        </div>
+                    </div>
+                    
+                    <div class="ac-section">
+                        <h4>📈 Graph Metrics</h4>
+                        <div class="status-grid">
+                            <div class="status-item">
+                                Nodes
+                                <span class="status-value">4,283</span>
+                            </div>
+                            <div class="status-item">
+                                Edges
+                                <span class="status-value">12,847</span>
+                            </div>
+                            <div class="status-item">
+                                DGL Score
+                                <span class="status-value">94.2%</span>
+                            </div>
+                            <div class="status-item">
+                                IRR Rate
+                                <span class="status-value">15.7%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="control-panel">
+                        <button class="control-button" onclick="injectPulse()">Inject Pulse</button>
+                        <button class="control-button" onclick="debugNode()">Debug Node</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Unreal IRL View -->
+        <div id="unrealView" class="view-container">
+            <div class="connection-status">
+                <div class="connection-dot"></div>
+                Unreal Engine Connected
+            </div>
+            
+            <div class="unreal-container">
+                <div class="spatial-grid"></div>
+                <div class="unreal-viewport">
+                    <div class="building-placeholder">
+                        <h3>🏗️ Spatial Environment</h3>
+                        <p>Unreal Engine viewport will render here</p>
+                        <p>Spatial outcomes: housing, decay, growth patterns</p>
+                        <br>
+                        <p style="font-size: 0.9em; opacity: 0.7;">
+                            This view shows the IRL (In Real Life) impact of graph decisions
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Unreal AC Window -->
+            <div class="ac-window unreal-ac">
+                <div class="ac-header">
+                    <div class="ac-title">🏙️ Spatial AC Console</div>
+                    <button class="minimize-btn" onclick="toggleAC('unreal')">_</button>
+                </div>
+                <div class="ac-content">
+                    <div class="ac-section">
+                        <h4>🏘️ Spatial Outcomes</h4>
+                        <div class="status-grid">
+                            <div class="status-item">
+                                Buildings
+                                <span class="status-value">1,247</span>
+                            </div>
+                            <div class="status-item">
+                                Decay Areas
+                                <span class="status-value">23</span>
+                            </div>
+                            <div class="status-item">
+                                Growth Rate
+                                <span class="status-value">+8.3%</span>
+                            </div>
+                            <div class="status-item">
+                                Efficiency
+                                <span class="status-value">87.9%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="ac-section">
+                        <h4>🎮 View Controls</h4>
+                        <div class="control-panel">
+                            <button class="control-button" onclick="changeCamera()">Camera View</button>
+                            <button class="control-button" onclick="highlightArea()">Highlight</button>
+                        </div>
+                    </div>
+                    
+                    <div class="ac-section">
+                        <h4>📝 System Logs</h4>
+                        <div class="logs-section">
+                            <div class="log-entry">
+                                <span class="log-timestamp">14:23:45</span>
+                                Investment pulse processed: +12 buildings
+                            </div>
+                            <div class="log-entry">
+                                <span class="log-timestamp">14:23:42</span>
+                                Decay pulse triggered: Area C-7
+                            </div>
+                            <div class="log-entry">
+                                <span class="log-timestamp">14:23:38</span>
+                                DGL training completed: 94.2% accuracy
+                            </div>
+                            <div class="log-entry">
+                                <span class="log-timestamp">14:23:35</span>
+                                ECM Gateway: All systems operational
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // WebSocket connections
+        let ecmSocket = null;
+        let pulseSocket = null;
+
+        // Initialize Agent Console
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCytoscape();
+            connectWebSockets();
+            startRealTimeUpdates();
+        });
+
+        function initializeCytoscape() {
+            const cy = cytoscape({
+                container: document.getElementById('cytoscapeView'),
+                
+                elements: [
+                    // Sample graph data representing BEM system
+                    { data: { id: 'n1', label: 'Agent 1', type: 'agent' } },
+                    { data: { id: 'n2', label: 'Building A', type: 'building' } },
+                    { data: { id: 'n3', label: 'Investment Node', type: 'investment' } },
+                    { data: { id: 'n4', label: 'Decay Monitor', type: 'decay' } },
+                    { data: { id: 'n5', label: 'Compliance Check', type: 'compliance' } },
+                    
+                    { data: { id: 'e1', source: 'n1', target: 'n2', type: 'bid_pulse' } },
+                    { data: { id: 'e2', source: 'n2', target: 'n3', type: 'investment_pulse' } },
+                    { data: { id: 'e3', source: 'n3', target: 'n4', type: 'decay_pulse' } },
+                    { data: { id: 'e4', source: 'n2', target: 'n5', type: 'compliancy_pulse' } }
+                ],
+                
+                style: [
+                    {
+                        selector: 'node',
+                        style: {
+                            'background-color': '#64b5f6',
+                            'label': 'data(label)',
+                            'color': '#ffffff',
+                            'text-valign': 'center',
+                            'text-halign': 'center',
+                            'font-size': '12px',
+                            'width': '60px',
+                            'height': '60px'
+                        }
+                    },
+                    {
+                        selector: 'node[type="agent"]',
+                        style: { 'background-color': '#81c784' }
+                    },
+                    {
+                        selector: 'node[type="building"]',
+                        style: { 'background-color': '#64b5f6' }
+                    },
+                    {
+                        selector: 'node[type="investment"]',
+                        style: { 'background-color': '#00BCD4' }
+                    },
+                    {
+                        selector: 'node[type="decay"]',
+                        style: { 'background-color': '#9E9E9E' }
+                    },
+                    {
+                        selector: 'edge',
+                        style: {
+                            'width': 3,
+                            'line-color': '#ffffff',
+                            'target-arrow-color': '#ffffff',
+                            'target-arrow-shape': 'triangle',
+                            'curve-style': 'bezier'
+                        }
+                    },
+                    {
+                        selector: 'edge[type="bid_pulse"]',
+                        style: { 'line-color': '#2196F3', 'target-arrow-color': '#2196F3' }
+                    },
+                    {
+                        selector: 'edge[type="investment_pulse"]',
+                        style: { 'line-color': '#00BCD4', 'target-arrow-color': '#00BCD4' }
+                    }
+                ],
+                
+                layout: {
+                    name: 'circle',
+                    radius: 150
+                }
+            });
+
+            // Add interaction handlers
+            cy.on('tap', 'node', function(evt) {
+                const node = evt.target;
+                console.log('Node clicked:', node.data());
+                updateACWindow('graph', `Selected: ${node.data('label')}`);
+            });
+        }
+
+        function connectWebSockets() {
+            // Connect to ECM Gateway
+            try {
+                ecmSocket = new WebSocket('ws://localhost:8765');
+                ecmSocket.onopen = () => {
+                    console.log('ECM Gateway connected');
+                    updateConnectionStatus('ecm', true);
+                };
+                ecmSocket.onmessage = (event) => {
+                    console.log('ECM message:', event.data);
+                };
+                ecmSocket.onerror = (error) => {
+                    console.error('ECM connection error:', error);
+                    updateConnectionStatus('ecm', false);
+                };
+            } catch (error) {
+                console.error('Failed to connect ECM:', error);
+            }
+
+            // Connect to Pulse System
+            try {
+                pulseSocket = new WebSocket('ws://localhost:8766');
+                pulseSocket.onopen = () => {
+                    console.log('Pulse system connected');
+                    updateConnectionStatus('pulse', true);
+                };
+                pulseSocket.onmessage = (event) => {
+                    console.log('Pulse message:', event.data);
+                    handlePulseUpdate(JSON.parse(event.data));
+                };
+                pulseSocket.onerror = (error) => {
+                    console.error('Pulse connection error:', error);
+                    updateConnectionStatus('pulse', false);
+                };
+            } catch (error) {
+                console.error('Failed to connect Pulse:', error);
+            }
+        }
+
+        function switchView(viewType) {
+            // Update button states
+            document.querySelectorAll('.view-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Switch view containers
+            document.querySelectorAll('.view-container').forEach(container => {
+                container.classList.remove('active');
+            });
+            
+            if (viewType === 'graph') {
+                document.getElementById('graphView').classList.add('active');
+            } else {
+                document.getElementById('unrealView').classList.add('active');
+            }
+        }
+
+        function toggleAC(type) {
+            const acWindow = document.querySelector(`.${type}-ac`);
+            const content = acWindow.querySelector('.ac-content');
+            
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+            } else {
+                content.style.display = 'none';
+            }
+        }
+
+        function injectPulse() {
+            if (pulseSocket && pulseSocket.readyState === WebSocket.OPEN) {
+                const pulse = {
+                    type: 'bid_pulse',
+                    timestamp: new Date().toISOString(),
+                    payload: { agent_id: 'admin', action: 'inject' }
+                };
+                pulseSocket.send(JSON.stringify(pulse));
+                addLogEntry('Pulse injected via Graph AC');
+            }
+        }
+
+        function debugNode() {
+            addLogEntry('Debug mode activated for selected node');
+        }
+
+        function changeCamera() {
+            addLogEntry('Camera view changed in Unreal viewport');
+        }
+
+        function highlightArea() {
+            addLogEntry('Area highlighted in spatial view');
+        }
+
+        function updateConnectionStatus(type, connected) {
+            // Update connection indicators
+            const dots = document.querySelectorAll('.connection-dot');
+            dots.forEach(dot => {
+                dot.style.background = connected ? '#4CAF50' : '#F44336';
+            });
+        }
+
+        function handlePulseUpdate(data) {
+            // Update pulse indicators based on real data
+            if (data.status === 'pulse_received') {
+                addLogEntry(`Pulse processed: ${data.timestamp}`);
+            }
+        }
+
+        function addLogEntry(message) {
+            const logsSection = document.querySelector('.logs-section');
+            if (logsSection) {
+                const timestamp = new Date().toLocaleTimeString();
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry';
+                logEntry.innerHTML = `<span class="log-timestamp">${timestamp}</span>${message}`;
+                
+                logsSection.insertBefore(logEntry, logsSection.firstChild);
+                
+                // Keep only last 10 entries
+                const entries = logsSection.querySelectorAll('.log-entry');
+                if (entries.length > 10) {
+                    entries[entries.length - 1].remove();
+                }
+            }
+        }
+
+        function updateACWindow(type, message) {
+            addLogEntry(message);
+        }
+
+        function startRealTimeUpdates() {
+            // Simulate real-time data updates
+            setInterval(() => {
+                // Update metrics randomly for demo
+                const nodes = Math.floor(Math.random() * 1000) + 4000;
+                const edges = Math.floor(Math.random() * 2000) + 12000;
+                const dglScore = (Math.random() * 10 + 90).toFixed(1);
+                const irrRate = (Math.random() * 5 + 13).toFixed(1);
+                
+                // Update DOM if elements exist
+                const statusValues = document.querySelectorAll('.status-value');
+                if (statusValues.length >= 4) {
+                    statusValues[0].textContent = nodes.toLocaleString();
+                    statusValues[1].textContent = edges.toLocaleString();
+                    statusValues[2].textContent = dglScore + '%';
+                    statusValues[3].textContent = irrRate + '%';
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html> 
