@@ -7,11 +7,27 @@ networks:
   bem-network:
     driver: bridge
     name: bem-optimized-network
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
 
 volumes:
   shared-data:
+    driver: local
+    name: bem-shared-data
   computation-cache:
+    driver: local
+    name: bem-computation-cache
   monitoring-data:
+    driver: local
+    name: bem-monitoring-data
+  fabrication-outputs:
+    driver: local
+    name: bem-fabrication-outputs
+    driver_opts:
+      type: none
+      o: bind
+      device: ./outputs/fabrication
 
 services:
   # === COMPUTE CLUSTER: High-Performance Calculation Services ===
@@ -215,6 +231,52 @@ services:
       - "com.bem.service=gateway"
       - "com.bem.cluster=api-layer"
 
+  # === FABRICATION BUNDLE GENERATOR ===
+  # Emergence-driven CAD automation and compliance package generation
+  fabrication-bundle-gen:
+    build:
+      context: ./fabrication-bundle-gen
+      dockerfile: Dockerfile
+    container_name: bem-fabrication-bundle-gen
+    restart: unless-stopped
+    ports:
+      - "5006:5006"
+    volumes:
+      - fabrication-outputs:/app/outputs
+      - ./shared:/app/shared:ro
+      - ./inputs:/app/inputs:ro
+    networks:
+      - bem-network
+    environment:
+      - FIT_SCORE_THRESHOLD=0.85
+      - PYTHONPATH=/app:/app/shared
+      - EMERGENCE_MODE=production
+      - CAD_OUTPUT_FORMATS=dxf,ifc,obj,stl,pdf
+    depends_on:
+      redis-cache:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 3G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5006/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "com.bem.service=fabrication"
+      - "com.bem.cluster=emergence-automation"
+      - "com.bem.emergence=true"
+    profiles:
+      - full
+      - development
+      - production
+
 # === DEVELOPMENT PROFILES ===
 # Use profiles to control which services start in different environments
 
@@ -263,16 +325,21 @@ x-deploy-defaults: &deploy-defaults
 #         sfde, ne-graph-runtime-engine, ne-optimization-engine, + monitoring services)
 #         = ~12-15 containers total
 #
-# AFTER: 5 optimized containers:
-#        1. compute-cluster    (3 services: DAG, SFDE, Graph Runtime)
-#        2. logic-cluster      (3 services: Functor Types, Callbacks, Optimization) 
-#        3. redis-cache        (Shared state and caching)
-#        4. api-gateway        (GraphQL + ECM + Load Balancing)
-#        5. monitoring-stack   (Prometheus + Grafana + Node Exporter) [optional]
-#        = 4-5 containers total (67% reduction)
+# AFTER: 6 optimized containers:
+#        1. compute-cluster         (3 services: DAG, SFDE, Graph Runtime)
+#        2. logic-cluster           (3 services: Functor Types, Callbacks, Optimization) 
+#        3. fabrication-bundle-gen  (Emergence-driven CAD automation)
+#        4. redis-cache             (Shared state and caching)
+#        5. api-gateway             (GraphQL + ECM + Load Balancing)
+#        6. monitoring-stack        (Prometheus + Grafana + Node Exporter) [optional]
+#        = 5-6 containers total (60% reduction)
 #
 # BENEFITS:
-# ✅ 67% reduction in container count
+# ✅ 60% reduction in container count
+# ✅ Emergence-driven fabrication automation
+# ✅ Complete CAD package generation (DXF, IFC, OBJ, STL, PDF)
+# ✅ BOM resolution with verified suppliers
+# ✅ Compliance validation and certification
 # ✅ Improved resource utilization through co-location
 # ✅ Reduced network overhead between related services  
 # ✅ Simplified service discovery and configuration
