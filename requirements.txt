@@ -32,6 +32,11 @@ phonenumbers==8.13.31  # For phone number validation
 # AWS SDK for remote backups
 boto3==1.34.69
 
+# Deployment Testing
+docker==7.0.0
+websockets==12.0
+aiohttp==3.9.3
+
 # Performance Testing
 websockets==12.0
 aiohttp==3.9.3

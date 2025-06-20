@@ -1,0 +1,206 @@
+version: '3.8'
+
+# Define custom networks for service isolation
+networks:
+  frontend-net:
+    driver: bridge
+  backend-net:
+    driver: bridge
+  training-net:
+    driver: bridge
+  monitoring-net:
+    driver: bridge
+
+services:
+  # ECM Gateway
+  ecm-gateway:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.ecm
+    ports:
+      - "8765:8765"  # WebSocket
+      - "8766:8766"  # Secure WebSocket
+    environment:
+      - DB_HOST=training-db
+      - REDIS_HOST=redis
+      - SSL_CERT_PATH=/certs/cert.pem
+      - SSL_KEY_PATH=/certs/key.pem
+      - AUDIT_LOG_PATH=/logs/ecm_audit.log
+      - LOG_LEVEL=INFO
+    volumes:
+      - ./certs:/certs:ro
+      - ecm-logs:/logs
+    networks:
+      - frontend-net
+      - backend-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8765/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Callback Engine
+  callback-engine:
+    build:
+      context: .
+      dockerfile: MICROSERVICE_ENGINES/ne-callback-engine/Dockerfile
+    environment:
+      - ECM_WS_URL=ws://ecm-gateway:8765
+      - DB_HOST=training-db
+    networks:
+      - backend-net
+    depends_on:
+      - ecm-gateway
+      - training-db
+
+  # DAG Alpha Engine
+  dag-alpha:
+    build:
+      context: .
+      dockerfile: MICROSERVICE_ENGINES/ne-dag-alpha/Dockerfile
+    environment:
+      - ECM_WS_URL=ws://ecm-gateway:8765
+      - DB_HOST=training-db
+    volumes:
+      - dag-data:/data
+    networks:
+      - backend-net
+    depends_on:
+      - ecm-gateway
+      - training-db
+
+  # Functor Types Engine
+  functor-types:
+    build:
+      context: .
+      dockerfile: MICROSERVICE_ENGINES/ne-functor-types/Dockerfile
+    environment:
+      - ECM_WS_URL=ws://ecm-gateway:8765
+      - DB_HOST=training-db
+    networks:
+      - backend-net
+    depends_on:
+      - ecm-gateway
+      - training-db
+
+  # Graph Runtime Engine
+  graph-runtime:
+    build:
+      context: .
+      dockerfile: MICROSERVICE_ENGINES/ne-graph-runtime-engine/Dockerfile
+    environment:
+      - ECM_WS_URL=ws://ecm-gateway:8765
+      - DB_HOST=training-db
+    volumes:
+      - graph-data:/data
+    networks:
+      - backend-net
+    depends_on:
+      - ecm-gateway
+      - training-db
+
+  # Optimization Engine
+  optimization:
+    build:
+      context: .
+      dockerfile: MICROSERVICE_ENGINES/ne-optimization-engine/Dockerfile
+    environment:
+      - ECM_WS_URL=ws://ecm-gateway:8765
+      - DB_HOST=training-db
+    networks:
+      - backend-net
+    depends_on:
+      - ecm-gateway
+      - training-db
+
+  # Training Database (Isolated)
+  training-db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=bem_training
+      - POSTGRES_USER=bem_user
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - SSL_CERT_FILE=/certs/cert.pem
+      - SSL_KEY_FILE=/certs/key.pem
+    volumes:
+      - training-db-data:/var/lib/postgresql/data
+      - ./certs:/certs:ro
+      - ./database/init-training-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - training-net
+    command: 
+      - "postgres"
+      - "-c"
+      - "ssl=on"
+      - "-c"
+      - "ssl_cert_file=/certs/cert.pem"
+      - "-c"
+      - "ssl_key_file=/certs/key.pem"
+
+  # Redis for Rate Limiting and Session Management
+  redis:
+    image: redis:7
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis-data:/data
+    networks:
+      - backend-net
+
+  # Monitoring Service
+  monitoring:
+    image: prom/prometheus:v2.45.0
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    networks:
+      - monitoring-net
+    ports:
+      - "9090:9090"
+
+  # Log Aggregation
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.12.0
+    volumes:
+      - ./monitoring/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+      - ecm-logs:/logs:ro
+    networks:
+      - monitoring-net
+    depends_on:
+      - elasticsearch
+
+  # Search Engine for Logs
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - monitoring-net
+
+  # Log Visualization
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.12.0
+    ports:
+      - "5601:5601"
+    networks:
+      - monitoring-net
+    depends_on:
+      - elasticsearch
+
+volumes:
+  training-db-data:
+    driver: local
+  redis-data:
+    driver: local
+  ecm-logs:
+    driver: local
+  dag-data:
+    driver: local
+  graph-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  elasticsearch-data:
+    driver: local 
