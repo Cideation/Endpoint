@@ -18,6 +18,17 @@ class NetworkGraphLoader:
     def __init__(self, inputs_dir: str = "/inputs", shared_dir: str = "/shared"):
         self.inputs_dir = Path(inputs_dir)
         self.shared_dir = Path(shared_dir)
+        
+        # For local development, use current directory if container paths don't exist
+        if not self.shared_dir.exists() and not Path("/shared").exists():
+            # We're in local development mode
+            self.base_dir = Path(".")  # Current directory (MICROSERVICE_ENGINES)
+            logger.info("Using local development paths")
+        else:
+            # We're in container mode
+            self.base_dir = self.shared_dir.parent
+            logger.info("Using container paths")
+            
         self.graph = nx.DiGraph()  # Directed graph for BEM system
         
     def load_graph(self) -> nx.DiGraph:
@@ -51,22 +62,33 @@ class NetworkGraphLoader:
     def _load_callback_registry(self):
         """Load callback registry for node relationships"""
         try:
-            registry_path = self.shared_dir.parent / "callback_registry.json"
+            registry_path = self.base_dir / "callback_registry.json"
             if registry_path.exists():
                 with open(registry_path, 'r') as f:
                     registry = json.load(f)
                     
-                # Add callback nodes to graph
-                for callback_id, callback_data in registry.items():
-                    self.graph.add_node(
-                        callback_id,
-                        node_type="callback",
-                        **callback_data
-                    )
-                    
-                logger.info(f"Loaded {len(registry)} callback nodes")
+                # Handle list format
+                if isinstance(registry, list):
+                    for callback_item in registry:
+                        node_id = callback_item.get('node_id')
+                        if node_id:
+                            self.graph.add_node(
+                                node_id,
+                                node_type="callback",
+                                **callback_item
+                            )
+                elif isinstance(registry, dict):
+                    # Handle dict format
+                    for callback_id, callback_data in registry.items():
+                        self.graph.add_node(
+                            callback_id,
+                            node_type="callback",
+                            **callback_data
+                        )
+                        
+                logger.info(f"Loaded {len(registry)} callback entries")
             else:
-                logger.warning("Callback registry not found")
+                logger.warning(f"Callback registry not found at {registry_path}")
                 
         except Exception as e:
             logger.error(f"Failed to load callback registry: {e}")
@@ -74,22 +96,36 @@ class NetworkGraphLoader:
     def _load_node_dictionary(self):
         """Load node dictionary for main graph nodes"""
         try:
-            node_dict_path = self.shared_dir.parent / "node_dictionarY.json"
+            node_dict_path = self.base_dir / "node_dictionarY.json"
             if node_dict_path.exists():
                 with open(node_dict_path, 'r') as f:
-                    nodes = json.load(f)
+                    data = json.load(f)
                     
-                # Add nodes to graph
-                for node_id, node_data in nodes.items():
-                    self.graph.add_node(
-                        node_id,
-                        node_type="main",
-                        **node_data
-                    )
-                    
+                # Extract nodes from the structure
+                nodes = data.get('nodes', data)  # Try 'nodes' key first, fallback to whole data
+                
+                if isinstance(nodes, dict):
+                    # Handle dict format
+                    for node_id, node_data in nodes.items():
+                        self.graph.add_node(
+                            node_id,
+                            node_type="main",
+                            **node_data
+                        )
+                elif isinstance(nodes, list):
+                    # Handle list format
+                    for node_item in nodes:
+                        node_id = node_item.get('node_id') or node_item.get('id')
+                        if node_id:
+                            self.graph.add_node(
+                                node_id,
+                                node_type="main",
+                                **node_item
+                            )
+                        
                 logger.info(f"Loaded {len(nodes)} main nodes")
             else:
-                logger.warning("Node dictionary not found")
+                logger.warning(f"Node dictionary not found at {node_dict_path}")
                 
         except Exception as e:
             logger.error(f"Failed to load node dictionary: {e}")
@@ -97,22 +133,27 @@ class NetworkGraphLoader:
     def _load_functor_registry(self):
         """Load functor registry for computational nodes"""
         try:
-            functor_path = self.shared_dir.parent / "functor_registry.json"
+            functor_path = self.base_dir / "functor_registry.json"
             if functor_path.exists():
                 with open(functor_path, 'r') as f:
                     functors = json.load(f)
                     
-                # Add functor nodes
+                # Add functor nodes (limit to first 50 for performance)
+                count = 0
                 for functor_id, functor_data in functors.items():
                     self.graph.add_node(
                         f"functor_{functor_id}",
                         node_type="functor",
+                        original_id=functor_id,
                         **functor_data
                     )
-                    
-                logger.info(f"Loaded {len(functors)} functor nodes")
+                    count += 1
+                    if count >= 50:  # Limit for performance
+                        break
+                        
+                logger.info(f"Loaded {count} functor nodes (limited from {len(functors)} total)")
             else:
-                logger.warning("Functor registry not found")
+                logger.warning(f"Functor registry not found at {functor_path}")
                 
         except Exception as e:
             logger.error(f"Failed to load functor registry: {e}")
@@ -121,7 +162,7 @@ class NetworkGraphLoader:
         """Load edges from various edge definition files"""
         try:
             # Load functor edges
-            edges_path = self.shared_dir.parent / "functor_edges_with_lookup.json"
+            edges_path = self.base_dir / "functor_edges_with_lookup.json"
             if edges_path.exists():
                 with open(edges_path, 'r') as f:
                     edges_data = json.load(f)
@@ -142,7 +183,7 @@ class NetworkGraphLoader:
                 logger.info(f"Loaded {len(edges_data)} edges")
             
             # Load unified edges
-            unified_edges_path = self.shared_dir.parent / "unified_functor_variable_edges.json"
+            unified_edges_path = self.base_dir / "unified_functor_variable_edges.json"
             if unified_edges_path.exists():
                 with open(unified_edges_path, 'r') as f:
                     unified_edges = json.load(f)

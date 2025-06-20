@@ -1,0 +1,15 @@
+2025-06-20 17:49:01,734 [INFO] ECM Gateway starting on 0.0.0.0:8765
+2025-06-20 17:49:01,736 [INFO] ECM Health: 0 connected clients
+2025-06-20 17:49:01,737 [INFO] server listening on 0.0.0.0:8765
+2025-06-20 17:49:07,389 [INFO] connection rejected (426 Upgrade Required)
+2025-06-20 17:49:07,390 [ERROR] opening handshake failed
+Traceback (most recent call last):
+  File "/Users/jpoldphone/Desktop/temporary destination/Endpoint-1/.venv/lib/python3.9/site-packages/websockets/asyncio/server.py", line 356, in conn_handler
+    await connection.handshake(
+  File "/Users/jpoldphone/Desktop/temporary destination/Endpoint-1/.venv/lib/python3.9/site-packages/websockets/asyncio/server.py", line 207, in handshake
+    raise self.protocol.handshake_exc
+  File "/Users/jpoldphone/Desktop/temporary destination/Endpoint-1/.venv/lib/python3.9/site-packages/websockets/server.py", line 138, in accept
+    ) = self.process_request(request)
+  File "/Users/jpoldphone/Desktop/temporary destination/Endpoint-1/.venv/lib/python3.9/site-packages/websockets/server.py", line 233, in process_request
+    raise InvalidUpgrade(
+websockets.exceptions.InvalidUpgrade: missing Connection header
