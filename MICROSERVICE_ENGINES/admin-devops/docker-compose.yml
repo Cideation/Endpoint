@@ -2,6 +2,7 @@ version: '3.8'
 
 # Admin/DevOps Infrastructure Stack
 # Provides monitoring, management, and documentation for the BEM system
+# Now includes VaaS billing and customer management
 
 networks:
   devops-net:
@@ -16,8 +17,136 @@ volumes:
   prometheus-data:
   grafana-data:
   loki-data:
+  postgres-vaas-data:
+  redis-vaas-data:
 
 services:
+  # =============================================================================
+  # VAAS BILLING INFRASTRUCTURE
+  # =============================================================================
+  
+  # PostgreSQL for VaaS billing
+  postgres-vaas:
+    image: postgres:15
+    container_name: bem-postgres-vaas
+    restart: unless-stopped
+    ports:
+      - "5433:5432"  # Different port to avoid conflicts
+    environment:
+      - POSTGRES_DB=bem_vaas
+      - POSTGRES_USER=bem_user
+      - POSTGRES_PASSWORD=bem_password
+    volumes:
+      - postgres-vaas-data:/var/lib/postgresql/data
+      - ./vaas-billing/database_schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    networks:
+      - devops-net
+      - bem-network
+    labels:
+      - "com.bem.service=vaas"
+      - "com.bem.component=postgres"
+
+  # Redis for VaaS caching and notifications
+  redis-vaas:
+    image: redis:7-alpine
+    container_name: bem-redis-vaas
+    restart: unless-stopped
+    ports:
+      - "6380:6379"  # Different port to avoid conflicts
+    volumes:
+      - redis-vaas-data:/data
+    networks:
+      - devops-net
+      - bem-network
+    command: redis-server --appendonly yes
+    labels:
+      - "com.bem.service=vaas"
+      - "com.bem.component=redis"
+
+  # VaaS Billing Service
+  vaas-billing:
+    build:
+      context: ./vaas-billing
+      dockerfile: Dockerfile
+    container_name: bem-vaas-billing
+    restart: unless-stopped
+    ports:
+      - "8004:8004"
+    environment:
+      - DATABASE_URL=postgresql://bem_user:bem_password@postgres-vaas:5432/bem_vaas
+      - REDIS_URL=redis://redis-vaas:6379
+      - DEBUG=false
+    depends_on:
+      - postgres-vaas
+      - redis-vaas
+    networks:
+      - devops-net
+      - bem-network
+    labels:
+      - "com.bem.service=vaas"
+      - "com.bem.component=billing"
+      - "traefik.enable=true"
+      - "traefik.http.routers.vaas-billing.rule=Host(`billing.bem.local`)"
+      - "traefik.http.services.vaas-billing.loadbalancer.server.port=8004"
+
+  # VaaS CRM Dashboard
+  vaas-crm:
+    build:
+      context: ./vaas-billing
+      dockerfile: Dockerfile
+    container_name: bem-vaas-crm
+    restart: unless-stopped
+    ports:
+      - "8005:8005"
+    environment:
+      - DATABASE_URL=postgresql://bem_user:bem_password@postgres-vaas:5432/bem_vaas
+      - REDIS_URL=redis://redis-vaas:6379
+      - DEBUG=false
+    command: ["uvicorn", "crm_dashboard:app", "--host", "0.0.0.0", "--port", "8005"]
+    depends_on:
+      - postgres-vaas
+      - redis-vaas
+    networks:
+      - devops-net
+      - bem-network
+    labels:
+      - "com.bem.service=vaas"
+      - "com.bem.component=crm"
+      - "traefik.enable=true"
+      - "traefik.http.routers.vaas-crm.rule=Host(`crm.bem.local`)"
+      - "traefik.http.services.vaas-crm.loadbalancer.server.port=8005"
+
+  # VaaS Webhook Service
+  vaas-webhook:
+    build:
+      context: ./vaas-billing
+      dockerfile: Dockerfile
+    container_name: bem-vaas-webhook
+    restart: unless-stopped
+    ports:
+      - "8006:8006"
+    environment:
+      - DATABASE_URL=postgresql://bem_user:bem_password@postgres-vaas:5432/bem_vaas
+      - REDIS_URL=redis://redis-vaas:6379
+      - DEBUG=false
+    command: ["uvicorn", "emergence_webhook:app", "--host", "0.0.0.0", "--port", "8006"]
+    depends_on:
+      - postgres-vaas
+      - redis-vaas
+    networks:
+      - devops-net
+      - bem-network
+    labels:
+      - "com.bem.service=vaas"
+      - "com.bem.component=webhook"
+      - "traefik.enable=true"
+      - "traefik.http.routers.vaas-webhook.rule=Host(`webhook.bem.local`)"
+      - "traefik.http.services.vaas-webhook.loadbalancer.server.port=8006"
+
+  # =============================================================================
+  # EXISTING ADMIN/DEVOPS SERVICES
+  # =============================================================================
+
   # 1. Portainer - Visual Docker Management
   portainer:
     image: portainer/portainer-ce:latest
@@ -98,7 +227,7 @@ services:
       - devops-net
       - bem-network
     environment:
-      - SWAGGER_JSON_URL=http://api:8000/openapi.json
+      - SWAGGER_JSON_URL=http://vaas-billing:8004/openapi.json
       - BASE_URL=/swagger
       - DOM_ID=#swagger-ui
       - DEEP_LINKING=true

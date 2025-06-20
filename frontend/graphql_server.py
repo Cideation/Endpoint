@@ -190,11 +190,19 @@ class PositionInput:
     y: float
 
 @strawberry.input
+class ProjectContextInput:
+    agent_project_tag: Optional[str] = None
+    project_id: Optional[str] = None
+    phase: Optional[str] = None
+    agent_id: Optional[str] = None
+
+@strawberry.input
 class NodeFilter:
     phases: Optional[List[PhaseType]] = None
     functor_types: Optional[List[NodeType]] = None
     node_ids: Optional[List[str]] = None
     status: Optional[str] = None
+    project_context: Optional[ProjectContextInput] = None
 
 @strawberry.input
 class AffinityRequest:
@@ -225,7 +233,7 @@ def get_sync_db_connection():
     """Get synchronous database connection"""
     return psycopg2.connect(**DB_CONFIG, cursor_factory=RealDictCursor)
 
-async def load_graph_from_db(filter_params: Optional[NodeFilter] = None) -> Graph:
+async def load_graph_from_db(filter_params: Optional[NodeFilter] = None, project_context: Optional[ProjectContextInput] = None) -> Graph:
     """Load graph data from database with optional filtering"""
     conn = await get_async_db_connection()
     
@@ -325,14 +333,25 @@ async def publish_pulse_event(pulse_event: PulseEvent):
 class Query:
     
     @strawberry.field
-    async def graph(self, filter: Optional[NodeFilter] = None) -> Graph:
-        """Get graph data for Cytoscape visualization"""
-        return await load_graph_from_db(filter)
+    async def graph(self, filter: Optional[NodeFilter] = None, project_context: Optional[ProjectContextInput] = None) -> Graph:
+        """Get the entire graph with optional filtering and project context"""
+        # Merge project context from direct parameter or filter
+        if project_context and filter and filter.project_context:
+            # Use the one from filter if both provided
+            effective_context = filter.project_context
+        elif project_context:
+            effective_context = project_context
+        elif filter and filter.project_context:
+            effective_context = filter.project_context
+        else:
+            effective_context = None
+            
+        return await load_graph_from_db(filter, effective_context)
     
     @strawberry.field
-    async def node(self, id: str) -> Optional[Node]:
-        """Get specific node details"""
-        graph = await load_graph_from_db(NodeFilter(node_ids=[id]))
+    async def node(self, id: str, project_context: Optional[ProjectContextInput] = None) -> Optional[Node]:
+        """Get a specific node by ID with project context validation"""
+        graph = await load_graph_from_db(NodeFilter(node_ids=[id]), project_context)
         return graph.nodes[0] if graph.nodes else None
     
     @strawberry.field

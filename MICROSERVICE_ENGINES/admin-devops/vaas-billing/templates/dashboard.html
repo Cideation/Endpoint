@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BEM VaaS CRM Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-100">
+    <!-- Navigation -->
+    <nav class="bg-blue-900 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <i class="fas fa-building text-2xl mr-3"></i>
+                    <h1 class="text-xl font-bold">BEM VaaS CRM</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/" class="px-3 py-2 rounded-md bg-blue-800 hover:bg-blue-700">Dashboard</a>
+                    <a href="/customers" class="px-3 py-2 rounded-md hover:bg-blue-800">Customers</a>
+                    <a href="/analytics" class="px-3 py-2 rounded-md hover:bg-blue-800">Analytics</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto py-6 px-4">
+        <!-- Page Header -->
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-900">💡 Emergence Billing Dashboard</h2>
+            <p class="text-gray-600 mt-2">Value-as-a-Service billing triggered only when system delivers actionable outcomes</p>
+        </div>
+
+        <!-- Metrics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Daily Revenue -->
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-peso-sign text-green-500 text-2xl"></i>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Daily Revenue</dt>
+                                <dd class="text-lg font-medium text-gray-900">₱{{ "%.2f"|format(metrics.daily_revenue) }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monthly Revenue -->
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-chart-line text-blue-500 text-2xl"></i>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Monthly Revenue</dt>
+                                <dd class="text-lg font-medium text-gray-900">₱{{ "%.2f"|format(metrics.monthly_revenue) }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Customers -->
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-users text-purple-500 text-2xl"></i>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Total Customers</dt>
+                                <dd class="text-lg font-medium text-gray-900">{{ metrics.total_customers }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Customers -->
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-user-check text-orange-500 text-2xl"></i>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Active (7 days)</dt>
+                                <dd class="text-lg font-medium text-gray-900">{{ metrics.active_customers }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Emergence Billing Tiers -->
+        <div class="bg-white shadow rounded-lg mb-8">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">🎯 Emergence Billing Tiers</h3>
+                <p class="text-sm text-gray-600">Users are charged only when outputs become deployable/buildable/fundable</p>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {% for tier in tier_analytics %}
+                    <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-medium text-gray-900">
+                                {% if tier.tier_id == 'blueprint_package' %}
+                                    📐 CAD + Blueprint
+                                {% elif tier.tier_id == 'bom_with_suppliers' %}
+                                    📦 BOM + Suppliers
+                                {% elif tier.tier_id == 'compliance_docs' %}
+                                    ✅ Compliance Package
+                                {% elif tier.tier_id == 'investment_packet' %}
+                                    💰 Investment Report
+                                {% elif tier.tier_id == 'full_emergence_bundle' %}
+                                    🏗️ Full Bundle
+                                {% else %}
+                                    {{ tier.tier_id }}
+                                {% endif %}
+                            </h4>
+                            <span class="text-sm text-gray-500">{{ tier.purchase_count }} sales</span>
+                        </div>
+                        <div class="text-2xl font-bold text-green-600">₱{{ "%.0f"|format(tier.tier_revenue) }}</div>
+                        <div class="text-sm text-gray-500">
+                            {{ tier.unique_customers }} customers • Avg: ₱{{ "%.0f"|format(tier.avg_price) }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Emergence Model Explanation -->
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6 mb-8">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-lightbulb text-yellow-500 text-3xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">💡 How Emergence Billing Works</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
+                        <div>
+                            <p><strong>✅ Freemium Exploration:</strong> Users can interact with agents, test node logic, and simulate configurations at no cost.</p>
+                        </div>
+                        <div>
+                            <p><strong>🎯 Value-Driven Triggers:</strong> Billing only activates when system reaches actionable status (finalized geometry, resolved logic, investment readiness).</p>
+                        </div>
+                        <div>
+                            <p><strong>🔄 Aligned to Intelligence:</strong> Charges tied to system intelligence passing thresholds, not passive usage.</p>
+                        </div>
+                        <div>
+                            <p><strong>📦 Modular Outputs:</strong> Different emergence types (CAD, BOM, Compliance, Investment) billed separately based on completion.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Recent Activity -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-medium text-gray-900">Recent Activity</h3>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-3" id="recent-activity">
+                        <div class="text-sm text-gray-500">Loading recent activities...</div>
+                    </div>
+                    <div class="mt-4">
+                        <a href="/customers" class="text-blue-600 hover:text-blue-900 text-sm font-medium">View all customers →</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Tier Performance -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-medium text-gray-900">Top Performing Tier</h3>
+                </div>
+                <div class="p-6">
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-blue-600">{{ metrics.top_tier }}</div>
+                        <div class="text-sm text-gray-500 mt-2">Most purchased tier this month</div>
+                    </div>
+                    <div class="mt-4">
+                        <a href="/analytics" class="text-blue-600 hover:text-blue-900 text-sm font-medium">View full analytics →</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customer Value -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-medium text-gray-900">Average Customer Value</h3>
+                </div>
+                <div class="p-6">
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-green-600">₱{{ "%.0f"|format(metrics.avg_customer_value) }}</div>
+                        <div class="text-sm text-gray-500 mt-2">Lifetime value per customer</div>
+                    </div>
+                    <div class="mt-4">
+                        <a href="/customers" class="text-blue-600 hover:text-blue-900 text-sm font-medium">Manage customers →</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript for dynamic updates -->
+    <script>
+        // Load recent activity
+        async function loadRecentActivity() {
+            try {
+                const response = await fetch('/api/customers?limit=5');
+                const data = await response.json();
+                const container = document.getElementById('recent-activity');
+                
+                if (data.customers && data.customers.length > 0) {
+                    container.innerHTML = data.customers.map(customer => `
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="text-sm font-medium text-gray-900">${customer.name}</div>
+                                <div class="text-xs text-gray-500">${customer.email}</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm font-medium">${customer.credit_balance} credits</div>
+                                <div class="text-xs text-gray-500">${customer.activity_status}</div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div class="text-sm text-gray-500">No recent activity</div>';
+                }
+            } catch (error) {
+                console.error('Error loading recent activity:', error);
+                document.getElementById('recent-activity').innerHTML = '<div class="text-sm text-red-500">Failed to load activity</div>';
+            }
+        }
+
+        // Auto-refresh metrics every 30 seconds
+        setInterval(async () => {
+            try {
+                const response = await fetch('/api/metrics');
+                const metrics = await response.json();
+                // Update metrics on page without full reload
+                // Implementation would update specific DOM elements
+            } catch (error) {
+                console.error('Error refreshing metrics:', error);
+            }
+        }, 30000);
+
+        // Load initial data
+        loadRecentActivity();
+    </script>
+</body>
+</html> 
