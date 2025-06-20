@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BEM System Interaction Flow</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #1a1a1a;
+            color: #fff;
+        }
+        
+        #cy {
+            width: 100%;
+            height: 80vh;
+            background-color: #0d0d0d;
+            border: 2px solid #333;
+        }
+        
+        .info-panel {
+            padding: 20px;
+            background-color: #1a1a1a;
+            border-top: 2px solid #333;
+        }
+        
+        .flow-step {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px 20px;
+            background-color: #2a2a2a;
+            border-radius: 5px;
+            border: 1px solid #444;
+        }
+        
+        .active-flow {
+            background-color: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+        
+        .controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 5px;
+        }
+        
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div id="cy"></div>
+    
+    <div class="controls">
+        <h3>Interaction Flow Controls</h3>
+        <button onclick="simulateUserInteraction()">Simulate User Action</button>
+        <button onclick="resetFlow()">Reset Flow</button>
+        <button onclick="toggleAutoPlay()">Auto-Play: <span id="autoplay-status">OFF</span></button>
+    </div>
+    
+    <div class="info-panel">
+        <h2>🔁 System Interaction Flow</h2>
+        <div id="flow-status">
+            <div class="flow-step" id="step-1">1️⃣ User Interaction</div>
+            <div class="flow-step" id="step-2">2️⃣ AA Classification</div>
+            <div class="flow-step" id="step-3">3️⃣ ECM Routing</div>
+            <div class="flow-step" id="step-4">4️⃣ PostgreSQL Logging</div>
+            <div class="flow-step" id="step-5">5️⃣ Cytoscape Update</div>
+            <div class="flow-step" id="step-6">6️⃣ Unreal Visualization</div>
+        </div>
+        <div id="current-action" style="margin-top: 20px; font-size: 18px;"></div>
+    </div>
+
+    <script>
+        // Initialize Cytoscape
+        const cy = cytoscape({
+            container: document.getElementById('cy'),
+            
+            style: [
+                {
+                    selector: 'node',
+                    style: {
+                        'background-color': '#666',
+                        'label': 'data(label)',
+                        'color': '#fff',
+                        'text-valign': 'center',
+                        'text-halign': 'center',
+                        'font-size': '12px',
+                        'width': 'label',
+                        'height': 'label',
+                        'padding': '10px',
+                        'shape': 'roundrectangle'
+                    }
+                },
+                {
+                    selector: 'edge',
+                    style: {
+                        'width': 3,
+                        'line-color': '#444',
+                        'target-arrow-color': '#444',
+                        'target-arrow-shape': 'triangle',
+                        'curve-style': 'bezier',
+                        'label': 'data(label)',
+                        'font-size': '10px',
+                        'color': '#aaa',
+                        'text-rotation': 'autorotate'
+                    }
+                },
+                {
+                    selector: '.user-node',
+                    style: {
+                        'background-color': '#2196F3',
+                        'shape': 'ellipse',
+                        'width': '80px',
+                        'height': '80px'
+                    }
+                },
+                {
+                    selector: '.aa-node',
+                    style: {
+                        'background-color': '#FF9800',
+                        'shape': 'hexagon'
+                    }
+                },
+                {
+                    selector: '.ecm-node',
+                    style: {
+                        'background-color': '#9C27B0',
+                        'shape': 'diamond'
+                    }
+                },
+                {
+                    selector: '.db-node',
+                    style: {
+                        'background-color': '#4CAF50',
+                        'shape': 'barrel'
+                    }
+                },
+                {
+                    selector: '.viz-node',
+                    style: {
+                        'background-color': '#F44336',
+                        'shape': 'star'
+                    }
+                },
+                {
+                    selector: '.active-flow',
+                    style: {
+                        'line-color': '#4CAF50',
+                        'target-arrow-color': '#4CAF50',
+                        'width': 6,
+                        'z-index': 999
+                    }
+                },
+                {
+                    selector: '.pulse-effect',
+                    style: {
+                        'background-color': '#FFD700',
+                        'border-width': 3,
+                        'border-color': '#FFA500'
+                    }
+                }
+            ],
+            
+            elements: {
+                nodes: [
+                    { data: { id: 'user', label: 'User\n(Browser/App)' }, classes: 'user-node', position: { x: 100, y: 300 } },
+                    { data: { id: 'cytoscape', label: 'Cytoscape.js\nView' }, classes: 'viz-node', position: { x: 300, y: 200 } },
+                    { data: { id: 'unreal', label: 'Unreal Engine\nView' }, classes: 'viz-node', position: { x: 300, y: 400 } },
+                    { data: { id: 'aa', label: 'Automated Admin\n(AA)' }, classes: 'aa-node', position: { x: 500, y: 300 } },
+                    { data: { id: 'ecm', label: 'ECM Gateway' }, classes: 'ecm-node', position: { x: 700, y: 300 } },
+                    { data: { id: 'postgres', label: 'PostgreSQL\nDatabase' }, classes: 'db-node', position: { x: 900, y: 300 } },
+                    
+                    // Pulse nodes
+                    { data: { id: 'bid-pulse', label: 'Bid Pulse' }, position: { x: 700, y: 100 } },
+                    { data: { id: 'occupancy-pulse', label: 'Occupancy Pulse' }, position: { x: 800, y: 150 } },
+                    { data: { id: 'compliance-pulse', label: 'Compliance Pulse' }, position: { x: 850, y: 250 } },
+                    { data: { id: 'fit-pulse', label: 'Fit Pulse' }, position: { x: 850, y: 350 } },
+                    { data: { id: 'investment-pulse', label: 'Investment Pulse' }, position: { x: 800, y: 450 } },
+                    { data: { id: 'decay-pulse', label: 'Decay Pulse' }, position: { x: 700, y: 500 } },
+                    { data: { id: 'reject-pulse', label: 'Reject Pulse' }, position: { x: 600, y: 450 } }
+                ],
+                
+                edges: [
+                    { data: { source: 'user', target: 'cytoscape', label: 'Interact' } },
+                    { data: { source: 'user', target: 'unreal', label: 'Interact' } },
+                    { data: { source: 'cytoscape', target: 'aa', label: 'Log Action' } },
+                    { data: { source: 'unreal', target: 'aa', label: 'Log Action' } },
+                    { data: { source: 'aa', target: 'ecm', label: 'Classify & Route' } },
+                    { data: { source: 'ecm', target: 'postgres', label: 'Log State' } },
+                    { data: { source: 'postgres', target: 'cytoscape', label: 'Update View' } },
+                    { data: { source: 'ecm', target: 'unreal', label: 'Pulse Effects' } },
+                    
+                    // Pulse connections
+                    { data: { source: 'ecm', target: 'bid-pulse', label: '' } },
+                    { data: { source: 'ecm', target: 'occupancy-pulse', label: '' } },
+                    { data: { source: 'ecm', target: 'compliance-pulse', label: '' } },
+                    { data: { source: 'ecm', target: 'fit-pulse', label: '' } },
+                    { data: { source: 'ecm', target: 'investment-pulse', label: '' } },
+                    { data: { source: 'ecm', target: 'decay-pulse', label: '' } },
+                    { data: { source: 'ecm', target: 'reject-pulse', label: '' } }
+                ]
+            },
+            
+            layout: {
+                name: 'preset',
+                padding: 50
+            }
+        });
+
+        // Flow simulation variables
+        let currentStep = 0;
+        let autoPlay = false;
+        let autoPlayInterval = null;
+
+        // Define the flow sequence
+        const flowSequence = [
+            {
+                step: 1,
+                edges: ['user->cytoscape', 'user->unreal'],
+                nodes: ['user'],
+                message: "User interacts with Cytoscape.js or Unreal view"
+            },
+            {
+                step: 2,
+                edges: ['cytoscape->aa', 'unreal->aa'],
+                nodes: ['aa'],
+                message: "Actions logged by Automated Admin → classifies user"
+            },
+            {
+                step: 3,
+                edges: ['aa->ecm'],
+                nodes: ['ecm'],
+                message: "AA and ECM decide what pulses to route",
+                pulses: true
+            },
+            {
+                step: 4,
+                edges: ['ecm->postgres'],
+                nodes: ['postgres'],
+                message: "PostgreSQL logs all system states"
+            },
+            {
+                step: 5,
+                edges: ['postgres->cytoscape'],
+                nodes: ['cytoscape'],
+                message: "Cytoscape updates logic view"
+            },
+            {
+                step: 6,
+                edges: ['ecm->unreal'],
+                nodes: ['unreal'],
+                message: "Unreal visualizes pulse effects from ECM"
+            }
+        ];
+
+        function highlightStep(stepIndex) {
+            // Reset all highlights
+            cy.elements().removeClass('active-flow pulse-effect');
+            document.querySelectorAll('.flow-step').forEach(el => el.classList.remove('active-flow'));
+            
+            if (stepIndex >= flowSequence.length) {
+                currentStep = 0;
+                return;
+            }
+            
+            const step = flowSequence[stepIndex];
+            
+            // Highlight UI step
+            document.getElementById(`step-${step.step}`).classList.add('active-flow');
+            document.getElementById('current-action').textContent = step.message;
+            
+            // Highlight nodes
+            step.nodes.forEach(nodeId => {
+                cy.$(`#${nodeId}`).addClass('pulse-effect');
+            });
+            
+            // Highlight edges
+            step.edges.forEach(edgeId => {
+                const [source, target] = edgeId.split('->');
+                cy.edges(`[source="${source}"][target="${target}"]`).addClass('active-flow');
+            });
+            
+            // Show pulses if applicable
+            if (step.pulses) {
+                const pulseTypes = ['bid-pulse', 'occupancy-pulse', 'compliance-pulse', 
+                                  'fit-pulse', 'investment-pulse', 'decay-pulse', 'reject-pulse'];
+                const selectedPulse = pulseTypes[Math.floor(Math.random() * pulseTypes.length)];
+                cy.$(`#${selectedPulse}`).addClass('pulse-effect');
+                cy.edges(`[source="ecm"][target="${selectedPulse}"]`).addClass('active-flow');
+            }
+        }
+
+        function simulateUserInteraction() {
+            highlightStep(currentStep);
+            currentStep = (currentStep + 1) % (flowSequence.length + 1);
+        }
+
+        function resetFlow() {
+            currentStep = 0;
+            cy.elements().removeClass('active-flow pulse-effect');
+            document.querySelectorAll('.flow-step').forEach(el => el.classList.remove('active-flow'));
+            document.getElementById('current-action').textContent = '';
+        }
+
+        function toggleAutoPlay() {
+            autoPlay = !autoPlay;
+            document.getElementById('autoplay-status').textContent = autoPlay ? 'ON' : 'OFF';
+            
+            if (autoPlay) {
+                autoPlayInterval = setInterval(() => {
+                    simulateUserInteraction();
+                }, 2000);
+            } else {
+                clearInterval(autoPlayInterval);
+            }
+        }
+
+        // WebSocket connection for real-time updates
+        function connectToECM() {
+            const ws = new WebSocket('ws://localhost:8765');
+            
+            ws.onopen = () => {
+                console.log('Connected to ECM Gateway');
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'pulse') {
+                    // Highlight the pulse in real-time
+                    cy.$(`#${data.pulse_type}`).addClass('pulse-effect');
+                    setTimeout(() => {
+                        cy.$(`#${data.pulse_type}`).removeClass('pulse-effect');
+                    }, 1000);
+                }
+            };
+        }
+
+        // Initialize connection (optional - only if ECM is running)
+        // connectToECM();
+    </script>
+</body>
+</html> 
