@@ -43,6 +43,25 @@ class InteractionType(str, Enum):
     STATE_UPDATE = "state_update"
     SYSTEM_COMMAND = "system_command"
 
+class SemanticPulseType(str, Enum):
+    """Semantic pulse types with specific business meaning"""
+    BID_PULSE = "bid_pulse"                   # Competitive intent, pricing, offers
+    OCCUPANCY_PULSE = "occupancy_pulse"       # Spatial request, usage claim
+    COMPLIANCY_PULSE = "compliancy_pulse"     # Enforcement, constraints, violations
+    FIT_PULSE = "fit_pulse"                   # Geometric, contextual match
+    INVESTMENT_PULSE = "investment_pulse"     # Capital signal, resource allocation
+    DECAY_PULSE = "decay_pulse"               # Decline, obsolescence, reset readiness
+
+# Modern UX color coding for pulse types
+PULSE_COLORS = {
+    SemanticPulseType.BID_PULSE: "#FFC107",        # ⚠️ Amber - Attention-grabbing, action-oriented
+    SemanticPulseType.OCCUPANCY_PULSE: "#2196F3",  # 🌊 Sky Blue - Movement, presence
+    SemanticPulseType.COMPLIANCY_PULSE: "#1E3A8A", # 🛡️ Indigo - Trustworthy, serious, institutional
+    SemanticPulseType.FIT_PULSE: "#4CAF50",        # ✅ Green - Success, confirmation
+    SemanticPulseType.INVESTMENT_PULSE: "#FF9800", # 💰 Deep Orange - Warm, motivating, urgency
+    SemanticPulseType.DECAY_PULSE: "#9E9E9E"       # ⚫ Neutral Gray - Low visibility, subtle decay
+}
+
 class PulseRouter:
     """
     Mutable Computation Layer - Interaction Signal Dispatcher
@@ -163,6 +182,10 @@ class PulseRouter:
         """
         msg_type = message.get('type', 'unknown')
         
+        # Check for semantic pulse types first
+        if msg_type in [pulse_type.value for pulse_type in SemanticPulseType]:
+            return InteractionType.PULSE_TRIGGER
+        
         # Routing logic (mutable - can be updated)
         if msg_type in ['pulse_trigger', 'trigger']:
             return InteractionType.PULSE_TRIGGER
@@ -181,6 +204,33 @@ class PulseRouter:
         else:
             # Default to pulse trigger for unknown types
             return InteractionType.PULSE_TRIGGER
+    
+    def _determine_semantic_pulse_type(self, message: Dict[str, Any]) -> Optional[SemanticPulseType]:
+        """Determine semantic pulse type from message"""
+        msg_type = message.get('type', 'unknown')
+        
+        # Direct semantic pulse type mapping
+        for pulse_type in SemanticPulseType:
+            if msg_type == pulse_type.value:
+                return pulse_type
+        
+        # Intelligent inference based on message content (can evolve)
+        payload = message.get('payload', {})
+        
+        if any(key in payload for key in ['price', 'bid', 'offer', 'quote']):
+            return SemanticPulseType.BID_PULSE
+        elif any(key in payload for key in ['spatial', 'occupancy', 'claim', 'usage']):
+            return SemanticPulseType.OCCUPANCY_PULSE
+        elif any(key in payload for key in ['compliance', 'violation', 'constraint', 'rule']):
+            return SemanticPulseType.COMPLIANCY_PULSE
+        elif any(key in payload for key in ['fit', 'match', 'geometry', 'context']):
+            return SemanticPulseType.FIT_PULSE
+        elif any(key in payload for key in ['investment', 'capital', 'resource', 'allocation']):
+            return SemanticPulseType.INVESTMENT_PULSE
+        elif any(key in payload for key in ['decay', 'decline', 'obsolete', 'reset']):
+            return SemanticPulseType.DECAY_PULSE
+        
+        return None
     
     async def _dispatch_to_handlers(self, interaction_type: InteractionType, message: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Dispatch message to all registered handlers for the interaction type"""
@@ -222,22 +272,93 @@ class PulseRouter:
     # Default Handlers (can be evolved/replaced)
     
     async def _handle_pulse_trigger(self, message: Dict[str, Any]) -> Dict[str, Any]:
-        """Handle pulse trigger interactions"""
-        logger.info(f"PULSE-TRIGGER: {message.get('payload', {})}")
+        """Handle pulse trigger interactions with semantic pulse type support"""
+        payload = message.get('payload', {})
+        semantic_pulse = self._determine_semantic_pulse_type(message)
+        
+        logger.info(f"PULSE-TRIGGER: Type: {semantic_pulse} | Payload: {payload}")
         
         # Trigger specific graph node or functor
         target = message.get('target', 'default')
-        payload = message.get('payload', {})
         
-        # TODO: Interface with Node Engine to trigger specific functors
-        # For now, simulate functor execution
-        
-        return {
+        # Enhanced pulse processing with semantic meaning
+        pulse_response = {
             'action': 'pulse_triggered',
             'target': target,
             'payload': payload,
+            'semantic_pulse_type': semantic_pulse.value if semantic_pulse else None,
+            'pulse_color': PULSE_COLORS.get(semantic_pulse) if semantic_pulse else None,
             'timestamp': datetime.now().isoformat()
         }
+        
+        # Semantic-specific processing (can evolve)
+        if semantic_pulse:
+            pulse_response.update(await self._process_semantic_pulse(semantic_pulse, message))
+        
+        # TODO: Interface with Node Engine to trigger specific functors
+        # TODO: Send visual pulse to Unreal Engine with color coding
+        
+        return pulse_response
+    
+    async def _process_semantic_pulse(self, pulse_type: SemanticPulseType, message: Dict[str, Any]) -> Dict[str, Any]:
+        """Process semantic pulse with type-specific logic"""
+        payload = message.get('payload', {})
+        
+        if pulse_type == SemanticPulseType.BID_PULSE:
+            # Competitive intent, pricing, offers
+            return {
+                'semantic_action': 'competitive_analysis',
+                'urgency_level': 'high',
+                'visual_effect': 'pulsing_amber',
+                'expected_response': 'bid_evaluation'
+            }
+        
+        elif pulse_type == SemanticPulseType.OCCUPANCY_PULSE:
+            # Spatial request, usage claim
+            return {
+                'semantic_action': 'spatial_allocation',
+                'urgency_level': 'medium',
+                'visual_effect': 'flowing_blue',
+                'expected_response': 'occupancy_update'
+            }
+        
+        elif pulse_type == SemanticPulseType.COMPLIANCY_PULSE:
+            # Enforcement, constraints, violations
+            return {
+                'semantic_action': 'compliance_check',
+                'urgency_level': 'critical',
+                'visual_effect': 'steady_indigo',
+                'expected_response': 'compliance_report'
+            }
+        
+        elif pulse_type == SemanticPulseType.FIT_PULSE:
+            # Geometric, contextual match
+            return {
+                'semantic_action': 'fit_analysis',
+                'urgency_level': 'low',
+                'visual_effect': 'confirming_green',
+                'expected_response': 'fit_validation'
+            }
+        
+        elif pulse_type == SemanticPulseType.INVESTMENT_PULSE:
+            # Capital signal, resource allocation
+            return {
+                'semantic_action': 'investment_evaluation',
+                'urgency_level': 'high',
+                'visual_effect': 'warming_orange',
+                'expected_response': 'investment_decision'
+            }
+        
+        elif pulse_type == SemanticPulseType.DECAY_PULSE:
+            # Decline, obsolescence, reset readiness
+            return {
+                'semantic_action': 'decay_processing',
+                'urgency_level': 'low',
+                'visual_effect': 'fading_gray',
+                'expected_response': 'cleanup_initiated'
+            }
+        
+        return {}
     
     async def _handle_spatial_event(self, message: Dict[str, Any]) -> Dict[str, Any]:
         """Handle spatial events from Unreal"""
