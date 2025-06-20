@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BEM Agent Console - Project Aware</title>
+    
+    <!-- Cytoscape.js -->
+    <script src="https://unpkg.com/cytoscape@3.26.0/dist/cytoscape.min.js"></script>
+    
+    <!-- GraphQL Client -->
+    <script src="https://unpkg.com/graphql-request@6.1.0/dist/index.umd.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            grid-template-rows: auto 1fr;
+            height: 100vh;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        /* Header spanning both columns */
+        .header {
+            grid-column: 1 / -1;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 15px 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #2d3748;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .connection-status {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-indicator.connected {
+            background: #48bb78;
+            color: white;
+        }
+
+        .status-indicator.disconnected {
+            background: #f56565;
+            color: white;
+        }
+
+        .status-indicator.loading {
+            background: #ed8936;
+            color: white;
+        }
+
+        /* Left Panel - Project Selector & Controls */
+        .left-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            max-height: calc(100vh - 80px);
+        }
+
+        /* Right Panel - Graph Visualization */
+        .graph-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        #cy {
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+        }
+
+        /* Project Selector Styles */
+        .project-selector-panel {
+            padding: 20px;
+        }
+
+        .session-status {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #e2e8f0;
+        }
+
+        .session-status.active {
+            border-color: #48bb78;
+            background: #f0fff4;
+        }
+
+        .session-status.inactive {
+            border-color: #cbd5e0;
+            background: #f7fafc;
+        }
+
+        .session-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .session-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #cbd5e0;
+        }
+
+        .session-status.active .session-indicator {
+            background: #48bb78;
+        }
+
+        .session-header h3 {
+            color: #2d3748;
+            font-size: 16px;
+            margin: 0;
+        }
+
+        .session-time {
+            background: #edf2f7;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #4a5568;
+        }
+
+        .agent-tag {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .session-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+            font-size: 12px;
+            color: #4a5568;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #2d3748;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 3px;
+            color: #718096;
+            font-size: 11px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a67d8;
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e0;
+        }
+
+        .quick-actions {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .quick-actions h4 {
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .quick-action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .quick-project-btn {
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            background: white;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 13px;
+        }
+
+        .quick-project-btn:hover {
+            border-color: #667eea;
+            background: #f7fafc;
+        }
+
+        .tag-preview {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .tag-preview h4 {
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .preview-display {
+            padding: 10px;
+            background: #f7fafc;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+
+        #tag-preview {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #4a5568;
+        }
+
+        .tag-valid {
+            color: #2d3748 !important;
+            background: #f0fff4 !important;
+        }
+
+        .tag-invalid {
+            color: #e53e3e !important;
+            background: #fed7d7 !important;
+        }
+
+        .notification {
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .notification.success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+
+        .notification.error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #fc8181;
+        }
+
+        /* Data Affinity Panel */
+        .data-affinity-panel {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        .data-affinity-panel h4 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .affinity-type-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .affinity-type-btn {
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            font-size: 12px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .affinity-type-btn:hover {
+            border-color: #667eea;
+        }
+
+        .affinity-type-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .affinity-execute-btn {
+            width: 100%;
+            padding: 10px;
+            background: #38a169;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .affinity-execute-btn:hover {
+            background: #2f855a;
+        }
+
+        .affinity-execute-btn:disabled {
+            background: #a0aec0;
+            cursor: not-allowed;
+        }
+
+        /* Node Info Panel */
+        .node-info-panel {
+            margin-top: 20px;
+            padding: 15px;
+            background: #ffffff;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .node-info-panel h4 {
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .no-selection {
+            color: #718096;
+            font-style: italic;
+            font-size: 13px;
+        }
+
+        .node-details {
+            font-size: 12px;
+            color: #4a5568;
+        }
+
+        .node-details div {
+            margin-bottom: 5px;
+        }
+
+        .node-details strong {
+            color: #2d3748;
+        }
+
+        /* Graph Info Overlay */
+        .graph-info-overlay {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            font-size: 12px;
+            color: #4a5568;
+            z-index: 1000;
+        }
+
+        .graph-stats {
+            display: flex;
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: #718096;
+            text-transform: uppercase;
+        }
+
+        /* Loading States */
+        .loading-spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .main-container {
+                grid-template-columns: 300px 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto 1fr;
+            }
+            
+            .left-panel {
+                max-height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🎯 BEM Agent Console - Project Aware</h1>
+            <div class="connection-status">
+                <div id="graphql-status" class="status-indicator disconnected">
+                    <span class="loading-spinner" style="display: none;"></span>
+                    GraphQL: Disconnected
+                </div>
+                <div id="websocket-status" class="status-indicator disconnected">
+                    <span class="loading-spinner" style="display: none;"></span>
+                    WebSocket: Disconnected
+                </div>
+            </div>
+        </div>
+
+        <!-- Left Panel - Project Controls -->
+        <div class="left-panel">
+            <div id="project-selector-container">
+                <!-- Project selector will be rendered here -->
+            </div>
+
+            <!-- Data Affinity Panel -->
+            <div class="data-affinity-panel">
+                <h4>🔧 Data Affinity Analysis</h4>
+                <div class="affinity-type-grid">
+                    <button class="affinity-type-btn" data-type="structural">
+                        🏗️ Structural
+                    </button>
+                    <button class="affinity-type-btn" data-type="cost">
+                        💰 Cost
+                    </button>
+                    <button class="affinity-type-btn" data-type="energy">
+                        ⚡ Energy
+                    </button>
+                    <button class="affinity-type-btn" data-type="mep">
+                        🔧 MEP
+                    </button>
+                    <button class="affinity-type-btn" data-type="spatial">
+                        📐 Spatial
+                    </button>
+                    <button class="affinity-type-btn" data-type="time">
+                        ⏱️ Time
+                    </button>
+                </div>
+                <button id="execute-affinity-btn" class="affinity-execute-btn" disabled>
+                    Execute Data Affinity Analysis
+                </button>
+            </div>
+
+            <!-- Node Info Panel -->
+            <div class="node-info-panel">
+                <h4>📊 Selected Node</h4>
+                <div id="node-info-content" class="no-selection">
+                    Click a node to view details
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel - Graph Visualization -->
+        <div class="graph-container">
+            <div id="cy"></div>
+            
+            <!-- Graph Info Overlay -->
+            <div class="graph-info-overlay">
+                <div class="graph-stats">
+                    <div class="stat-item">
+                        <div id="node-count" class="stat-value">0</div>
+                        <div class="stat-label">Nodes</div>
+                    </div>
+                    <div class="stat-item">
+                        <div id="edge-count" class="stat-value">0</div>
+                        <div class="stat-label">Edges</div>
+                    </div>
+                    <div class="stat-item">
+                        <div id="project-tag" class="stat-value">-</div>
+                        <div class="stat-label">Project Tag</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include Session Manager and Project Selector -->
+    <script src="project_aware_session_manager.js"></script>
+    <script src="project_selector_component.js"></script>
+
+    <script>
+        // Global application state
+        let cy = null;
+        let graphqlClient = null;
+        let websocket = null;
+        let selectedNodes = new Set();
+        let selectedAffinityTypes = new Set();
+
+        // Initialize GraphQL client
+        function initializeGraphQL() {
+            const graphqlStatus = document.getElementById('graphql-status');
+            const spinner = graphqlStatus.querySelector('.loading-spinner');
+            
+            graphqlStatus.className = 'status-indicator loading';
+            graphqlStatus.innerHTML = '<span class="loading-spinner"></span> GraphQL: Connecting...';
+            
+            try {
+                graphqlClient = window.projectSessionManager.createProjectAwareGraphQLClient({
+                    query: async (query, variables) => {
+                        const response = await fetch('http://localhost:8080/graphql', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ query, variables })
+                        });
+                        return response.json();
+                    },
+                    mutate: async (mutation, variables) => {
+                        const response = await fetch('http://localhost:8080/graphql', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ query: mutation, variables })
+                        });
+                        return response.json();
+                    }
+                });
+
+                graphqlStatus.className = 'status-indicator connected';
+                graphqlStatus.textContent = 'GraphQL: Connected';
+                
+                console.log('✅ GraphQL client initialized with project awareness');
+                loadGraphData();
+                
+            } catch (error) {
+                console.error('GraphQL connection failed:', error);
+                graphqlStatus.className = 'status-indicator disconnected';
+                graphqlStatus.textContent = 'GraphQL: Failed';
+                
+                // Use demo data instead
+                loadDemoData();
+            }
+        }
+
+        // Initialize WebSocket
+        function initializeWebSocket() {
+            const wsStatus = document.getElementById('websocket-status');
+            
+            wsStatus.className = 'status-indicator loading';
+            wsStatus.innerHTML = '<span class="loading-spinner"></span> WebSocket: Connecting...';
+            
+            try {
+                websocket = new WebSocket('ws://localhost:8765');
+                
+                websocket.onopen = () => {
+                    wsStatus.className = 'status-indicator connected';
+                    wsStatus.textContent = 'WebSocket: Connected';
+                    console.log('✅ WebSocket connected');
+                };
+                
+                websocket.onclose = () => {
+                    wsStatus.className = 'status-indicator disconnected';
+                    wsStatus.textContent = 'WebSocket: Disconnected';
+                    console.log('❌ WebSocket disconnected');
+                };
+                
+                websocket.onerror = (error) => {
+                    wsStatus.className = 'status-indicator disconnected';
+                    wsStatus.textContent = 'WebSocket: Error';
+                    console.error('WebSocket error:', error);
+                };
+                
+                websocket.onmessage = (event) => {
+                    handleWebSocketMessage(JSON.parse(event.data));
+                };
+                
+            } catch (error) {
+                console.error('WebSocket connection failed:', error);
+                wsStatus.className = 'status-indicator disconnected';
+                wsStatus.textContent = 'WebSocket: Failed';
+            }
+        }
+
+        // Initialize Cytoscape
+        function initializeCytoscape() {
+            cy = cytoscape({
+                container: document.getElementById('cy'),
+                
+                style: [
+                    {
+                        selector: 'node',
+                        style: {
+                            'background-color': '#667eea',
+                            'label': 'data(label)',
+                            'color': '#2d3748',
+                            'text-valign': 'center',
+                            'text-halign': 'center',
+                            'font-size': '12px',
+                            'font-weight': '500',
+                            'width': '60px',
+                            'height': '60px',
+                            'border-width': '2px',
+                            'border-color': '#4c51bf'
+                        }
+                    },
+                    {
+                        selector: 'node[type="structural"]',
+                        style: {
+                            'background-color': '#48bb78',
+                            'border-color': '#38a169'
+                        }
+                    },
+                    {
+                        selector: 'node[type="cost"]',
+                        style: {
+                            'background-color': '#ed8936',
+                            'border-color': '#dd6b20'
+                        }
+                    },
+                    {
+                        selector: 'node[type="energy"]',
+                        style: {
+                            'background-color': '#ecc94b',
+                            'border-color': '#d69e2e'
+                        }
+                    },
+                    {
+                        selector: 'node[type="mep"]',
+                        style: {
+                            'background-color': '#9f7aea',
+                            'border-color': '#805ad5'
+                        }
+                    },
+                    {
+                        selector: 'node[type="spatial"]',
+                        style: {
+                            'background-color': '#4fd1c7',
+                            'border-color': '#38b2ac'
+                        }
+                    },
+                    {
+                        selector: 'node[type="time"]',
+                        style: {
+                            'background-color': '#fc8181',
+                            'border-color': '#f56565'
+                        }
+                    },
+                    {
+                        selector: 'node:selected',
+                        style: {
+                            'border-width': '4px',
+                            'border-color': '#2d3748',
+                            'box-shadow': '0 0 20px rgba(45, 55, 72, 0.5)'
+                        }
+                    },
+                    {
+                        selector: 'edge',
+                        style: {
+                            'width': 3,
+                            'line-color': '#a0aec0',
+                            'target-arrow-color': '#a0aec0',
+                            'target-arrow-shape': 'triangle',
+                            'curve-style': 'bezier'
+                        }
+                    },
+                    {
+                        selector: 'edge[type="dependency"]',
+                        style: {
+                            'line-color': '#4c51bf',
+                            'target-arrow-color': '#4c51bf'
+                        }
+                    },
+                    {
+                        selector: 'edge[type="flow"]',
+                        style: {
+                            'line-color': '#38a169',
+                            'target-arrow-color': '#38a169'
+                        }
+                    }
+                ],
+
+                layout: {
+                    name: 'cose',
+                    animate: true,
+                    animationDuration: 1000,
+                    nodeRepulsion: 8000,
+                    nodeOverlap: 20,
+                    idealEdgeLength: 100,
+                    edgeElasticity: 100,
+                    nestingFactor: 5,
+                    gravity: 80,
+                    numIter: 1000,
+                    initialTemp: 200,
+                    coolingFactor: 0.95,
+                    minTemp: 1.0
+                }
+            });
+
+            // Node selection handling
+            cy.on('select', 'node', function(evt) {
+                const node = evt.target;
+                selectedNodes.add(node.id());
+                updateNodeInfo(node);
+                updateSessionActiveNodes();
+                console.log('Node selected:', node.id());
+            });
+
+            cy.on('unselect', 'node', function(evt) {
+                const node = evt.target;
+                selectedNodes.delete(node.id());
+                updateSessionActiveNodes();
+                
+                if (selectedNodes.size === 0) {
+                    clearNodeInfo();
+                }
+                console.log('Node unselected:', node.id());
+            });
+
+            console.log('✅ Cytoscape initialized');
+        }
+
+        // Load graph data via GraphQL with project filtering
+        async function loadGraphData() {
+            if (!graphqlClient) {
+                console.warn('GraphQL client not available, using demo data');
+                loadDemoData();
+                return;
+            }
+
+            try {
+                const query = `
+                    query GetProjectGraph($projectContext: ProjectContextInput) {
+                        graph(projectContext: $projectContext) {
+                            nodes {
+                                id
+                                label
+                                type
+                                position {
+                                    x
+                                    y
+                                }
+                                properties
+                                projectId
+                                phase
+                            }
+                            edges {
+                                id
+                                source
+                                target
+                                type
+                                properties
+                            }
+                        }
+                    }
+                `;
+
+                const result = await graphqlClient.query(query, {});
+                
+                if (result.data && result.data.graph) {
+                    renderGraph(result.data.graph);
+                    console.log('✅ Graph data loaded from GraphQL');
+                } else {
+                    console.warn('No graph data received, using demo data');
+                    loadDemoData();
+                }
+                
+            } catch (error) {
+                console.error('Failed to load graph data:', error);
+                loadDemoData();
+            }
+        }
+
+        // Load demo data when services unavailable
+        function loadDemoData() {
+            const sessionStatus = window.projectSessionManager.getSessionStatus();
+            const projectId = sessionStatus.active ? sessionStatus.project_id : 'demo';
+            const phase = sessionStatus.active ? sessionStatus.phase : 'phase_1';
+
+            const demoData = {
+                nodes: [
+                    { id: 'n1', label: 'Foundation', type: 'structural', position: { x: 100, y: 100 }, projectId, phase },
+                    { id: 'n2', label: 'Walls', type: 'structural', position: { x: 200, y: 100 }, projectId, phase },
+                    { id: 'n3', label: 'HVAC', type: 'mep', position: { x: 150, y: 200 }, projectId, phase },
+                    { id: 'n4', label: 'Cost Analysis', type: 'cost', position: { x: 250, y: 150 }, projectId, phase },
+                    { id: 'n5', label: 'Energy Model', type: 'energy', position: { x: 300, y: 250 }, projectId, phase },
+                    { id: 'n6', label: 'Space Layout', type: 'spatial', position: { x: 50, y: 250 }, projectId, phase }
+                ],
+                edges: [
+                    { id: 'e1', source: 'n1', target: 'n2', type: 'dependency' },
+                    { id: 'e2', source: 'n2', target: 'n3', type: 'flow' },
+                    { id: 'e3', source: 'n3', target: 'n5', type: 'dependency' },
+                    { id: 'e4', source: 'n2', target: 'n4', type: 'flow' },
+                    { id: 'e5', source: 'n6', target: 'n1', type: 'dependency' }
+                ]
+            };
+
+            renderGraph(demoData);
+            console.log('📊 Demo data loaded');
+        }
+
+        // Render graph in Cytoscape
+        function renderGraph(graphData) {
+            if (!cy) return;
+
+            const elements = [];
+
+            // Add nodes
+            graphData.nodes.forEach(node => {
+                elements.push({
+                    data: {
+                        id: node.id,
+                        label: node.label,
+                        type: node.type,
+                        projectId: node.projectId,
+                        phase: node.phase,
+                        properties: node.properties || {}
+                    },
+                    position: node.position || { x: Math.random() * 400, y: Math.random() * 400 }
+                });
+            });
+
+            // Add edges
+            graphData.edges.forEach(edge => {
+                elements.push({
+                    data: {
+                        id: edge.id,
+                        source: edge.source,
+                        target: edge.target,
+                        type: edge.type,
+                        properties: edge.properties || {}
+                    }
+                });
+            });
+
+            cy.elements().remove();
+            cy.add(elements);
+            cy.layout({ name: 'cose', animate: true }).run();
+
+            updateGraphStats();
+        }
+
+        // Update graph statistics display
+        function updateGraphStats() {
+            const nodeCount = cy.nodes().length;
+            const edgeCount = cy.edges().length;
+            const sessionStatus = window.projectSessionManager.getSessionStatus();
+            
+            document.getElementById('node-count').textContent = nodeCount;
+            document.getElementById('edge-count').textContent = edgeCount;
+            
+            if (sessionStatus.active) {
+                const shortTag = sessionStatus.tag.split('::').pop() || sessionStatus.tag;
+                document.getElementById('project-tag').textContent = shortTag;
+            } else {
+                document.getElementById('project-tag').textContent = '-';
+            }
+        }
+
+        // Update node info panel
+        function updateNodeInfo(node) {
+            const nodeInfoContent = document.getElementById('node-info-content');
+            const data = node.data();
+            
+            nodeInfoContent.innerHTML = `
+                <div class="node-details">
+                    <div><strong>ID:</strong> ${data.id}</div>
+                    <div><strong>Label:</strong> ${data.label}</div>
+                    <div><strong>Type:</strong> ${data.type}</div>
+                    <div><strong>Project:</strong> ${data.projectId || 'default'}</div>
+                    <div><strong>Phase:</strong> ${data.phase || 'N/A'}</div>
+                    <div><strong>Position:</strong> (${Math.round(node.position().x)}, ${Math.round(node.position().y)})</div>
+                </div>
+            `;
+        }
+
+        // Clear node info panel
+        function clearNodeInfo() {
+            const nodeInfoContent = document.getElementById('node-info-content');
+            nodeInfoContent.innerHTML = '<div class="no-selection">Click a node to view details</div>';
+        }
+
+        // Update session active nodes
+        function updateSessionActiveNodes() {
+            const nodeIds = Array.from(selectedNodes);
+            window.projectSessionManager.updateActiveNodes(nodeIds);
+        }
+
+        // Handle WebSocket messages
+        function handleWebSocketMessage(message) {
+            console.log('📡 WebSocket message:', message);
+            
+            if (message.type === 'pulse_event') {
+                // Handle pulse visualization
+                handlePulseEvent(message.data);
+            } else if (message.type === 'graph_update') {
+                // Handle graph updates
+                loadGraphData();
+            }
+        }
+
+        // Handle pulse events
+        function handlePulseEvent(pulseData) {
+            // Animate pulse effect on relevant nodes
+            const targetNodes = cy.nodes().filter(node => {
+                return pulseData.target_nodes && pulseData.target_nodes.includes(node.id());
+            });
+
+            if (targetNodes.length > 0) {
+                targetNodes.addClass('pulse-effect');
+                setTimeout(() => {
+                    targetNodes.removeClass('pulse-effect');
+                }, 2000);
+            }
+        }
+
+        // Initialize data affinity controls
+        function initializeDataAffinityControls() {
+            const affinityButtons = document.querySelectorAll('.affinity-type-btn');
+            const executeButton = document.getElementById('execute-affinity-btn');
+
+            affinityButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const type = btn.dataset.type;
+                    
+                    if (selectedAffinityTypes.has(type)) {
+                        selectedAffinityTypes.delete(type);
+                        btn.classList.remove('active');
+                    } else {
+                        selectedAffinityTypes.add(type);
+                        btn.classList.add('active');
+                    }
+
+                    executeButton.disabled = selectedAffinityTypes.size === 0 || selectedNodes.size === 0;
+                });
+            });
+
+            executeButton.addEventListener('click', async () => {
+                await executeDataAffinity();
+            });
+        }
+
+        // Execute data affinity analysis
+        async function executeDataAffinity() {
+            if (selectedAffinityTypes.size === 0 || selectedNodes.size === 0) {
+                return;
+            }
+
+            const executeButton = document.getElementById('execute-affinity-btn');
+            executeButton.disabled = true;
+            executeButton.textContent = 'Executing...';
+
+            try {
+                const mutation = `
+                    mutation ExecuteDataAffinity($input: DataAffinityInput!) {
+                        executeDataAffinity(input: $input) {
+                            success
+                            results {
+                                nodeId
+                                affinityType
+                                value
+                                analysis
+                            }
+                            executionTime
+                        }
+                    }
+                `;
+
+                const variables = {
+                    input: {
+                        nodeIds: Array.from(selectedNodes),
+                        affinityTypes: Array.from(selectedAffinityTypes),
+                        executeReal: true
+                    }
+                };
+
+                const result = await graphqlClient.mutate(mutation, variables);
+                
+                if (result.data && result.data.executeDataAffinity.success) {
+                    console.log('✅ Data affinity executed:', result.data.executeDataAffinity);
+                    // Show success notification or update UI with results
+                } else {
+                    console.error('Data affinity execution failed:', result.errors);
+                }
+
+            } catch (error) {
+                console.error('Data affinity execution error:', error);
+            } finally {
+                executeButton.disabled = false;
+                executeButton.textContent = 'Execute Data Affinity Analysis';
+            }
+        }
+
+        // Listen for session changes to reload graph
+        window.projectSessionManager.addListener((event, data) => {
+            if (event === 'session_assigned' || event === 'nodes_updated') {
+                loadGraphData();
+                updateGraphStats();
+            }
+        });
+
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 Initializing BEM Agent Console - Project Aware');
+            
+            initializeCytoscape();
+            initializeGraphQL();
+            initializeWebSocket();
+            initializeDataAffinityControls();
+            
+            // Auto-initialize with default session if none exists
+            setTimeout(() => {
+                const sessionStatus = window.projectSessionManager.getSessionStatus();
+                if (!sessionStatus.active) {
+                    window.projectSessionManager.initializeSession('agent_demo', 'demo', 'phase_1');
+                }
+            }, 1000);
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (cy) {
+                cy.resize();
+            }
+        });
+    </script>
+</body>
+</html> 
