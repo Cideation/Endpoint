@@ -1,0 +1,43 @@
+# Real-Time GraphQL Engine Requirements
+# ⚡ No Cosmetic Delays - Immediate Backend State Synchronization
+
+# Core FastAPI & GraphQL
+fastapi==0.104.1
+strawberry-graphql==0.214.1
+uvicorn[standard]==0.24.0
+
+# WebSocket Support
+websockets==12.0
+python-multipart==0.0.6
+
+# ASGI & CORS
+starlette==0.27.0
+python-json-logger==2.0.7
+
+# Real-time Subscriptions
+asyncio-mqtt==0.16.1
+redis==5.0.1
+aioredis==2.0.1
+
+# Database Integration (Optional)
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
+alembic==1.13.0
+
+# Validation & Serialization
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# Development & Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+httpx==0.25.2
+
+# Performance & Monitoring
+prometheus-client==0.19.0
+structlog==23.2.0
+
+# Utility Libraries
+python-dateutil==2.8.2
+pytz==2023.3
+uuid==1.30 

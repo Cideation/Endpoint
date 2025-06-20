@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BEM Real-Time Graph Interface - No Cosmetic Delays</title>
+    
+    <!-- External Dependencies -->
+    <script src="https://unpkg.com/cytoscape@3.26.0/dist/cytoscape.min.js"></script>
+    <script src="https://unpkg.com/cytoscape-cose-bilkent@4.1.0/cytoscape-cose-bilkent.js"></script>
+    <script src="https://unpkg.com/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
+    
+    <style>
+        /* Modern, Clean Interface */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 320px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .sidebar-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+        }
+        
+        .sidebar-header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .sidebar-header .subtitle {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        /* Connection Status */
+        .connection-status {
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+            transition: background-color 0.2s;
+        }
+        
+        .status-connected { background-color: #27ae60; }
+        .status-disconnected { background-color: #e74c3c; }
+        .status-connecting { background-color: #f39c12; }
+        
+        /* Graph Stats */
+        .graph-stats {
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+        
+        .stat-label {
+            color: #666;
+        }
+        
+        .stat-value {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        /* Controls */
+        .controls {
+            padding: 20px;
+            flex: 1;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        .control-group h3 {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #495057;
+            border: 1px solid #dee2e6;
+        }
+        
+        .btn-secondary:hover {
+            background: #e9ecef;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        /* Input Groups */
+        .input-group {
+            margin-bottom: 10px;
+        }
+        
+        .input-group label {
+            display: block;
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+        
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        /* Activity Log */
+        .activity-log {
+            padding: 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #eee;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            font-size: 11px;
+            margin-bottom: 4px;
+            padding: 4px 8px;
+            border-radius: 3px;
+            background: white;
+            border-left: 3px solid #007bff;
+        }
+        
+        .log-entry.error {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+        }
+        
+        .log-entry.success {
+            border-left-color: #28a745;
+            background: #f8fff8;
+        }
+        
+        .log-timestamp {
+            color: #666;
+            font-weight: 500;
+        }
+        
+        /* Main Graph Area */
+        .graph-container {
+            flex: 1;
+            position: relative;
+            background: white;
+        }
+        
+        #cytoscape-container {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #f8f9fa 0%, #e9ecef 100%);
+        }
+        
+        /* Graph Overlay Controls */
+        .graph-overlay {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .overlay-btn {
+            display: block;
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+            backdrop-filter: blur(5px);
+        }
+        
+        .overlay-btn:hover {
+            background: rgba(255, 255, 255, 1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Real-time Indicators */
+        .realtime-indicator {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+        
+        .realtime-pulse {
+            width: 6px;
+            height: 6px;
+            background: #27ae60;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+                max-height: 40vh;
+                order: 2;
+            }
+            
+            .graph-container {
+                order: 1;
+                height: 60vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1>⚡ Real-Time Graph</h1>
+                <div class="subtitle">No Cosmetic Delays</div>
+            </div>
+            
+            <!-- Connection Status -->
+            <div class="connection-status">
+                <div class="status-indicator" id="connection-status">
+                    <div class="status-dot status-connecting"></div>
+                    <span>Connecting...</span>
+                </div>
+            </div>
+            
+            <!-- Graph Statistics -->
+            <div class="graph-stats">
+                <div class="stat-item">
+                    <span class="stat-label">Graph Version:</span>
+                    <span class="stat-value" id="graph-version">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Total Nodes:</span>
+                    <span class="stat-value" id="total-nodes">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Total Edges:</span>
+                    <span class="stat-value" id="total-edges">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Connected Clients:</span>
+                    <span class="stat-value" id="connected-clients">0</span>
+                </div>
+            </div>
+            
+            <!-- Controls -->
+            <div class="controls">
+                <!-- Functor Execution -->
+                <div class="control-group">
+                    <h3>Execute Functor</h3>
+                    <div class="input-group">
+                        <label>Node ID:</label>
+                        <select id="node-select">
+                            <option value="">Select a node...</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Functor Type:</label>
+                        <select id="functor-select">
+                            <option value="MaterialSpecification">Material Specification</option>
+                            <option value="DesignOptimization">Design Optimization</option>
+                            <option value="QualityValidation">Quality Validation</option>
+                            <option value="CostAnalysis">Cost Analysis</option>
+                            <option value="ComplianceCheck">Compliance Check</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="executeFunctor()">
+                        Execute Functor
+                    </button>
+                </div>
+                
+                <!-- Graph Controls -->
+                <div class="control-group">
+                    <h3>Graph Controls</h3>
+                    <button class="btn btn-secondary" onclick="fitGraph()">
+                        Fit to Screen
+                    </button>
+                    <button class="btn btn-secondary" onclick="centerGraph()">
+                        Center Graph
+                    </button>
+                    <button class="btn btn-secondary" onclick="runLayout()">
+                        Run Layout
+                    </button>
+                </div>
+                
+                <!-- Development Tools -->
+                <div class="control-group">
+                    <h3>Development</h3>
+                    <button class="btn btn-secondary" onclick="addTestNode()">
+                        Add Test Node
+                    </button>
+                    <button class="btn btn-secondary" onclick="addTestEdge()">
+                        Add Test Edge
+                    </button>
+                    <button class="btn btn-danger" onclick="clearGraph()">
+                        Clear Graph
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Activity Log -->
+            <div class="activity-log">
+                <div id="activity-log"></div>
+            </div>
+        </div>
+        
+        <!-- Main Graph Area -->
+        <div class="graph-container">
+            <div id="cytoscape-container"></div>
+            
+            <!-- Graph Overlay Controls -->
+            <div class="graph-overlay">
+                <button class="overlay-btn" onclick="togglePhaseFilter()">
+                    Toggle Phase Filter
+                </button>
+                <button class="overlay-btn" onclick="exportGraph()">
+                    Export Graph
+                </button>
+                <button class="overlay-btn" onclick="toggleFullscreen()">
+                    Fullscreen
+                </button>
+            </div>
+            
+            <!-- Real-time Indicator -->
+            <div class="realtime-indicator">
+                <div class="realtime-pulse"></div>
+                <span>Real-time Active</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include the Real-time Client -->
+    <script src="cytoscape_realtime_client.js"></script>
+    
+    <script>
+        // Global variables
+        let realTimeClient = null;
+        let activityLogCount = 0;
+        
+        // Initialize the application
+        async function init() {
+            try {
+                addLogEntry('🚀 Initializing Real-Time Graph Interface...', 'info');
+                
+                // Create real-time client
+                realTimeClient = new CytoscapeRealTimeClient({
+                    containerId: 'cytoscape-container',
+                    graphqlEndpoint: 'ws://localhost:8004/graphql',
+                    wsEndpoint: 'ws://localhost:8004/ws/realtime',
+                    enableDebugLog: true,
+                    onUpdate: handleGraphUpdate
+                });
+                
+                // Set up periodic stats updates
+                setInterval(updateStats, 2000);
+                
+                // Set up connection monitoring
+                setInterval(updateConnectionStatus, 1000);
+                
+                addLogEntry('✅ Real-Time Graph Interface initialized', 'success');
+                
+            } catch (error) {
+                addLogEntry(`❌ Initialization failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Handle graph updates
+        function handleGraphUpdate(updateType, data, version) {
+            addLogEntry(`⚡ ${updateType} update received (v${version})`, 'success');
+            updateNodeSelect();
+            updateStats();
+        }
+        
+        // Update connection status
+        function updateConnectionStatus() {
+            const statusElement = document.getElementById('connection-status');
+            const dotElement = statusElement.querySelector('.status-dot');
+            const textElement = statusElement.querySelector('span');
+            
+            if (realTimeClient && realTimeClient.isRealTimeConnected()) {
+                dotElement.className = 'status-dot status-connected';
+                textElement.textContent = 'Connected';
+            } else {
+                dotElement.className = 'status-dot status-disconnected';
+                textElement.textContent = 'Disconnected';
+            }
+        }
+        
+        // Update statistics
+        async function updateStats() {
+            if (!realTimeClient) return;
+            
+            try {
+                // Get stats from server
+                const response = await fetch('http://localhost:8004/stats');
+                const stats = await response.json();
+                
+                document.getElementById('graph-version').textContent = stats.graph_version || 0;
+                document.getElementById('total-nodes').textContent = stats.total_nodes || 0;
+                document.getElementById('total-edges').textContent = stats.total_edges || 0;
+                document.getElementById('connected-clients').textContent = stats.connected_clients || 0;
+                
+            } catch (error) {
+                console.warn('Failed to update stats:', error);
+            }
+        }
+        
+        // Update node select dropdown
+        function updateNodeSelect() {
+            if (!realTimeClient || !realTimeClient.getCytoscapeInstance()) return;
+            
+            const select = document.getElementById('node-select');
+            const currentValue = select.value;
+            
+            // Clear options
+            select.innerHTML = '<option value="">Select a node...</option>';
+            
+            // Add current nodes
+            const cy = realTimeClient.getCytoscapeInstance();
+            cy.nodes().forEach(node => {
+                const option = document.createElement('option');
+                option.value = node.data('node_id');
+                option.textContent = `${node.data('node_id')} (${node.data('functor_type')})`;
+                select.appendChild(option);
+            });
+            
+            // Restore selection if still valid
+            if (currentValue && Array.from(select.options).some(opt => opt.value === currentValue)) {
+                select.value = currentValue;
+            }
+        }
+        
+        // Execute functor
+        async function executeFunctor() {
+            const nodeId = document.getElementById('node-select').value;
+            const functorType = document.getElementById('functor-select').value;
+            
+            if (!nodeId) {
+                addLogEntry('❌ Please select a node', 'error');
+                return;
+            }
+            
+            if (!realTimeClient) {
+                addLogEntry('❌ Real-time client not initialized', 'error');
+                return;
+            }
+            
+            try {
+                addLogEntry(`⚙️ Executing ${functorType} on ${nodeId}...`, 'info');
+                
+                const result = await realTimeClient.executeFunctor(nodeId, functorType, {
+                    timestamp: new Date().toISOString(),
+                    user_initiated: true
+                });
+                
+                if (result.success) {
+                    addLogEntry(`✅ Functor executed successfully (${result.executionTimeMs.toFixed(1)}ms)`, 'success');
+                } else {
+                    addLogEntry(`❌ Functor execution failed`, 'error');
+                }
+                
+            } catch (error) {
+                addLogEntry(`❌ Execution error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Graph control functions
+        function fitGraph() {
+            if (realTimeClient && realTimeClient.getCytoscapeInstance()) {
+                realTimeClient.getCytoscapeInstance().fit();
+                addLogEntry('📏 Graph fitted to screen', 'info');
+            }
+        }
+        
+        function centerGraph() {
+            if (realTimeClient && realTimeClient.getCytoscapeInstance()) {
+                realTimeClient.getCytoscapeInstance().center();
+                addLogEntry('🎯 Graph centered', 'info');
+            }
+        }
+        
+        function runLayout() {
+            if (realTimeClient && realTimeClient.getCytoscapeInstance()) {
+                realTimeClient.getCytoscapeInstance().layout({ name: 'cose' }).run();
+                addLogEntry('🔄 Layout applied', 'info');
+            }
+        }
+        
+        // Development functions
+        async function addTestNode() {
+            try {
+                const testNode = {
+                    node_id: `TEST_${Date.now()}`,
+                    functor_type: 'TestNode',
+                    phase: 'alpha',
+                    status: 'active',
+                    inputs: {},
+                    outputs: {},
+                    position_x: Math.random() * 400,
+                    position_y: Math.random() * 400,
+                    last_update: new Date().toISOString(),
+                    version: 1
+                };
+                
+                const response = await fetch('http://localhost:8004/dev/trigger_node_update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testNode)
+                });
+                
+                if (response.ok) {
+                    addLogEntry(`✅ Test node added: ${testNode.node_id}`, 'success');
+                } else {
+                    addLogEntry('❌ Failed to add test node', 'error');
+                }
+                
+            } catch (error) {
+                addLogEntry(`❌ Error adding test node: ${error.message}`, 'error');
+            }
+        }
+        
+        async function addTestEdge() {
+            if (!realTimeClient || !realTimeClient.getCytoscapeInstance()) {
+                addLogEntry('❌ No graph available for edge creation', 'error');
+                return;
+            }
+            
+            const cy = realTimeClient.getCytoscapeInstance();
+            const nodes = cy.nodes();
+            
+            if (nodes.length < 2) {
+                addLogEntry('❌ Need at least 2 nodes to create an edge', 'error');
+                return;
+            }
+            
+            try {
+                const sourceNode = nodes[Math.floor(Math.random() * nodes.length)];
+                const targetNode = nodes[Math.floor(Math.random() * nodes.length)];
+                
+                if (sourceNode.id() === targetNode.id()) {
+                    addLogEntry('❌ Cannot create edge to same node', 'error');
+                    return;
+                }
+                
+                const testEdge = {
+                    edge_id: `EDGE_${Date.now()}`,
+                    source_node: sourceNode.data('node_id'),
+                    target_node: targetNode.data('node_id'),
+                    edge_type: 'test_edge',
+                    weight: Math.random() * 5 + 1,
+                    metadata: {},
+                    last_update: new Date().toISOString(),
+                    version: 1
+                };
+                
+                const response = await fetch('http://localhost:8004/dev/trigger_edge_update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testEdge)
+                });
+                
+                if (response.ok) {
+                    addLogEntry(`✅ Test edge added: ${testEdge.source_node} → ${testEdge.target_node}`, 'success');
+                } else {
+                    addLogEntry('❌ Failed to add test edge', 'error');
+                }
+                
+            } catch (error) {
+                addLogEntry(`❌ Error adding test edge: ${error.message}`, 'error');
+            }
+        }
+        
+        function clearGraph() {
+            if (realTimeClient && realTimeClient.getCytoscapeInstance()) {
+                realTimeClient.getCytoscapeInstance().elements().remove();
+                addLogEntry('🗑️ Graph cleared', 'info');
+            }
+        }
+        
+        // Utility functions
+        function addLogEntry(message, type = 'info') {
+            const logContainer = document.getElementById('activity-log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            entry.innerHTML = `<span class="log-timestamp">${timestamp}</span> ${message}`;
+            
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+            
+            // Limit log entries
+            activityLogCount++;
+            if (activityLogCount > 50) {
+                logContainer.removeChild(logContainer.firstChild);
+                activityLogCount--;
+            }
+        }
+        
+        function togglePhaseFilter() {
+            // Implementation for phase filtering
+            addLogEntry('🔍 Phase filter toggled', 'info');
+        }
+        
+        function exportGraph() {
+            if (realTimeClient && realTimeClient.getCytoscapeInstance()) {
+                const graphData = realTimeClient.getCytoscapeInstance().json();
+                const dataStr = JSON.stringify(graphData, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(dataBlob);
+                link.download = `graph_export_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+                link.click();
+                
+                addLogEntry('📁 Graph exported', 'success');
+            }
+        }
+        
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+                addLogEntry('🖥️ Entered fullscreen', 'info');
+            } else {
+                document.exitFullscreen();
+                addLogEntry('🖥️ Exited fullscreen', 'info');
+            }
+        }
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', init);
+        
+        // Listen for graph update events
+        document.addEventListener('graph_update', (event) => {
+            const { updateType, data, graphVersion } = event.detail;
+            addLogEntry(`📡 Graph event: ${updateType} (v${graphVersion})`, 'info');
+        });
+    </script>
+</body>
+</html> 
