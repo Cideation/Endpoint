@@ -23,6 +23,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.backends import default_backend
 import base64
+from .otp_auth import OTPManager
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -68,6 +69,9 @@ class SecurityManager:
         
         # Initialize encryption for sensitive data
         self.fernet = Fernet(base64.urlsafe_b64encode(hashlib.sha256(SECURITY_CONFIG['JWT_SECRET'].encode()).digest()))
+        
+        # Initialize OTP manager
+        self.otp_manager = OTPManager(redis_url=redis_url)
     
     def generate_api_key(self) -> str:
         """Generate a secure API key"""
@@ -224,6 +228,25 @@ class SecurityManager:
         
         data_str = str(request_data).lower()
         return any(pattern.lower() in data_str for pattern in threat_patterns)
+    
+    async def authenticate_with_otp(self, phone_number: str, otp: str) -> Optional[str]:
+        """Authenticate user with OTP and return JWT token"""
+        success, message, session_data = await self.otp_manager.verify_otp(phone_number, otp)
+        
+        if not success:
+            return None
+        
+        # Create JWT token with phone number as user_id
+        token = self.create_jwt_token(
+            user_id=session_data['phone_number'],
+            role='user'  # Default role for OTP auth
+        )
+        
+        return token
+    
+    async def request_otp(self, phone_number: str) -> Tuple[bool, str]:
+        """Request OTP code to be sent via SMS"""
+        return await self.otp_manager.request_otp(phone_number)
 
 # Example usage in FastAPI endpoints:
 """

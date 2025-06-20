@@ -26,6 +26,8 @@ python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.9
 secure==0.3.0
+twilio==8.15.0
+phonenumbers==8.13.31  # For phone number validation
 
 # AWS SDK for remote backups
 boto3==1.34.69 

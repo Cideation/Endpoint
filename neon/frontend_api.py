@@ -19,8 +19,57 @@ from .api_models import (
     ProcessingStatus, ComponentType, FileType
 )
 from .file_processor import FileProcessor
+from fastapi import FastAPI, HTTPException, Depends
+from pydantic import BaseModel
+from .security import SecurityManager
 
 logger = logging.getLogger(__name__)
+
+app = FastAPI()
+security_manager = SecurityManager()
+
+class PhoneNumber(BaseModel):
+    phone_number: str
+
+class OTPVerification(BaseModel):
+    phone_number: str
+    otp: str
+
+@app.post("/auth/request-otp")
+async def request_otp(phone: PhoneNumber):
+    """Request OTP code to be sent via SMS"""
+    success, message = await security_manager.request_otp(phone.phone_number)
+    if not success:
+        raise HTTPException(status_code=400, detail=message)
+    return {"message": message}
+
+@app.post("/auth/verify-otp")
+async def verify_otp(verification: OTPVerification):
+    """Verify OTP code and return JWT token"""
+    token = await security_manager.authenticate_with_otp(
+        verification.phone_number,
+        verification.otp
+    )
+    
+    if not token:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid verification code"
+        )
+    
+    return {
+        "message": "Authentication successful",
+        "token": token
+    }
+
+# Example protected endpoint
+@app.get("/api/protected")
+@security_manager.require_permissions(['read'])
+async def protected_endpoint(current_user: dict = Depends(security_manager.get_current_user)):
+    return {
+        "message": "Access granted",
+        "user": current_user
+    }
 
 class FrontendAPIService:
     """
