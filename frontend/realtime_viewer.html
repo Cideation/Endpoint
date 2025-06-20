@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔬 BEM Real-Time Data Viewer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'SF Mono', monospace;
+            background: linear-gradient(135deg, #0a0a0a, #1a1a2e);
+            color: #00ff41;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.9);
+            border-bottom: 2px solid #00ff41;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .title {
+            font-size: 1.3em;
+            text-shadow: 0 0 10px #00ff41;
+        }
+
+        .status {
+            display: flex;
+            gap: 20px;
+            font-size: 0.9em;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00ff41;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.3; transform: scale(1.3); }
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            height: calc(100vh - 60px);
+            gap: 2px;
+        }
+
+        .panel {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #00ff41;
+            padding: 15px;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            font-size: 1em;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #00ff41;
+            text-transform: uppercase;
+        }
+
+        .content {
+            height: calc(100% - 40px);
+            overflow-y: auto;
+            font-size: 0.8em;
+        }
+
+        /* JSON Viewer */
+        .json-line {
+            margin-bottom: 5px;
+            padding: 5px;
+            background: rgba(0, 255, 65, 0.1);
+            border-radius: 3px;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .json-key { color: #64b5f6; }
+        .json-string { color: #81c784; }
+        .json-number { color: #ffb74d; }
+
+        /* Pulse Flow to Unreal */
+        .pulse-item {
+            margin-bottom: 8px;
+            padding: 8px;
+            border-left: 3px solid;
+            border-radius: 3px;
+            background: rgba(0, 255, 65, 0.1);
+        }
+
+        .pulse-item.bid { border-color: #2196F3; }
+        .pulse-item.investment { border-color: #00BCD4; }
+        .pulse-item.decay { border-color: #9E9E9E; }
+        .pulse-item.compliancy { border-color: #FF9800; }
+
+        .pulse-header {
+            font-weight: bold;
+            color: #00ff41;
+        }
+
+        /* Agent Nudges */
+        .nudge {
+            background: rgba(0, 255, 65, 0.1);
+            border: 1px solid #00ff41;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .nudge-title {
+            font-weight: bold;
+            color: #64b5f6;
+            margin-bottom: 5px;
+        }
+
+        .nudge-content {
+            margin-bottom: 8px;
+            font-size: 0.85em;
+        }
+
+        .nudge-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .nudge-btn {
+            background: rgba(0, 255, 65, 0.2);
+            border: 1px solid #00ff41;
+            color: #00ff41;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.2s;
+        }
+
+        .nudge-btn:hover {
+            background: rgba(0, 255, 65, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .agent-type {
+            background: rgba(100, 181, 246, 0.3);
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.7em;
+            margin-left: 5px;
+        }
+
+        .aa-confidence {
+            background: rgba(129, 199, 132, 0.3);
+            padding: 1px 4px;
+            border-radius: 8px;
+            font-size: 0.6em;
+            margin-left: 8px;
+            color: #81c784;
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.3); }
+        ::-webkit-scrollbar-thumb { background: #00ff41; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">🔬 BEM Real-Time Data Viewer</div>
+        <div class="status">
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <div class="status-dot"></div>
+                PostgreSQL DB
+            </div>
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <div class="status-dot"></div>
+                AA Service
+            </div>
+        </div>
+    </div>
+
+    <div class="grid">
+        <!-- Graph Structure -->
+        <div class="panel">
+            <div class="panel-header">📊 Cytoscape → PostgreSQL Direct</div>
+            <div class="content" id="graphData">
+                <div style="color: #64b5f6; margin-bottom: 10px;">Database Layer: Live Tables</div>
+                <div style="margin-bottom: 15px;">
+                    <div>• Nodes Table: 4,283 records</div>
+                    <div>• Edges Table: 12,847 connections</div>
+                    <div>• Pulses Table: Live stream</div>
+                    <div>• Coefficients Table: IRR 15.7%</div>
+                </div>
+                <div style="color: #81c784; margin-bottom: 10px;">AA Service Bridge</div>
+                <div>
+                    <div>• FastAPI/Flask: Active</div>
+                    <div>• WebSocket Updates: Real-time</div>
+                    <div>• Behavioral Tracking: Silent</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live JSON Stream -->
+        <div class="panel">
+            <div class="panel-header">📡 Live JSON Data Stream</div>
+            <div class="content" id="jsonStream">
+                <!-- JSON data will populate here -->
+            </div>
+        </div>
+
+        <!-- Pulse Flow to Unreal -->
+        <div class="panel">
+            <div class="panel-header">🌊 Pulse Flow → Unreal Engine</div>
+            <div class="content" id="pulseFlow">
+                <!-- Pulse data will populate here -->
+            </div>
+        </div>
+
+        <!-- Agent Classification via AA -->
+        <div class="panel">
+            <div class="panel-header">🤖 AA Silent Agent Classification</div>
+            <div class="content" id="agentNudges">
+                <!-- Agent nudges will populate here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Real-time data simulation
+        let updateInterval;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            startDataUpdates();
+            populateAgentNudges();
+        });
+
+        function startDataUpdates() {
+            updateInterval = setInterval(() => {
+                updateJsonStream();
+                updatePulseFlow();
+                updateGraphMetrics();
+            }, 2000);
+        }
+
+        function updateJsonStream() {
+            const jsonContainer = document.getElementById('jsonStream');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            const sampleData = {
+                timestamp: timestamp,
+                action: 'system_update',
+                nodes_active: Math.floor(Math.random() * 1000) + 4000,
+                edges_active: Math.floor(Math.random() * 2000) + 12000,
+                aa_classifications: {
+                    investors: Math.floor(Math.random() * 50) + 150,
+                    validators: Math.floor(Math.random() * 30) + 80,
+                    contributors: Math.floor(Math.random() * 40) + 120,
+                    analysts: Math.floor(Math.random() * 35) + 90
+                },
+                dgl_accuracy: (Math.random() * 10 + 90).toFixed(2) + '%',
+                irr_rate: (Math.random() * 5 + 13).toFixed(1) + '%'
+            };
+
+            const jsonHtml = `
+                <div class="json-line">
+                    <strong>[${timestamp}]</strong><br>
+                    <span class="json-key">"nodes_active"</span>: <span class="json-number">${sampleData.nodes_active}</span><br>
+                    <span class="json-key">"dgl_accuracy"</span>: <span class="json-string">"${sampleData.dgl_accuracy}"</span><br>
+                    <span class="json-key">"irr_rate"</span>: <span class="json-string">"${sampleData.irr_rate}"</span><br>
+                    <span class="json-key">"aa_classifications"</span>: {<br>
+                    &nbsp;&nbsp;<span class="json-key">"investors"</span>: <span class="json-number">${sampleData.aa_classifications.investors}</span><br>
+                    &nbsp;&nbsp;<span class="json-key">"validators"</span>: <span class="json-number">${sampleData.aa_classifications.validators}</span><br>
+                    }
+                </div>
+            `;
+
+            jsonContainer.innerHTML = jsonHtml + jsonContainer.innerHTML;
+
+            // Keep only last 10 entries
+            const entries = jsonContainer.children;
+            if (entries.length > 10) {
+                for (let i = 10; i < entries.length; i++) {
+                    entries[i].remove();
+                }
+            }
+        }
+
+        function updatePulseFlow() {
+            const pulseContainer = document.getElementById('pulseFlow');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            const pulseTypes = [
+                { type: 'bid', description: 'Bid pulse targeting building sector A-7' },
+                { type: 'investment', description: 'Investment pulse: 15.7% IRR opportunity' },
+                { type: 'decay', description: 'Decay pulse detected in sector C-3' },
+                { type: 'compliancy', description: 'Compliance check for zoning regulations' }
+            ];
+
+            const randomPulse = pulseTypes[Math.floor(Math.random() * pulseTypes.length)];
+            
+            const pulseHtml = `
+                <div class="pulse-item ${randomPulse.type}">
+                    <div class="pulse-header">🌊 ${randomPulse.type.toUpperCase()}_PULSE → Unreal Engine</div>
+                    <div style="font-size: 0.8em; margin-top: 3px;">
+                        [${timestamp}] ${randomPulse.description}<br>
+                        Target: Spatial nodes | Strength: ${Math.random().toFixed(2)}
+                    </div>
+                </div>
+            `;
+
+            pulseContainer.innerHTML = pulseHtml + pulseContainer.innerHTML;
+
+            // Keep only last 12 entries
+            const entries = pulseContainer.children;
+            if (entries.length > 12) {
+                for (let i = 12; i < entries.length; i++) {
+                    entries[i].remove();
+                }
+            }
+        }
+
+        function updateGraphMetrics() {
+            const graphContainer = document.getElementById('graphData');
+            const nodes = Math.floor(Math.random() * 1000) + 4000;
+            const edges = Math.floor(Math.random() * 2000) + 12000;
+            const agents = Math.floor(Math.random() * 100) + 500;
+            const irr = (Math.random() * 5 + 13).toFixed(1);
+
+            graphContainer.innerHTML = `
+                <div style="color: #64b5f6; margin-bottom: 10px;">Database Layer: Live Tables</div>
+                <div style="margin-bottom: 15px;">
+                    <div>• Nodes Table: ${nodes.toLocaleString()} records</div>
+                    <div>• Edges Table: ${edges.toLocaleString()} connections</div>
+                    <div>• Pulses Table: Live stream</div>
+                    <div>• Coefficients Table: IRR ${irr}%</div>
+                </div>
+                <div style="color: #81c784; margin-bottom: 10px;">AA Service Bridge</div>
+                <div>
+                    <div>• FastAPI/Flask: Active</div>
+                    <div>• WebSocket Updates: Real-time</div>
+                    <div>• Behavioral Tracking: Silent</div>
+                </div>
+            `;
+        }
+
+        function populateAgentNudges() {
+            const nudgeContainer = document.getElementById('agentNudges');
+            
+            const nudges = [
+                {
+                    title: "AA Classified: Investment Pattern",
+                    content: "Silent behavior analysis → 'investor' role. No signup required. Building A-7 shows 15.2% IRR potential.",
+                    actions: ["Explore", "Bid", "Pass"],
+                    type: "investor",
+                    aa_confidence: "94%"
+                },
+                {
+                    title: "AA Detected: Compliance Focus",
+                    content: "Interaction patterns suggest 'validator' role. Automated classification active. Zoning update available.",
+                    actions: ["Review", "Auto-Fix", "Delegate"],
+                    type: "validator",
+                    aa_confidence: "87%"
+                },
+                {
+                    title: "AA Inferred: Collaboration Tendency",
+                    content: "Network activity analysis → 'contributor' classification. No manual role selection. Join project X-12?",
+                    actions: ["Join", "Observe", "Counter"],
+                    type: "contributor",
+                    aa_confidence: "91%"
+                },
+                {
+                    title: "AA Tagged: Risk Analysis Profile",
+                    content: "Silent observation → 'analyst' behavior patterns. Access level adjusted automatically. Decay risk C-3.",
+                    actions: ["Analyze", "Monitor", "Divest"],
+                    type: "analyst",
+                    aa_confidence: "96%"
+                }
+            ];
+
+            nudges.forEach(nudge => {
+                const nudgeHtml = `
+                    <div class="nudge">
+                        <div class="nudge-title">
+                            ${nudge.title}
+                            <span class="agent-type">${nudge.type}</span>
+                            <span class="aa-confidence">AA: ${nudge.aa_confidence}</span>
+                        </div>
+                        <div class="nudge-content">${nudge.content}</div>
+                        <div class="nudge-actions">
+                            ${nudge.actions.map(action => 
+                                `<button class="nudge-btn" onclick="handleNudge('${nudge.type}', '${action}')">${action}</button>`
+                            ).join('')}
+                        </div>
+                    </div>
+                `;
+                nudgeContainer.innerHTML += nudgeHtml;
+            });
+        }
+
+        function handleNudge(agentType, action) {
+            // Route actions correctly: spatial to Unreal, data to Database
+            const actionData = {
+                agent_type: agentType,
+                action: action,
+                timestamp: new Date().toISOString(),
+                route: ['Bid', 'Join', 'Analyze'].includes(action) ? 'unreal_spatial' : 'database_direct',
+                aa_tracking: 'silent_update'
+            };
+
+            console.log('Agent action:', actionData);
+            
+            // Add to JSON stream
+            const jsonContainer = document.getElementById('jsonStream');
+            const jsonHtml = `
+                <div class="json-line">
+                    <strong>[Agent Action]</strong><br>
+                    <span class="json-key">"agent_type"</span>: <span class="json-string">"${agentType}"</span><br>
+                    <span class="json-key">"action"</span>: <span class="json-string">"${action}"</span><br>
+                    <span class="json-key">"route"</span>: <span class="json-string">"${actionData.route}"</span><br>
+                    <span class="json-key">"aa_tracking"</span>: <span class="json-string">"${actionData.aa_tracking}"</span>
+                </div>
+            `;
+            jsonContainer.innerHTML = jsonHtml + jsonContainer.innerHTML;
+
+            // If spatial action, also add to pulse flow
+            if (actionData.route === 'unreal_spatial') {
+                const pulseContainer = document.getElementById('pulseFlow');
+                const pulseHtml = `
+                    <div class="pulse-item ${agentType}">
+                        <div class="pulse-header">🤖 AGENT_PULSE → Unreal Engine</div>
+                        <div style="font-size: 0.8em; margin-top: 3px;">
+                            AA classified ${agentType} performed ${action}<br>
+                            Routing to spatial environment for processing
+                        </div>
+                    </div>
+                `;
+                pulseContainer.innerHTML = pulseHtml + pulseContainer.innerHTML;
+            }
+        }
+
+        // Cleanup
+        window.addEventListener('beforeunload', () => {
+            if (updateInterval) clearInterval(updateInterval);
+        });
+    </script>
+</body>
+</html> 

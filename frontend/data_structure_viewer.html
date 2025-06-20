@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BEM Data Structure Viewer - Real-Time System State</title>
+    <script src="https://unpkg.com/cytoscape@3.24.0/dist/cytoscape.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0a0a, #1a1a2e);
+            color: #00ff41;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.9);
+            border-bottom: 2px solid #00ff41;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        .title {
+            font-size: 1.3em;
+            color: #00ff41;
+            text-shadow: 0 0 10px #00ff41;
+        }
+
+        .system-status {
+            display: flex;
+            gap: 20px;
+            font-size: 0.9em;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00ff41;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.3; transform: scale(1.3); }
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            height: calc(100vh - 60px);
+            gap: 2px;
+        }
+
+        .panel {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #00ff41;
+            padding: 15px;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #00ff41;
+            color: #00ff41;
+            text-transform: uppercase;
+        }
+
+        /* Graph Structure Panel */
+        .graph-structure {
+            position: relative;
+        }
+
+        #cytoscapeContainer {
+            width: 100%;
+            height: calc(100% - 40px);
+            border: 1px solid #333;
+        }
+
+        /* Real-Time JSON Panel */
+        .json-viewer {
+            font-size: 0.8em;
+            line-height: 1.3;
+        }
+
+        .json-content {
+            height: calc(100% - 40px);
+            overflow-y: auto;
+            background: rgba(0, 20, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .json-key {
+            color: #64b5f6;
+        }
+
+        .json-string {
+            color: #81c784;
+        }
+
+        .json-number {
+            color: #ffb74d;
+        }
+
+        .json-boolean {
+            color: #f48fb1;
+        }
+
+        /* Pulse Flow Panel */
+        .pulse-flow {
+            position: relative;
+        }
+
+        .pulse-container {
+            height: calc(100% - 40px);
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .pulse-stream {
+            margin-bottom: 10px;
+            padding: 8px;
+            background: rgba(0, 255, 65, 0.1);
+            border-left: 3px solid;
+            border-radius: 3px;
+            font-size: 0.85em;
+        }
+
+        .pulse-stream.bid { border-color: #2196F3; }
+        .pulse-stream.occupancy { border-color: #4CAF50; }
+        .pulse-stream.compliancy { border-color: #FF9800; }
+        .pulse-stream.fit { border-color: #9C27B0; }
+        .pulse-stream.investment { border-color: #00BCD4; }
+        .pulse-stream.decay { border-color: #9E9E9E; }
+        .pulse-stream.reject { border-color: #F44336; }
+
+        .pulse-header {
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .pulse-data {
+            font-size: 0.8em;
+            opacity: 0.8;
+        }
+
+        /* Agent Classification Panel */
+        .agent-classification {
+            position: relative;
+        }
+
+        .agent-container {
+            height: calc(100% - 40px);
+            overflow-y: auto;
+        }
+
+        .agent-nudge {
+            background: rgba(0, 255, 65, 0.1);
+            border: 1px solid #00ff41;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .nudge-header {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #64b5f6;
+        }
+
+        .nudge-content {
+            font-size: 0.85em;
+            margin-bottom: 8px;
+        }
+
+        .nudge-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .nudge-btn {
+            background: rgba(0, 255, 65, 0.2);
+            border: 1px solid #00ff41;
+            color: #00ff41;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.2s;
+        }
+
+        .nudge-btn:hover {
+            background: rgba(0, 255, 65, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .agent-type {
+            display: inline-block;
+            padding: 2px 6px;
+            background: rgba(100, 181, 246, 0.3);
+            border-radius: 10px;
+            font-size: 0.7em;
+            margin-left: 5px;
+        }
+
+        /* ECM Architecture Indicator */
+        .ecm-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #00ff41;
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 0.8em;
+            z-index: 1000;
+        }
+
+        .ecm-layer {
+            margin-bottom: 3px;
+        }
+
+        .immutable { color: #64b5f6; }
+        .mutable { color: #81c784; }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #00ff41;
+            border-radius: 3px;
+        }
+
+        /* Real-time data flow animation */
+        .data-flow {
+            animation: dataFlow 3s infinite;
+        }
+
+        @keyframes dataFlow {
+            0% { opacity: 0.5; transform: translateX(-10px); }
+            50% { opacity: 1; transform: translateX(0); }
+            100% { opacity: 0.5; transform: translateX(10px); }
+        }
+
+        /* Connection indicators */
+        .connection-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .connection-item {
+            text-align: center;
+            padding: 5px;
+            background: rgba(0, 255, 65, 0.1);
+            border-radius: 3px;
+            font-size: 0.8em;
+        }
+
+        .connected { color: #4CAF50; }
+        .disconnected { color: #F44336; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">🔬 BEM Data Structure Viewer - Real-Time System State</div>
+        <div class="system-status">
+            <div class="status-item">
+                <div class="status-dot"></div>
+                ECM Gateway
+            </div>
+            <div class="status-item">
+                <div class="status-dot"></div>
+                Pulse Router
+            </div>
+            <div class="status-item">
+                <div class="status-dot"></div>
+                Data Stream
+            </div>
+        </div>
+    </div>
+
+    <div class="main-grid">
+        <!-- Graph Structure Panel -->
+        <div class="panel graph-structure">
+            <div class="panel-header">📊 Graph Data Structure (Cytoscape View)</div>
+            <div class="ecm-indicator">
+                <div class="ecm-layer immutable">ECM: Immutable</div>
+                <div class="ecm-layer mutable">Compute: Mutable</div>
+            </div>
+            <div id="cytoscapeContainer"></div>
+        </div>
+
+        <!-- Real-Time JSON Panel -->
+        <div class="panel json-viewer">
+            <div class="panel-header">📡 Live JSON Data Stream</div>
+            <div class="connection-grid">
+                <div class="connection-item connected">API Server</div>
+                <div class="connection-item connected">WebSocket</div>
+                <div class="connection-item connected">Database</div>
+            </div>
+            <div class="json-content" id="jsonContent">
+                <div class="data-flow">Loading real-time data...</div>
+            </div>
+        </div>
+
+        <!-- Pulse Flow Panel (Unreal Integration) -->
+        <div class="panel pulse-flow">
+            <div class="panel-header">🌊 Pulse Flow → Unreal Engine</div>
+            <div class="pulse-container" id="pulseContainer">
+                <!-- Pulse streams will be populated here -->
+            </div>
+        </div>
+
+        <!-- Agent Classification Panel -->
+        <div class="panel agent-classification">
+            <div class="panel-header">🤖 Agent Classification via Nudges</div>
+            <div class="agent-container" id="agentContainer">
+                <!-- Agent nudges will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // WebSocket connections
+        let ecmSocket = null;
+        let pulseSocket = null;
+        let dataUpdateInterval = null;
+
+        // Initialize system
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCytoscape();
+            connectWebSockets();
+            startDataUpdates();
+            populateAgentNudges();
+        });
+
+        function initializeCytoscape() {
+            // Cytoscape shows ONLY graph data structure - no pulse processing
+            const cy = cytoscape({
+                container: document.getElementById('cytoscapeContainer'),
+                
+                elements: [
+                    // BEM system graph structure
+                    { data: { id: 'n1', label: 'Node Registry', type: 'system' } },
+                    { data: { id: 'n2', label: 'Building Network', type: 'building' } },
+                    { data: { id: 'n3', label: 'Agent Pool', type: 'agent' } },
+                    { data: { id: 'n4', label: 'IRR Calculator', type: 'compute' } },
+                    { data: { id: 'n5', label: 'DGL Trainer', type: 'ml' } },
+                    { data: { id: 'n6', label: 'State Manager', type: 'system' } },
+                    
+                    // Data flow edges (NOT pulse flow)
+                    { data: { id: 'e1', source: 'n1', target: 'n2', type: 'data_flow' } },
+                    { data: { id: 'e2', source: 'n3', target: 'n2', type: 'data_flow' } },
+                    { data: { id: 'e3', source: 'n2', target: 'n4', type: 'data_flow' } },
+                    { data: { id: 'e4', source: 'n4', target: 'n5', type: 'data_flow' } },
+                    { data: { id: 'e5', source: 'n5', target: 'n6', type: 'data_flow' } }
+                ],
+                
+                style: [
+                    {
+                        selector: 'node',
+                        style: {
+                            'background-color': '#00ff41',
+                            'label': 'data(label)',
+                            'color': '#000',
+                            'text-valign': 'center',
+                            'text-halign': 'center',
+                            'font-size': '10px',
+                            'width': '50px',
+                            'height': '50px',
+                            'font-family': 'monospace'
+                        }
+                    },
+                    {
+                        selector: 'node[type="system"]',
+                        style: { 'background-color': '#64b5f6' }
+                    },
+                    {
+                        selector: 'node[type="building"]',
+                        style: { 'background-color': '#81c784' }
+                    },
+                    {
+                        selector: 'node[type="agent"]',
+                        style: { 'background-color': '#ffb74d' }
+                    },
+                    {
+                        selector: 'node[type="compute"]',
+                        style: { 'background-color': '#f48fb1' }
+                    },
+                    {
+                        selector: 'node[type="ml"]',
+                        style: { 'background-color': '#ce93d8' }
+                    },
+                    {
+                        selector: 'edge',
+                        style: {
+                            'width': 2,
+                            'line-color': '#00ff41',
+                            'target-arrow-color': '#00ff41',
+                            'target-arrow-shape': 'triangle',
+                            'curve-style': 'bezier',
+                            'opacity': 0.7
+                        }
+                    }
+                ],
+                
+                layout: {
+                    name: 'circle',
+                    radius: 80
+                }
+            });
+
+            // Click handler for data structure exploration
+            cy.on('tap', 'node', function(evt) {
+                const node = evt.target;
+                updateJsonViewer({
+                    action: 'node_selected',
+                    node_id: node.id(),
+                    node_data: node.data(),
+                    timestamp: new Date().toISOString()
+                });
+            });
+        }
+
+        function connectWebSockets() {
+            // Connect to ECM Gateway
+            try {
+                ecmSocket = new WebSocket('ws://localhost:8765');
+                ecmSocket.onopen = () => {
+                    console.log('ECM Gateway connected');
+                    updateConnectionStatus('ecm', true);
+                };
+                ecmSocket.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    updateJsonViewer(data);
+                };
+            } catch (error) {
+                console.error('ECM connection failed:', error);
+            }
+
+            // Connect to Pulse System (routes to Unreal)
+            try {
+                pulseSocket = new WebSocket('ws://localhost:8766');
+                pulseSocket.onopen = () => {
+                    console.log('Pulse system connected');
+                    updateConnectionStatus('pulse', true);
+                };
+                pulseSocket.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    updatePulseFlow(data);
+                };
+            } catch (error) {
+                console.error('Pulse connection failed:', error);
+            }
+        }
+
+        function updateJsonViewer(data) {
+            const jsonContent = document.getElementById('jsonContent');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            const jsonHtml = `
+                <div class="data-flow">
+                    <strong>[${timestamp}]</strong> <span class="json-key">${data.action || 'system_update'}</span><br>
+                    ${formatJson(data)}
+                </div>
+            `;
+            
+            jsonContent.innerHTML = jsonHtml + jsonContent.innerHTML;
+            
+            // Keep only last 20 entries
+            const entries = jsonContent.children;
+            if (entries.length > 20) {
+                for (let i = 20; i < entries.length; i++) {
+                    entries[i].remove();
+                }
+            }
+        }
+
+        function formatJson(obj, indent = 0) {
+            let html = '';
+            const spacing = '&nbsp;'.repeat(indent * 2);
+            
+            for (const [key, value] of Object.entries(obj)) {
+                if (typeof value === 'object' && value !== null) {
+                    html += `${spacing}<span class="json-key">"${key}"</span>: {<br>`;
+                    html += formatJson(value, indent + 1);
+                    html += `${spacing}}<br>`;
+                } else if (typeof value === 'string') {
+                    html += `${spacing}<span class="json-key">"${key}"</span>: <span class="json-string">"${value}"</span><br>`;
+                } else if (typeof value === 'number') {
+                    html += `${spacing}<span class="json-key">"${key}"</span>: <span class="json-number">${value}</span><br>`;
+                } else if (typeof value === 'boolean') {
+                    html += `${spacing}<span class="json-key">"${key}"</span>: <span class="json-boolean">${value}</span><br>`;
+                }
+            }
+            
+            return html;
+        }
+
+        function updatePulseFlow(data) {
+            const pulseContainer = document.getElementById('pulseContainer');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            // Determine pulse type
+            const pulseType = data.type || 'unknown';
+            const pulseClass = pulseType.replace('_pulse', '');
+            
+            const pulseHtml = `
+                <div class="pulse-stream ${pulseClass}">
+                    <div class="pulse-header">
+                        🌊 ${pulseType.toUpperCase()} → Unreal Engine [${timestamp}]
+                    </div>
+                    <div class="pulse-data">
+                        Target: ${data.payload?.target_nodes || data.payload?.area || 'All Nodes'}<br>
+                        Strength: ${data.payload?.pulse_strength || data.payload?.irr_rate || 'N/A'}<br>
+                        Source: ${data.payload?.source || 'System'}<br>
+                        Status: ${data.status || 'Processing'}
+                    </div>
+                </div>
+            `;
+            
+            pulseContainer.innerHTML = pulseHtml + pulseContainer.innerHTML;
+            
+            // Keep only last 15 pulse entries
+            const entries = pulseContainer.children;
+            if (entries.length > 15) {
+                for (let i = 15; i < entries.length; i++) {
+                    entries[i].remove();
+                }
+            }
+        }
+
+        function populateAgentNudges() {
+            const agentContainer = document.getElementById('agentContainer');
+            
+            const nudges = [
+                {
+                    title: "Investment Opportunity Detected",
+                    content: "Building sector A-7 shows 15.2% IRR potential. Your bidding style suggests high-yield preference.",
+                    actions: ["Explore", "Bid Now", "Pass"],
+                    type: "investor"
+                },
+                {
+                    title: "Compliance Alert",
+                    content: "New zoning regulations affect your managed properties. Review compliance status?",
+                    actions: ["Review", "Auto-Fix", "Delegate"],
+                    type: "compliance"
+                },
+                {
+                    title: "Network Effect Opportunity",
+                    content: "Your neighbor agents are collaborating on project X-12. Join the network?",
+                    actions: ["Join", "Observe", "Counter-Offer"],
+                    type: "collaborator"
+                },
+                {
+                    title: "Decay Risk Assessment",
+                    content: "Portfolio analysis shows potential decay in sector C-3. Proactive measures recommended.",
+                    actions: ["Mitigate", "Monitor", "Divest"],
+                    type: "analyst"
+                },
+                {
+                    title: "Pulse Pattern Recognition",
+                    content: "Your trading pattern matches successful 'momentum' agent profiles. Optimize strategy?",
+                    actions: ["Optimize", "Learn More", "Maintain"],
+                    type: "momentum"
+                }
+            ];
+            
+            nudges.forEach((nudge, index) => {
+                const nudgeHtml = `
+                    <div class="agent-nudge">
+                        <div class="nudge-header">
+                            ${nudge.title}
+                            <span class="agent-type">${nudge.type}</span>
+                        </div>
+                        <div class="nudge-content">${nudge.content}</div>
+                        <div class="nudge-actions">
+                            ${nudge.actions.map(action => 
+                                `<button class="nudge-btn" onclick="handleNudgeAction('${nudge.type}', '${action}')">${action}</button>`
+                            ).join('')}
+                        </div>
+                    </div>
+                `;
+                
+                agentContainer.innerHTML += nudgeHtml;
+            });
+        }
+
+        function handleNudgeAction(agentType, action) {
+            // Send action to appropriate system
+            const actionData = {
+                type: 'agent_action',
+                agent_type: agentType,
+                action: action,
+                timestamp: new Date().toISOString()
+            };
+            
+            // Route to Unreal if it's a spatial action, ECM if it's a data action
+            if (['Bid Now', 'Join', 'Mitigate'].includes(action) && pulseSocket) {
+                // Spatial actions go to Unreal via Pulse System
+                pulseSocket.send(JSON.stringify({
+                    type: 'agent_pulse',
+                    payload: actionData
+                }));
+            } else if (ecmSocket) {
+                // Data actions go through ECM Gateway
+                ecmSocket.send(JSON.stringify(actionData));
+            }
+            
+            updateJsonViewer(actionData);
+        }
+
+        function startDataUpdates() {
+            // Simulate real-time system data updates
+            dataUpdateInterval = setInterval(() => {
+                // Random system metrics
+                const systemData = {
+                    action: 'system_metrics',
+                    nodes_active: Math.floor(Math.random() * 1000) + 4000,
+                    edges_active: Math.floor(Math.random() * 2000) + 12000,
+                    dgl_accuracy: (Math.random() * 10 + 90).toFixed(2),
+                    irr_current: (Math.random() * 5 + 13).toFixed(1),
+                    pulse_throughput: Math.floor(Math.random() * 50) + 200,
+                    agent_classifications: {
+                        investors: Math.floor(Math.random() * 50) + 150,
+                        compliance: Math.floor(Math.random() * 30) + 80,
+                        collaborators: Math.floor(Math.random() * 40) + 120,
+                        analysts: Math.floor(Math.random() * 35) + 90,
+                        momentum: Math.floor(Math.random() * 25) + 60
+                    },
+                    timestamp: new Date().toISOString()
+                };
+                
+                updateJsonViewer(systemData);
+                
+                // Simulate random pulse activity
+                const pulseTypes = ['bid_pulse', 'investment_pulse', 'decay_pulse', 'compliancy_pulse'];
+                const randomPulse = pulseTypes[Math.floor(Math.random() * pulseTypes.length)];
+                
+                updatePulseFlow({
+                    type: randomPulse,
+                    payload: {
+                        source: 'system_simulation',
+                        target_nodes: [`node_${Math.floor(Math.random() * 100)}`, `node_${Math.floor(Math.random() * 100)}`],
+                        pulse_strength: Math.random().toFixed(2)
+                    },
+                    status: 'processed'
+                });
+                
+            }, 3000);
+        }
+
+        function updateConnectionStatus(type, connected) {
+            // Update status indicators in header
+            const statusDots = document.querySelectorAll('.status-dot');
+            statusDots.forEach(dot => {
+                dot.style.background = connected ? '#00ff41' : '#ff4444';
+            });
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (dataUpdateInterval) clearInterval(dataUpdateInterval);
+            if (ecmSocket) ecmSocket.close();
+            if (pulseSocket) pulseSocket.close();
+        });
+    </script>
+</body>
+</html> 
