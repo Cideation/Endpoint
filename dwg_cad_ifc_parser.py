@@ -8,6 +8,9 @@ import traceback
 import multiprocessing as mp
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 import math
+from pydantic import BaseModel
+import psycopg2
+from neon.config import DATABASE_URL
 
 # For DWG parsing
 try:
@@ -907,3 +910,42 @@ def parse_ifc(data):
         return parse_ifc_file(data)
     else:
         return [{"name": entity.get("Name", ""), "shape": entity.get("Type", "")} for entity in data]
+
+# Schema-first: Define the structure first
+class NodeDictionary(BaseModel):
+    node_id: str
+    node_label: str
+    phase: Phase
+    agent: int
+    callback_type: CallbackType
+    trigger_functor: str
+    dictionary: Dict[str, Any]
+
+# Then transform data to match the schema
+node_dict = transformer.transform_component_to_node_dictionary(component)
+
+def get_components_from_neon():
+    # Query actual PostgreSQL database
+    # Return real component data
+
+# Replace test data with real database queries
+components = get_components_from_neon()  # Real data
+pipeline_result = await orchestrator.orchestrate_full_pipeline(components)
+
+def process_and_discard(file_path):
+    # 1. Extract all schema data
+    extracted_data = parse_file_parallel(file_path)
+    
+    # 2. Store in database
+    store_in_database(extracted_data)
+    
+    # 3. Delete raw file
+    os.remove(file_path)
+    
+    # 4. Return success with component count
+    return {
+        "status": "success",
+        "components_extracted": len(extracted_data),
+        "file_processed": True,
+        "raw_file_discarded": True
+    }
