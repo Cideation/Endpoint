@@ -1,14 +1,30 @@
 version: '3.8'
 
+networks:
+  bem-network:
+    driver: bridge
+
 services:
   ne-dag-alpha:
     build: ./ne-dag-alpha
+    ports:
+      - "5000:5000"
     volumes:
       - ./inputs:/inputs:ro
       - ./outputs:/outputs
       - ./shared:/shared:ro
       - ./pulse:/pulse:ro
     working_dir: /app
+    networks:
+      - bem-network
+    environment:
+      - FLASK_ENV=production
+      - PYTHONPATH=/shared:/app/shared
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 #  ne-functor-types:
 #    build: ./ne-functor-types
@@ -37,10 +53,107 @@ services:
 #      - ./pulse:/pulse:ro
 #    working_dir: /app
 
-  ne-graph-runtime-engine:
-    build: ./ne-graph-runtime-engine
+  ne-functor-types:
+    build: ./ne-functor-types
+    ports:
+      - "5001:5001"
     volumes:
       - ./inputs:/inputs:ro
       - ./outputs:/outputs
+      - ./shared:/shared:ro
+      - ./pulse:/pulse:ro
     working_dir: /app
-    command: python main.py 
+    networks:
+      - bem-network
+    environment:
+      - FLASK_ENV=production
+      - PYTHONPATH=/shared:/app/shared
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  ne-callback-engine:
+    build: ./ne-callback-engine
+    ports:
+      - "5002:5002"
+    volumes:
+      - ./inputs:/inputs:ro
+      - ./outputs:/outputs
+      - ./shared:/shared:ro
+      - ./pulse:/pulse:ro
+    working_dir: /app
+    networks:
+      - bem-network
+    environment:
+      - FLASK_ENV=production
+      - PYTHONPATH=/shared:/app/shared
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  sfde:
+    build: ./sfde
+    ports:
+      - "5003:5003"
+    volumes:
+      - ./inputs:/inputs:ro
+      - ./outputs:/outputs
+      - ./shared:/shared:ro
+      - ./pulse:/pulse:ro
+    working_dir: /app
+    networks:
+      - bem-network
+    environment:
+      - FLASK_ENV=production
+      - PYTHONPATH=/shared:/app/shared
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  ne-graph-runtime-engine:
+    build: ./ne-graph-runtime-engine
+    ports:
+      - "5004:5004"
+    volumes:
+      - ./inputs:/inputs:ro
+      - ./outputs:/outputs
+      - ./shared:/shared:ro
+      - ./pulse:/pulse:ro
+    working_dir: /app
+    networks:
+      - bem-network
+    environment:
+      - FLASK_ENV=production
+      - PYTHONPATH=/shared:/app/shared
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  ne-optimization-engine:
+    build: ./ne-optimization-engine
+    ports:
+      - "5005:5005"
+    volumes:
+      - ./inputs:/inputs:ro
+      - ./outputs:/outputs
+      - ./shared:/shared:ro
+      - ./pulse:/pulse:ro
+    working_dir: /app
+    networks:
+      - bem-network
+    environment:
+      - FLASK_ENV=production
+      - PYTHONPATH=/shared:/app/shared
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3 
