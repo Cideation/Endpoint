@@ -2,6 +2,7 @@
 """
 Functor Types Microservice - Real Implementation
 Handles functor type analysis and recommendations with actual computations
+Enhanced with Global Design Parameters for node enrichment
 """
 
 from flask import Flask, request, jsonify
@@ -14,6 +15,39 @@ import os
 # Add shared modules to path
 sys.path.append('/shared')
 sys.path.append('/app/shared')
+sys.path.append('../shared')
+
+# Import global design parameters
+try:
+    from shared.global_design_parameters import (
+        global_design_parameters,
+        enrich_node_with_global_params,
+        get_building_component_params,
+        get_scoring_context
+    )
+    GDP_AVAILABLE = True
+    logger = logging.getLogger(__name__)
+    logger.info("✅ Global Design Parameters imported successfully")
+except ImportError as e:
+    GDP_AVAILABLE = False
+    # Fallback global design parameters
+    global_design_parameters = {
+        "building_components": {
+            "locus_condition": "context_driven",
+            "self_weight_category": "lightweight",
+            "order_type": "modular_grid",
+            "form_strategy": "evolutionary_adaptive",
+            "function_flexibility": 0.85,
+            "material_expression": "symbolic_natural",
+            "aesthetic_tension": 0.6,
+            "precision_tolerance": "high",
+            "detail_complexity": "prefab_ready",
+            "joint_type": "slip_fit",
+            "daylight_factor": 0.73,
+            "evolutionary_potential": 0.92
+        }
+    }
+    print(f"⚠️ Using fallback global design parameters: {e}")
 
 app = Flask(__name__)
 
@@ -81,29 +115,51 @@ def process_functor_types():
         phase = request_data.get('phase', 'phase_2')
         analysis_type = request_data.get('analysis_type', 'compatibility')
         
-        # Process functor type analysis
+        # Enrich components with global design parameters
+        enriched_components = []
+        for component in components:
+            # Create a copy to avoid modifying original
+            enriched_component = component.copy()
+            
+            # Enrich with global design parameters
+            if GDP_AVAILABLE:
+                enriched_component = enrich_node_with_global_params(enriched_component, 'building_components')
+            else:
+                enriched_component.update(global_design_parameters['building_components'])
+            
+            # Add GDP metadata
+            enriched_component['_gdp_enriched'] = True
+            enriched_component['_gdp_timestamp'] = datetime.now().isoformat()
+            
+            enriched_components.append(enriched_component)
+        
+        logger.info(f"Enriched {len(enriched_components)} components with global design parameters")
+        
+        # Process functor type analysis with enriched data
         results = {
             "functor_analysis_status": "completed",
             "timestamp": datetime.now().isoformat(),
-            "components_analyzed": len(components),
+            "components_analyzed": len(enriched_components),
+            "components_enriched": len([c for c in enriched_components if c.get('_gdp_enriched', False)]),
             "phase": phase,
-            "analysis_type": analysis_type
+            "analysis_type": analysis_type,
+            "global_design_params_applied": GDP_AVAILABLE
         }
         
         # Perform type compatibility analysis
-        compatibility_results = analyze_type_compatibility(components, phase)
+        compatibility_results = analyze_type_compatibility(enriched_components, phase)
         results["compatibility_analysis"] = compatibility_results
         
         # Generate type recommendations
-        type_recommendations = generate_type_recommendations(components, phase)
+        type_recommendations = generate_type_recommendations(enriched_components, phase)
         results["type_recommendations"] = type_recommendations
         
         # Analyze functor affinity
-        affinity_analysis = analyze_functor_affinity(components, phase)
+        affinity_analysis = analyze_functor_affinity(enriched_components, phase)
         results["affinity_analysis"] = affinity_analysis
         
         # Calculate type scores
-        type_scores = calculate_type_scores(components, phase)
+        type_scores = calculate_type_scores(enriched_components, phase)
         results["type_scores"] = type_scores
         
         logger.info(f"Functor Types processing completed successfully")
