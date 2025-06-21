@@ -1,0 +1,78 @@
+{
+  "interpretation_map": {
+    "V01_ProductComponent": {
+      "default_tags": [
+        "component",
+        "product",
+        "manufacturing"
+      ],
+      "expected_inputs": [
+        "material",
+        "dimensions",
+        "specifications"
+      ],
+      "expected_outputs": [
+        "score",
+        "quality",
+        "feasibility"
+      ],
+      "rendering_priority": "high"
+    },
+    "V04_UserEconomicProfile": {
+      "default_tags": [
+        "user",
+        "economic",
+        "constraints"
+      ],
+      "expected_inputs": [
+        "budget",
+        "preferences",
+        "timeline"
+      ],
+      "expected_outputs": [
+        "profile",
+        "constraints",
+        "priorities"
+      ],
+      "rendering_priority": "medium"
+    },
+    "V05_ManufacturingProcess": {
+      "default_tags": [
+        "process",
+        "manufacturing",
+        "workflow"
+      ],
+      "expected_inputs": [
+        "components",
+        "resources",
+        "schedule"
+      ],
+      "expected_outputs": [
+        "plan",
+        "timeline",
+        "cost"
+      ],
+      "rendering_priority": "high"
+    }
+  },
+  "hints_metadata": {
+    "V01_ProductComponent": {
+      "hint_id": "hint_730b2d63",
+      "confidence": 1.0,
+      "source": "system",
+      "timestamp": "2025-06-21T04:54:23.571135+00:00"
+    },
+    "V04_UserEconomicProfile": {
+      "hint_id": "hint_69dbca42",
+      "confidence": 1.0,
+      "source": "system",
+      "timestamp": "2025-06-21T04:54:23.572564+00:00"
+    },
+    "V05_ManufacturingProcess": {
+      "hint_id": "hint_156ae6b4",
+      "confidence": 1.0,
+      "source": "system",
+      "timestamp": "2025-06-21T04:54:23.580168+00:00"
+    }
+  }
+}

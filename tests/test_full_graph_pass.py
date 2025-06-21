@@ -9,6 +9,7 @@ import json
 import logging
 import sys
 import time
+import pytest
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Any
@@ -17,10 +18,10 @@ from typing import Dict, List, Any
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-class FullGraphPassTest:
+class TestFullGraphPass:
     """Test complete DAG execution across all phases"""
     
-    def __init__(self):
+    def setup_method(self):
         self.test_results = {
             'alpha_phase': {'status': 'pending', 'nodes': [], 'execution_time': 0},
             'beta_phase': {'status': 'pending', 'nodes': [], 'execution_time': 0},
@@ -29,6 +30,43 @@ class FullGraphPassTest:
             'full_graph_integrity': {'status': 'pending', 'details': {}}
         }
         self.start_time = datetime.now()
+    
+    def test_full_graph_execution(self):
+        """Test complete full graph pass execution"""
+        logger.info("🚀 Starting Full Graph Pass Test")
+        
+        test_graph = self.create_test_graph()
+        alpha_results = self.execute_alpha_phase(test_graph)
+        beta_results = self.execute_beta_phase(test_graph, alpha_results)
+        gamma_results = self.execute_gamma_phase(test_graph, beta_results)
+        
+        # Assertions
+        assert self.test_results['alpha_phase']['status'] == 'passed'
+        assert self.test_results['beta_phase']['status'] == 'passed'
+        assert self.test_results['gamma_phase']['status'] == 'passed'
+        assert len(alpha_results['nodes']) == 2
+        assert len(beta_results['nodes']) == 3
+        assert len(gamma_results['nodes']) == 4
+    
+    def test_phase_transitions(self):
+        """Test phase transition validation"""
+        test_graph = self.create_test_graph()
+        alpha_results = self.execute_alpha_phase(test_graph)
+        beta_results = self.execute_beta_phase(test_graph, alpha_results)
+        gamma_results = self.execute_gamma_phase(test_graph, beta_results)
+        
+        self.validate_phase_transitions(alpha_results, beta_results, gamma_results)
+        assert self.test_results['phase_transitions']['status'] == 'passed'
+    
+    def test_graph_integrity(self):
+        """Test full graph integrity validation"""
+        test_graph = self.create_test_graph()
+        alpha_results = self.execute_alpha_phase(test_graph)
+        beta_results = self.execute_beta_phase(test_graph, alpha_results)
+        gamma_results = self.execute_gamma_phase(test_graph, beta_results)
+        
+        self.validate_full_graph_integrity(test_graph, gamma_results)
+        assert self.test_results['full_graph_integrity']['status'] == 'passed'
         
     def run_full_graph_test(self) -> Dict[str, Any]:
         """Execute complete full graph pass test"""
@@ -237,7 +275,7 @@ class FullGraphPassTest:
         logger.info(f"🚀 Full Graph Pass Test completed in {duration:.2f}s - Report: {report_file}")
 
 def main():
-    test_suite = FullGraphPassTest()
+    test_suite = TestFullGraphPass()
     results = test_suite.run_full_graph_test()
     failed_components = sum(1 for result in results.values() if result.get('status') == 'failed')
     sys.exit(failed_components)

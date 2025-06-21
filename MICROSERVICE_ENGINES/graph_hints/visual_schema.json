@@ -1,0 +1,55 @@
+{
+  "interpretation_map": {
+    "node": {
+      "required_keys": [
+        "id",
+        "type",
+        "state",
+        "position"
+      ],
+      "optional_keys": [
+        "color",
+        "animation",
+        "metadata",
+        "label"
+      ],
+      "rendering_hints": {
+        "min_size": 20,
+        "max_size": 100,
+        "default_color": "#4A90E2"
+      }
+    },
+    "edge": {
+      "required_keys": [
+        "id",
+        "source",
+        "target",
+        "type"
+      ],
+      "optional_keys": [
+        "color",
+        "width",
+        "animation",
+        "label"
+      ],
+      "rendering_hints": {
+        "default_width": 2,
+        "default_color": "#999999"
+      }
+    }
+  },
+  "hints_metadata": {
+    "node": {
+      "hint_id": "hint_1e7ecd45",
+      "confidence": 1.0,
+      "source": "system",
+      "timestamp": "2025-06-21T04:54:23.585529+00:00"
+    },
+    "edge": {
+      "hint_id": "hint_9088e2fb",
+      "confidence": 1.0,
+      "source": "system",
+      "timestamp": "2025-06-21T04:54:23.585875+00:00"
+    }
+  }
+}

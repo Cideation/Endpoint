@@ -1,0 +1,91 @@
+{
+  "interpretation_map": {
+    "manufacturing_optimization": {
+      "conditions": {
+        "quality_score": {
+          "operator": "greater_than",
+          "value": 0.8
+        },
+        "cost_efficiency": {
+          "operator": "greater_than",
+          "value": 0.7
+        },
+        "timeline_feasibility": {
+          "operator": "greater_than",
+          "value": 0.75
+        }
+      },
+      "actions": {
+        "trigger_production": true,
+        "notify_stakeholders": true,
+        "lock_configuration": true
+      },
+      "priority": 0.95,
+      "activation_count": 0,
+      "last_activated": null
+    },
+    "innovation_breakthrough": {
+      "conditions": {
+        "innovation_score": {
+          "operator": "greater_than",
+          "value": 0.9
+        },
+        "feasibility": {
+          "operator": "greater_than",
+          "value": 0.8
+        },
+        "market_potential": {
+          "operator": "greater_than",
+          "value": 0.85
+        }
+      },
+      "actions": {
+        "highlight_innovation": true,
+        "increase_priority": 2.0,
+        "alert_leadership": true
+      },
+      "priority": 0.98,
+      "activation_count": 0,
+      "last_activated": null
+    },
+    "system_convergence": {
+      "conditions": {
+        "all_phases_stable": {
+          "operator": "equals",
+          "value": true
+        },
+        "agent_consensus": {
+          "operator": "greater_than",
+          "value": 0.85
+        }
+      },
+      "actions": {
+        "finalize_design": true,
+        "generate_reports": true
+      },
+      "priority": 0.9,
+      "activation_count": 0,
+      "last_activated": null
+    }
+  },
+  "hints_metadata": {
+    "manufacturing_optimization": {
+      "hint_id": "hint_79b860bc",
+      "confidence": 0.95,
+      "source": "emergence_system",
+      "timestamp": "2025-06-21T04:54:23.591747+00:00"
+    },
+    "innovation_breakthrough": {
+      "hint_id": "hint_f3d80df8",
+      "confidence": 0.98,
+      "source": "emergence_system",
+      "timestamp": "2025-06-21T04:54:23.592156+00:00"
+    },
+    "system_convergence": {
+      "hint_id": "hint_d9bca4ac",
+      "confidence": 0.9,
+      "source": "emergence_system",
+      "timestamp": "2025-06-21T04:54:23.594906+00:00"
+    }
+  }
+}

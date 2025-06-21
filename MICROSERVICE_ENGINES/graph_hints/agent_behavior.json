@@ -1,0 +1,66 @@
+{
+  "interpretation_map": {
+    "QualityAgent": {
+      "learning_rate": 0.12,
+      "bidding_pattern": {
+        "quality": 1.8,
+        "manufacturing": 1.2,
+        "cost": 0.6
+      },
+      "adaptation_enabled": true
+    },
+    "CostAgent": {
+      "learning_rate": 0.15,
+      "bidding_pattern": {
+        "cost": 1.9,
+        "manufacturing": 1.1,
+        "quality": 0.7
+      },
+      "adaptation_enabled": true
+    },
+    "TimeAgent": {
+      "learning_rate": 0.1,
+      "bidding_pattern": {
+        "timeline": 1.7,
+        "manufacturing": 1.3,
+        "quality": 0.8
+      },
+      "adaptation_enabled": true
+    },
+    "InnovationAgent": {
+      "learning_rate": 0.2,
+      "bidding_pattern": {
+        "innovation": 2.0,
+        "quality": 1.0,
+        "cost": 0.5
+      },
+      "adaptation_enabled": true
+    }
+  },
+  "hints_metadata": {
+    "QualityAgent": {
+      "hint_id": "hint_d0cc77c6",
+      "confidence": 1.0,
+      "source": "agent_registration",
+      "timestamp": "2025-06-21T04:54:23.586696+00:00"
+    },
+    "CostAgent": {
+      "hint_id": "hint_c4c5f4e5",
+      "confidence": 1.0,
+      "source": "agent_registration",
+      "timestamp": "2025-06-21T04:54:23.586937+00:00"
+    },
+    "TimeAgent": {
+      "hint_id": "hint_29c1984a",
+      "confidence": 1.0,
+      "source": "agent_registration",
+      "timestamp": "2025-06-21T04:54:23.588731+00:00"
+    },
+    "InnovationAgent": {
+      "hint_id": "hint_d5fdb4ab",
+      "confidence": 1.0,
+      "source": "agent_registration",
+      "timestamp": "2025-06-21T04:54:23.589524+00:00"
+    }
+  }
+}

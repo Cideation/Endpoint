@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Agent Console - BEM System</title>
+    
+    <!-- SocketIO for real-time streaming -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-primary: #0f0f0f;
+            --bg-secondary: #1a1a1a;
+            --bg-tertiary: #262626;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --text-muted: #666666;
+            --border-color: #333333;
+            --accent-blue: #3f51b5;
+            --accent-orange: #ff9800;
+            --accent-green: #4caf50;
+            --accent-red: #f44336;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow: hidden;
+        }
+        
+        .dashboard-container {
+            display: grid;
+            grid-template-areas: 
+                "header header header"
+                "agents nodes phases"
+                "feed table overlay";
+            grid-template-rows: 60px 1fr 1fr;
+            grid-template-columns: 1fr 2fr 1fr;
+            height: 100vh;
+            gap: 1px;
+            background: var(--border-color);
+        }
+        
+        .panel {
+            background: var(--bg-secondary);
+            padding: 16px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .panel-header {
+            background: var(--bg-tertiary);
+            margin: -16px -16px 16px -16px;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        /* Header */
+        .header {
+            grid-area: header;
+            background: var(--bg-tertiary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            border-bottom: 2px solid var(--accent-blue);
+        }
+        
+        .system-status {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+        
+        /* Agent Activity Feed */
+        .agent-feed {
+            grid-area: agents;
+        }
+        
+        .activity-item {
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            padding: 8px;
+            margin-bottom: 8px;
+            border-left: 3px solid var(--accent-blue);
+            font-size: 12px;
+        }
+        
+        .activity-meta {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-muted);
+            font-size: 10px;
+            margin-bottom: 4px;
+        }
+        
+        .activity-content {
+            color: var(--text-primary);
+        }
+        
+        /* Node Table View */
+        .node-table {
+            grid-area: nodes;
+        }
+        
+        .table-container {
+            overflow-y: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+        
+        th, td {
+            padding: 6px 8px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        th {
+            background: var(--bg-tertiary);
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+        
+        .node-row {
+            transition: background-color 0.3s ease;
+        }
+        
+        .node-row:hover {
+            background: var(--bg-tertiary);
+        }
+        
+        .signal-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        
+        .urgency-immediate { background: var(--accent-red); }
+        .urgency-high { background: var(--accent-orange); }
+        .urgency-moderate { background: var(--accent-blue); }
+        .urgency-low { background: var(--accent-green); }
+        
+        /* Phase Overlay */
+        .phase-overlay {
+            grid-area: phases;
+        }
+        
+        .phase-item {
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .phase-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .phase-name {
+            font-weight: 600;
+            font-size: 12px;
+        }
+        
+        .phase-badge {
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 500;
+        }
+        
+        .phase-active {
+            background: var(--accent-green);
+            color: white;
+        }
+        
+        .phase-inactive {
+            background: var(--bg-secondary);
+            color: var(--text-muted);
+        }
+        
+        .phase-stats {
+            font-size: 10px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+        
+        /* Interaction Map */
+        .interaction-map {
+            grid-area: feed;
+        }
+        
+        .map-container {
+            position: relative;
+            height: 200px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .intent-arrow {
+            position: absolute;
+            width: 40px;
+            height: 2px;
+            background: var(--accent-blue);
+            transform-origin: left center;
+            transition: all 0.5s ease;
+        }
+        
+        .intent-arrow::after {
+            content: '';
+            position: absolute;
+            right: -6px;
+            top: -3px;
+            width: 0;
+            height: 0;
+            border-left: 8px solid var(--accent-blue);
+            border-top: 4px solid transparent;
+            border-bottom: 4px solid transparent;
+        }
+        
+        /* Signal Evolution */
+        .signal-evolution {
+            grid-area: table;
+        }
+        
+        .evolution-timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .timeline-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 6px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            font-size: 11px;
+        }
+        
+        .timeline-time {
+            color: var(--text-muted);
+            font-size: 10px;
+            min-width: 60px;
+        }
+        
+        .timeline-node {
+            min-width: 100px;
+            font-weight: 500;
+        }
+        
+        .timeline-transition {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+        }
+        
+        .transition-arrow {
+            color: var(--text-muted);
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 1200px) {
+            .dashboard-container {
+                grid-template-areas: 
+                    "header header"
+                    "agents nodes"
+                    "phases overlay";
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: 60px 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <div class="header">
+            <div>
+                <h1>🎛️ Dashboard Agent Console</h1>
+                <span style="font-size: 12px; color: var(--text-secondary);">Real-time BEM System Monitor</span>
+            </div>
+            <div class="system-status">
+                <div class="status-dot"></div>
+                <span id="connection-status">Connected</span>
+                <span style="color: var(--text-muted);">|</span>
+                <span id="update-counter">0 updates</span>
+            </div>
+        </div>
+        
+        <!-- Agent Activity Feed -->
+        <div class="panel agent-feed">
+            <div class="panel-header">
+                <span>🤖 Agent Activity Feed</span>
+                <span id="agent-count">0 agents</span>
+            </div>
+            <div class="panel-content" id="activity-feed">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+        
+        <!-- Node Table View -->
+        <div class="panel node-table">
+            <div class="panel-header">
+                <span>📊 Node Table View</span>
+                <span id="node-count">0 nodes</span>
+            </div>
+            <div class="panel-content">
+                <div class="table-container">
+                    <table id="node-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Type</th>
+                                <th>Signal</th>
+                                <th>Intent</th>
+                                <th>Urgency</th>
+                                <th>Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Phase Overlay -->
+        <div class="panel phase-overlay">
+            <div class="panel-header">
+                <span>⚙️ Phase Overlay</span>
+                <span id="active-phases">0 active</span>
+            </div>
+            <div class="panel-content" id="phase-container">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+        
+        <!-- Interaction Map -->
+        <div class="panel interaction-map">
+            <div class="panel-header">
+                <span>🧭 Interaction Map</span>
+                <span id="interaction-count">0 interactions</span>
+            </div>
+            <div class="panel-content">
+                <div class="map-container" id="interaction-map-canvas">
+                    <!-- Intent arrows populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Signal Evolution -->
+        <div class="panel signal-evolution">
+            <div class="panel-header">
+                <span>🔄 Signal Evolution</span>
+                <span id="evolution-count">0 transitions</span>
+            </div>
+            <div class="panel-content">
+                <div class="evolution-timeline" id="evolution-timeline">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Dashboard Console - Pure Data-Driven Implementation
+        class DashboardConsole {
+            constructor() {
+                this.socket = null;
+                this.graphHints = {};
+                this.currentState = {
+                    nodes: [],
+                    agents: [],
+                    phases: {},
+                    interactions: [],
+                    evolution: []
+                };
+                this.updateCounter = 0;
+                
+                this.initializeSocket();
+                this.loadGraphHints();
+            }
+            
+            initializeSocket() {
+                this.socket = io();
+                
+                // Core event handlers - pure data reception
+                this.socket.on('connect', () => {
+                    document.getElementById('connection-status').textContent = 'Connected';
+                    console.log('🔗 Connected to dashboard server');
+                });
+                
+                this.socket.on('disconnect', () => {
+                    document.getElementById('connection-status').textContent = 'Disconnected';
+                    console.log('🔌 Disconnected from dashboard server');
+                });
+                
+                // Data stream handlers
+                this.socket.on('agent_state_update', (data) => {
+                    this.handleAgentStateUpdate(data);
+                });
+                
+                this.socket.on('node_update', (data) => {
+                    this.handleNodeUpdate(data.data);
+                });
+                
+                this.socket.on('agent_update', (data) => {
+                    this.handleAgentUpdate(data.data);
+                });
+                
+                this.socket.on('phase_update', (data) => {
+                    this.handlePhaseUpdate(data.data);
+                });
+                
+                this.socket.on('dashboard_state', (data) => {
+                    this.handleCompleteState(data.data);
+                });
+                
+                this.socket.on('pulse_render', (data) => {
+                    this.renderPulse(data.data);
+                });
+                
+                this.socket.on('interaction_event', (data) => {
+                    this.handleInteractionEvent(data.data);
+                });
+            }
+            
+            async loadGraphHints() {
+                // Load all semantic configuration from graph_hints/
+                try {
+                    const [interactionLang, signalMap, visualSchema, phaseMap] = await Promise.all([
+                        fetch('/graph_hints/interaction_language.json').then(r => r.json()),
+                        fetch('/graph_hints/signal_map.json').then(r => r.json()),
+                        fetch('/graph_hints/visual_schema.json').then(r => r.json()),
+                        fetch('/graph_hints/phase_map.json').then(r => r.json())
+                    ]);
+                    
+                    this.graphHints = {
+                        interaction_language: interactionLang,
+                        signal_map: signalMap,
+                        visual_schema: visualSchema,
+                        phase_map: phaseMap
+                    };
+                    
+                    console.log('✅ Graph hints loaded - all semantics sourced from configuration');
+                    
+                } catch (error) {
+                    console.warn('⚠️ Could not load graph hints, using fallbacks:', error);
+                    this.graphHints = this.getFallbackHints();
+                }
+            }
+            
+            getFallbackHints() {
+                return {
+                    interaction_language: {
+                        design_signal: {
+                            neutral_state: { color: "#9E9E9E", intent: "wait" }
+                        }
+                    },
+                    signal_map: {
+                        score_ranges: {
+                            low: { color: "#F44336" },
+                            medium: { color: "#FF9800" },
+                            high: { color: "#4CAF50" }
+                        }
+                    },
+                    phase_map: {
+                        alpha: { name: "Alpha", color: "#3F51B5" },
+                        beta: { name: "Beta", color: "#FF9800" },
+                        gamma: { name: "Gamma", color: "#4CAF50" }
+                    }
+                };
+            }
+            
+            handleAgentStateUpdate(data) {
+                // Core function: socket.on("agent_state_update", (data) => { ... })
+                this.updateCounter++;
+                document.getElementById('update-counter').textContent = `${this.updateCounter} updates`;
+                
+                // Add to activity feed
+                this.addActivityItem({
+                    type: 'agent_state',
+                    agent_id: data.node_id || 'unknown',
+                    content: `${data.design_signal || 'unknown'} → ${data.intent || 'unknown'}`,
+                    urgency: data.urgency || 'low',
+                    timestamp: new Date().toLocaleTimeString()
+                });
+                
+                // Update node if it exists
+                if (data.node_id) {
+                    this.updateNodeInTable(data);
+                }
+                
+                console.log('📡 Agent state update:', data);
+            }
+            
+            handleNodeUpdate(nodeData) {
+                // Update or add node to current state
+                const existingIndex = this.currentState.nodes.findIndex(n => n.id === nodeData.id);
+                
+                if (existingIndex >= 0) {
+                    this.currentState.nodes[existingIndex] = nodeData;
+                } else {
+                    this.currentState.nodes.push(nodeData);
+                }
+                
+                this.renderNodeTable();
+                this.updateNodeCount();
+            }
+            
+            handleAgentUpdate(agentData) {
+                // Update or add agent to current state
+                const existingIndex = this.currentState.agents.findIndex(a => a.id === agentData.id);
+                
+                if (existingIndex >= 0) {
+                    this.currentState.agents[existingIndex] = agentData;
+                } else {
+                    this.currentState.agents.push(agentData);
+                }
+                
+                this.updateAgentCount();
+                this.addActivityItem({
+                    type: 'agent_action',
+                    agent_id: agentData.id,
+                    content: `${agentData.last_action} (${agentData.node_count} nodes)`,
+                    urgency: agentData.score > 0.7 ? 'high' : 'moderate',
+                    timestamp: new Date().toLocaleTimeString()
+                });
+            }
+            
+            handlePhaseUpdate(phaseData) {
+                // Update phase state
+                this.currentState.phases = { ...this.currentState.phases, ...phaseData };
+                this.renderPhaseOverlay();
+            }
+            
+            handleCompleteState(completeState) {
+                // Handle complete dashboard state update
+                this.currentState = {
+                    nodes: completeState.nodes || [],
+                    agents: completeState.agents || [],
+                    phases: completeState.phases || {},
+                    ...this.currentState
+                };
+                
+                this.renderAll();
+            }
+            
+            renderPulse(pulseData) {
+                // Render pulse visualization - direct from interaction language
+                console.log('🎨 Rendering pulse:', pulseData);
+                
+                // Add pulse to evolution timeline
+                this.addEvolutionItem({
+                    node_id: pulseData.node_id,
+                    from_signal: 'previous',
+                    to_signal: pulseData.pulse_type,
+                    timestamp: new Date().toLocaleTimeString()
+                });
+            }
+            
+            handleInteractionEvent(interactionData) {
+                // Handle interaction language events
+                this.currentState.interactions.push({
+                    ...interactionData,
+                    timestamp: new Date().toLocaleTimeString()
+                });
+                
+                this.updateInteractionMap();
+            }
+            
+            // Rendering functions - pure data display
+            renderNodeTable() {
+                const tbody = document.querySelector('#node-table tbody');
+                tbody.innerHTML = '';
+                
+                this.currentState.nodes.forEach(node => {
+                    const row = document.createElement('tr');
+                    row.className = 'node-row';
+                    
+                    // Get color from graph hints
+                    const color = this.getColorFromGraphHints(node.design_signal, node.score);
+                    
+                    row.innerHTML = `
+                        <td>${node.id}</td>
+                        <td>${node.type}</td>
+                        <td>
+                            <span class="signal-indicator" style="background: ${color};"></span>
+                            ${node.design_signal}
+                        </td>
+                        <td>${node.intent}</td>
+                        <td>
+                            <span class="urgency-${node.urgency}">${node.urgency}</span>
+                        </td>
+                        <td>${(node.score || 0).toFixed(2)}</td>
+                    `;
+                    
+                    tbody.appendChild(row);
+                });
+            }
+            
+            renderPhaseOverlay() {
+                const container = document.getElementById('phase-container');
+                container.innerHTML = '';
+                
+                Object.entries(this.currentState.phases).forEach(([phaseName, phaseData]) => {
+                    const phaseElement = document.createElement('div');
+                    phaseElement.className = 'phase-item';
+                    
+                    // Get phase color from graph hints
+                    const phaseConfig = this.graphHints.phase_map?.[phaseName] || {};
+                    const phaseColor = phaseConfig.color || '#9E9E9E';
+                    
+                    phaseElement.innerHTML = `
+                        <div class="phase-header">
+                            <div class="phase-name" style="color: ${phaseColor};">
+                                ${phaseData.name || phaseName}
+                            </div>
+                            <div class="phase-badge ${phaseData.active ? 'phase-active' : 'phase-inactive'}">
+                                ${phaseData.active ? 'ACTIVE' : 'IDLE'}
+                            </div>
+                        </div>
+                        <div class="phase-stats">
+                            Nodes: ${phaseData.node_count || 0}<br>
+                            Avg Score: ${(phaseData.avg_score || 0).toFixed(2)}<br>
+                            Behaviors: ${(phaseData.behaviors || []).join(', ')}
+                        </div>
+                    `;
+                    
+                    container.appendChild(phaseElement);
+                });
+                
+                this.updateActivePhaseCount();
+            }
+            
+            addActivityItem(activity) {
+                const feed = document.getElementById('activity-feed');
+                const item = document.createElement('div');
+                item.className = 'activity-item';
+                
+                item.innerHTML = `
+                    <div class="activity-meta">
+                        <span>${activity.agent_id}</span>
+                        <span>${activity.timestamp}</span>
+                    </div>
+                    <div class="activity-content">${activity.content}</div>
+                `;
+                
+                feed.insertBefore(item, feed.firstChild);
+                
+                // Keep only last 20 items
+                while (feed.children.length > 20) {
+                    feed.removeChild(feed.lastChild);
+                }
+            }
+            
+            addEvolutionItem(evolution) {
+                const timeline = document.getElementById('evolution-timeline');
+                const item = document.createElement('div');
+                item.className = 'timeline-item';
+                
+                item.innerHTML = `
+                    <div class="timeline-time">${evolution.timestamp}</div>
+                    <div class="timeline-node">${evolution.node_id}</div>
+                    <div class="timeline-transition">
+                        <span>${evolution.from_signal}</span>
+                        <span class="transition-arrow">→</span>
+                        <span>${evolution.to_signal}</span>
+                    </div>
+                `;
+                
+                timeline.insertBefore(item, timeline.firstChild);
+                
+                // Keep only last 15 items
+                while (timeline.children.length > 15) {
+                    timeline.removeChild(timeline.lastChild);
+                }
+                
+                this.updateEvolutionCount();
+            }
+            
+            getColorFromGraphHints(designSignal, score) {
+                // Get color from graph hints - no hardcoding
+                const signalConfig = this.graphHints.interaction_language?.design_signal?.[designSignal];
+                if (signalConfig?.color) {
+                    return signalConfig.color;
+                }
+                
+                // Fallback to score-based color from signal map
+                const scoreRanges = this.graphHints.signal_map?.score_ranges || {};
+                for (const [rangeName, rangeConfig] of Object.entries(scoreRanges)) {
+                    if (score >= rangeConfig.min && score <= rangeConfig.max) {
+                        return rangeConfig.color;
+                    }
+                }
+                
+                return '#9E9E9E'; // Default gray
+            }
+            
+            updateNodeInTable(nodeData) {
+                // Find and update specific node in table
+                const rows = document.querySelectorAll('#node-table tbody tr');
+                rows.forEach(row => {
+                    if (row.cells[0].textContent === nodeData.node_id) {
+                        // Update the row with new data
+                        const color = this.getColorFromGraphHints(nodeData.design_signal, nodeData.score || 0.5);
+                        row.cells[2].innerHTML = `
+                            <span class="signal-indicator" style="background: ${color};"></span>
+                            ${nodeData.design_signal}
+                        `;
+                        row.cells[3].textContent = nodeData.intent;
+                        row.cells[4].innerHTML = `<span class="urgency-${nodeData.urgency}">${nodeData.urgency}</span>`;
+                    }
+                });
+            }
+            
+            updateNodeCount() {
+                document.getElementById('node-count').textContent = `${this.currentState.nodes.length} nodes`;
+            }
+            
+            updateAgentCount() {
+                document.getElementById('agent-count').textContent = `${this.currentState.agents.length} agents`;
+            }
+            
+            updateActivePhaseCount() {
+                const activeCount = Object.values(this.currentState.phases).filter(p => p.active).length;
+                document.getElementById('active-phases').textContent = `${activeCount} active`;
+            }
+            
+            updateEvolutionCount() {
+                const count = document.getElementById('evolution-timeline').children.length;
+                document.getElementById('evolution-count').textContent = `${count} transitions`;
+            }
+            
+            updateInteractionMap() {
+                document.getElementById('interaction-count').textContent = `${this.currentState.interactions.length} interactions`;
+            }
+            
+            renderAll() {
+                this.renderNodeTable();
+                this.renderPhaseOverlay();
+                this.updateNodeCount();
+                this.updateAgentCount();
+            }
+        }
+        
+        // Initialize dashboard when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            window.dashboardConsole = new DashboardConsole();
+            console.log('🎛️ Dashboard Agent Console initialized - pure data-driven architecture');
+        });
+    </script>
+</body>
+</html> 

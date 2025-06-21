@@ -1,0 +1,54 @@
+{
+  "interpretation_map": {
+    "manufacturing_ready": {
+      "threshold": 0.8,
+      "color_mapping": "#00FF41",
+      "animation": "pulse",
+      "interpretation": "ready_for_production"
+    },
+    "quality_concern": {
+      "threshold": 0.3,
+      "color_mapping": "#FF8C00",
+      "animation": "warning",
+      "interpretation": "quality_review_needed"
+    },
+    "cost_optimal": {
+      "threshold": 0.9,
+      "color_mapping": "#32CD32",
+      "animation": "glow",
+      "interpretation": "cost_optimized"
+    },
+    "evolutionary_peak": {
+      "threshold": 0.95,
+      "color_mapping": "#FF1493",
+      "animation": "sparkle",
+      "interpretation": "breakthrough_performance"
+    }
+  },
+  "hints_metadata": {
+    "manufacturing_ready": {
+      "hint_id": "hint_df969c3d",
+      "confidence": 1.0,
+      "source": "system",
+      "timestamp": "2025-06-21T04:54:23.581121+00:00"
+    },
+    "quality_concern": {
+      "hint_id": "hint_449bbe2b",
+      "confidence": 1.0,
+      "source": "system",
+      "timestamp": "2025-06-21T04:54:23.581984+00:00"
+    },
+    "cost_optimal": {
+      "hint_id": "hint_c8cb979a",
+      "confidence": 1.0,
+      "source": "system",
+      "timestamp": "2025-06-21T04:54:23.583007+00:00"
+    },
+    "evolutionary_peak": {
+      "hint_id": "hint_2cf60916",
+      "confidence": 1.0,
+      "source": "system",
+      "timestamp": "2025-06-21T04:54:23.583517+00:00"
+    }
+  }
+}
