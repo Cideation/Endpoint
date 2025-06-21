@@ -1,0 +1,133 @@
+{
+  "schema_version": "1.0.0",
+  "edge_feature_dimensions": {
+    "structural_features": 6,
+    "interaction_features": 4,
+    "learning_features": 5,
+    "total_dimensions": 15
+  },
+  "edge_types": {
+    "alpha_edges": {
+      "type_id": 0,
+      "description": "DAG edges - directed, hierarchical flow",
+      "structural_features": [
+        {"name": "edge_weight", "index": 0, "range": [0, 1], "normalize": false},
+        {"name": "flow_capacity", "index": 1, "range": [0, 100], "normalize": true},
+        {"name": "structural_strength", "index": 2, "range": [0, 1], "normalize": false},
+        {"name": "dependency_level", "index": 3, "range": [1, 5], "normalize": true},
+        {"name": "criticality_score", "index": 4, "range": [0, 1], "normalize": false},
+        {"name": "reliability_factor", "index": 5, "range": [0, 1], "normalize": false}
+      ],
+      "interaction_features": [
+        {"name": "user_approval_rate", "index": 6, "range": [0, 1], "normalize": false},
+        {"name": "interaction_frequency", "index": 7, "range": [0, 50], "normalize": true},
+        {"name": "user_modification_count", "index": 8, "range": [0, 20], "normalize": true},
+        {"name": "feedback_sentiment", "index": 9, "range": [-1, 1], "normalize": false}
+      ],
+      "learning_features": [
+        {"name": "success_rate", "index": 10, "range": [0, 1], "normalize": false},
+        {"name": "convergence_speed", "index": 11, "range": [0, 1], "normalize": false},
+        {"name": "adaptation_rate", "index": 12, "range": [0, 1], "normalize": false},
+        {"name": "prediction_accuracy", "index": 13, "range": [0, 1], "normalize": false},
+        {"name": "learning_momentum", "index": 14, "range": [0, 1], "normalize": false}
+      ]
+    },
+    "beta_relationships": {
+      "type_id": 1,
+      "description": "Relational edges - many-to-many, objective functions",
+      "structural_features": [
+        {"name": "relationship_strength", "index": 0, "range": [0, 2], "normalize": true},
+        {"name": "mutual_dependency", "index": 1, "range": [0, 1], "normalize": false},
+        {"name": "optimization_potential", "index": 2, "range": [0, 1], "normalize": false},
+        {"name": "synergy_score", "index": 3, "range": [0, 1], "normalize": false},
+        {"name": "resource_sharing", "index": 4, "range": [0, 1], "normalize": false},
+        {"name": "conflict_resolution", "index": 5, "range": [0, 1], "normalize": false}
+      ]
+    },
+    "gamma_edges": {
+      "type_id": 2,
+      "description": "Combinatorial edges - emergent, many-to-many effects",
+      "structural_features": [
+        {"name": "emergence_potential", "index": 0, "range": [0, 1], "normalize": false},
+        {"name": "combinatorial_complexity", "index": 1, "range": [0, 10], "normalize": true},
+        {"name": "nonlinear_effects", "index": 2, "range": [0, 1], "normalize": false},
+        {"name": "emergence_stability", "index": 3, "range": [0, 1], "normalize": false},
+        {"name": "pattern_recognition", "index": 4, "range": [0, 1], "normalize": false},
+        {"name": "adaptive_capacity", "index": 5, "range": [0, 1], "normalize": false}
+      ],
+      "interaction_features": [
+        {"name": "user_approval_rate", "index": 6, "range": [0, 1], "normalize": false},
+        {"name": "interaction_frequency", "index": 7, "range": [0, 50], "normalize": true},
+        {"name": "user_modification_count", "index": 8, "range": [0, 20], "normalize": true},
+        {"name": "feedback_sentiment", "index": 9, "range": [-1, 1], "normalize": false}
+      ],
+      "learning_features": [
+        {"name": "success_rate", "index": 10, "range": [0, 1], "normalize": false},
+        {"name": "convergence_speed", "index": 11, "range": [0, 1], "normalize": false},
+        {"name": "adaptation_rate", "index": 12, "range": [0, 1], "normalize": false},
+        {"name": "prediction_accuracy", "index": 13, "range": [0, 1], "normalize": false},
+        {"name": "learning_momentum", "index": 14, "range": [0, 1], "normalize": false}
+      ]
+    },
+    "cross_phase_edges": {
+      "type_id": 3,
+      "description": "Cross-phase transitions - Alpha→Beta→Gamma",
+      "structural_features": [
+        {"name": "transition_efficiency", "index": 0, "range": [0, 1], "normalize": false},
+        {"name": "phase_compatibility", "index": 1, "range": [0, 1], "normalize": false},
+        {"name": "information_transfer", "index": 2, "range": [0, 1], "normalize": false},
+        {"name": "state_preservation", "index": 3, "range": [0, 1], "normalize": false},
+        {"name": "bridge_stability", "index": 4, "range": [0, 1], "normalize": false},
+        {"name": "cross_phase_learning", "index": 5, "range": [0, 1], "normalize": false}
+      ],
+      "interaction_features": [
+        {"name": "user_approval_rate", "index": 6, "range": [0, 1], "normalize": false},
+        {"name": "interaction_frequency", "index": 7, "range": [0, 50], "normalize": true},
+        {"name": "user_modification_count", "index": 8, "range": [0, 20], "normalize": true},
+        {"name": "feedback_sentiment", "index": 9, "range": [-1, 1], "normalize": false}
+      ],
+      "learning_features": [
+        {"name": "success_rate", "index": 10, "range": [0, 1], "normalize": false},
+        {"name": "convergence_speed", "index": 11, "range": [0, 1], "normalize": false},
+        {"name": "adaptation_rate", "index": 12, "range": [0, 1], "normalize": false},
+        {"name": "prediction_accuracy", "index": 13, "range": [0, 1], "normalize": false},
+        {"name": "learning_momentum", "index": 14, "range": [0, 1], "normalize": false}
+      ]
+    }
+  },
+  "user_interaction_mapping": {
+    "approval_signals": {
+      "positive": {"weight": 1.0, "learning_boost": 0.1},
+      "neutral": {"weight": 0.5, "learning_boost": 0.0},
+      "negative": {"weight": 0.0, "learning_boost": -0.1}
+    },
+    "modification_patterns": {
+      "frequent_modifications": {"adaptation_multiplier": 1.2},
+      "rare_modifications": {"adaptation_multiplier": 0.8},
+      "no_modifications": {"adaptation_multiplier": 1.0}
+    },
+    "feedback_integration": {
+      "sentiment_analysis": true,
+      "temporal_weighting": true,
+      "user_expertise_weighting": true
+    }
+  },
+  "training_configuration": {
+    "edge_weight_learning": {
+      "enabled": true,
+      "learning_rate": 0.01,
+      "momentum": 0.9,
+      "regularization": 0.001
+    },
+    "user_feedback_integration": {
+      "feedback_weight": 0.2,
+      "min_feedback_count": 5,
+      "feedback_decay_rate": 0.9
+    },
+    "cross_phase_learning": {
+      "enabled": true,
+      "phase_transition_weight": 1.5,
+      "emergence_detection_threshold": 0.7
+    }
+  }
+} 

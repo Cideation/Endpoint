@@ -1,0 +1,119 @@
+{
+  "schema_version": "1.0.0",
+  "feature_dimensions": {
+    "base_features": 8,
+    "agent_features": 4,
+    "interaction_features": 6,
+    "total_dimensions": 18
+  },
+  "node_feature_templates": {
+    "V01_ProductComponent": {
+      "base_features": [
+        {"name": "volume", "index": 0, "range": [0, 1000], "normalize": true},
+        {"name": "cost", "index": 1, "range": [0, 100000], "normalize": true},
+        {"name": "quality_factor", "index": 2, "range": [0, 1], "normalize": false},
+        {"name": "safety_factor", "index": 3, "range": [1, 3], "normalize": true},
+        {"name": "efficiency", "index": 4, "range": [0, 1], "normalize": false},
+        {"name": "performance", "index": 5, "range": [0, 1], "normalize": false},
+        {"name": "manufacturing_score", "index": 6, "range": [0, 1], "normalize": false},
+        {"name": "area", "index": 7, "range": [0, 100], "normalize": true}
+      ],
+      "agent_features": [
+        {"name": "agent_bidding_strength", "index": 8, "range": [0, 2], "normalize": false},
+        {"name": "agent_feedback_score", "index": 9, "range": [0, 1], "normalize": false},
+        {"name": "agent_learning_rate", "index": 10, "range": [0, 1], "normalize": false},
+        {"name": "agent_confidence", "index": 11, "range": [0, 1], "normalize": false}
+      ],
+      "interaction_features": [
+        {"name": "user_rating", "index": 12, "range": [0, 5], "normalize": true},
+        {"name": "user_interaction_count", "index": 13, "range": [0, 100], "normalize": true},
+        {"name": "user_preference_score", "index": 14, "range": [0, 1], "normalize": false},
+        {"name": "design_signal_strength", "index": 15, "range": [0, 1], "normalize": false},
+        {"name": "urgency_level", "index": 16, "range": [0, 1], "normalize": false},
+        {"name": "reward_score", "index": 17, "range": [0, 1], "normalize": false}
+      ]
+    },
+    "V02_EconomicProfile": {
+      "base_features": [
+        {"name": "cost_efficiency", "index": 0, "range": [0, 1], "normalize": false},
+        {"name": "market_demand", "index": 1, "range": [0, 1], "normalize": false},
+        {"name": "roi_potential", "index": 2, "range": [0, 2], "normalize": true},
+        {"name": "investment_risk", "index": 3, "range": [0, 1], "normalize": false},
+        {"name": "payback_period", "index": 4, "range": [1, 120], "normalize": true},
+        {"name": "profit_margin", "index": 5, "range": [0, 1], "normalize": false},
+        {"name": "economic_stability", "index": 6, "range": [0, 1], "normalize": false},
+        {"name": "market_position", "index": 7, "range": [0, 1], "normalize": false}
+      ],
+      "agent_features": [
+        {"name": "agent_bidding_strength", "index": 8, "range": [0, 2], "normalize": false},
+        {"name": "agent_feedback_score", "index": 9, "range": [0, 1], "normalize": false},
+        {"name": "agent_learning_rate", "index": 10, "range": [0, 1], "normalize": false},
+        {"name": "agent_confidence", "index": 11, "range": [0, 1], "normalize": false}
+      ],
+      "interaction_features": [
+        {"name": "user_rating", "index": 12, "range": [0, 5], "normalize": true},
+        {"name": "user_interaction_count", "index": 13, "range": [0, 100], "normalize": true},
+        {"name": "user_preference_score", "index": 14, "range": [0, 1], "normalize": false},
+        {"name": "design_signal_strength", "index": 15, "range": [0, 1], "normalize": false},
+        {"name": "urgency_level", "index": 16, "range": [0, 1], "normalize": false},
+        {"name": "reward_score", "index": 17, "range": [0, 1], "normalize": false}
+      ]
+    },
+    "V05_ComplianceCheck": {
+      "base_features": [
+        {"name": "regulatory_score", "index": 0, "range": [0, 1], "normalize": false},
+        {"name": "safety_rating", "index": 1, "range": [0, 1], "normalize": false},
+        {"name": "code_compliance", "index": 2, "range": [0, 1], "normalize": false},
+        {"name": "certification_level", "index": 3, "range": [0, 5], "normalize": true},
+        {"name": "audit_score", "index": 4, "range": [0, 100], "normalize": true},
+        {"name": "risk_assessment", "index": 5, "range": [0, 1], "normalize": false},
+        {"name": "documentation_quality", "index": 6, "range": [0, 1], "normalize": false},
+        {"name": "compliance_confidence", "index": 7, "range": [0, 1], "normalize": false}
+      ],
+      "agent_features": [
+        {"name": "agent_bidding_strength", "index": 8, "range": [0, 2], "normalize": false},
+        {"name": "agent_feedback_score", "index": 9, "range": [0, 1], "normalize": false},
+        {"name": "agent_learning_rate", "index": 10, "range": [0, 1], "normalize": false},
+        {"name": "agent_confidence", "index": 11, "range": [0, 1], "normalize": false}
+      ],
+      "interaction_features": [
+        {"name": "user_rating", "index": 12, "range": [0, 5], "normalize": true},
+        {"name": "user_interaction_count", "index": 13, "range": [0, 100], "normalize": true},
+        {"name": "user_preference_score", "index": 14, "range": [0, 1], "normalize": false},
+        {"name": "design_signal_strength", "index": 15, "range": [0, 1], "normalize": false},
+        {"name": "urgency_level", "index": 16, "range": [0, 1], "normalize": false},
+        {"name": "reward_score", "index": 17, "range": [0, 1], "normalize": false}
+      ]
+    }
+  },
+  "feature_extraction_rules": {
+    "normalization": {
+      "method": "min_max",
+      "clip_outliers": true,
+      "outlier_threshold": 3.0
+    },
+    "missing_values": {
+      "strategy": "default",
+      "default_values": {
+        "base_features": 0.5,
+        "agent_features": 0.5,
+        "interaction_features": 0.0
+      }
+    },
+    "feature_encoding": {
+      "categorical_features": ["node_type", "phase", "agent_type"],
+      "embedding_dimensions": {
+        "node_type": 8,
+        "phase": 4,
+        "agent_type": 6
+      }
+    }
+  },
+  "training_metadata": {
+    "user_feedback_integration": {
+      "enabled": true,
+      "feedback_weight": 0.15,
+      "min_interactions_for_learning": 3
+    }
+  }
+} 
