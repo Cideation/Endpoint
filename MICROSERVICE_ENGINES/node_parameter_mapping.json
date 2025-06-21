@@ -1,0 +1,143 @@
+{
+  "node_parameter_mapping": {
+    "description": "Lightweight mapping of global design parameters to specific node/component types",
+    "version": "1.0.0",
+    "last_updated": "2024-12-20",
+    "usage": "Dynamic parameter application based on node type",
+    
+    "V01_ProductComponent": [
+      "form_strategy",
+      "precision_tolerance",
+      "detail_complexity",
+      "joint_type",
+      "material_expression",
+      "evolutionary_potential"
+    ],
+    
+    "V02_MaterialProfile": [
+      "self_weight_category",
+      "material_expression",
+      "precision_tolerance",
+      "cad_integration_ready"
+    ],
+    
+    "V03_SpatialComponent": [
+      "locus_condition",
+      "order_type",
+      "layout_compactness",
+      "room_rectangularity_score",
+      "daylight_factor"
+    ],
+    
+    "V04_UserEconomicProfile": [
+      "function_flexibility",
+      "aesthetic_tension",
+      "evolutionary_potential",
+      "layout_success_rate"
+    ],
+    
+    "V05_ManufacturingNode": [
+      "precision_tolerance",
+      "detail_complexity",
+      "joint_type",
+      "generation_type",
+      "cad_integration_ready"
+    ],
+    
+    "V06_StructuralElement": [
+      "self_weight_category",
+      "precision_tolerance",
+      "joint_type",
+      "material_expression"
+    ],
+    
+    "V07_ArchitecturalElement": [
+      "aesthetic_tension",
+      "material_expression",
+      "facade_style_id",
+      "bay_arrangement_pattern",
+      "parametric_frame_depth"
+    ],
+    
+    "V08_MEPComponent": [
+      "component_modularity",
+      "layout_compactness",
+      "connectivity_validated",
+      "hierarchy_type"
+    ],
+    
+    "V09_OccupancyNode": [
+      "public_private_ratio",
+      "layout_compactness",
+      "room_rectangularity_score",
+      "daylight_factor",
+      "function_flexibility"
+    ],
+    
+    "V10_FacadeElement": [
+      "facade_style_id",
+      "parametric_frame_depth",
+      "bay_arrangement_pattern",
+      "component_modularity",
+      "tilt_transformation",
+      "aesthetic_tension"
+    ],
+    
+    "V11_LayoutNode": [
+      "connectivity_validated",
+      "symbolic_depth_range",
+      "layout_compactness",
+      "hierarchy_type",
+      "mirror_operations_enabled",
+      "layout_success_rate"
+    ],
+    
+    "V12_FloorPlanElement": [
+      "order_type",
+      "layout_compactness",
+      "room_rectangularity_score",
+      "floor_span_variance",
+      "public_private_ratio"
+    ]
+  },
+  
+  "parameter_categories": {
+    "structural": [
+      "self_weight_category",
+      "precision_tolerance", 
+      "joint_type",
+      "material_expression"
+    ],
+    "spatial": [
+      "locus_condition",
+      "layout_compactness",
+      "room_rectangularity_score",
+      "daylight_factor"
+    ],
+    "facade": [
+      "facade_style_id",
+      "parametric_frame_depth",
+      "bay_arrangement_pattern",
+      "aesthetic_tension"
+    ],
+    "manufacturing": [
+      "precision_tolerance",
+      "detail_complexity",
+      "generation_type",
+      "cad_integration_ready"
+    ],
+    "layout": [
+      "connectivity_validated",
+      "layout_compactness",
+      "hierarchy_type",
+      "mirror_operations_enabled"
+    ]
+  },
+  
+  "usage_patterns": {
+    "selective_enrichment": "Apply only relevant parameters to each node type",
+    "category_based": "Apply parameters by functional category",
+    "inheritance": "Child nodes inherit parent parameters plus their own",
+    "override": "Node-specific parameters override global defaults"
+  }
+}

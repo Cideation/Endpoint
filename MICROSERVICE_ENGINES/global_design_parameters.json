@@ -1,59 +1,52 @@
 {
   "global_design_parameters": {
     "description": "Global design parameters dictionary used to enrich each node or component during parsing, scoring, or UI rendering",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "last_updated": "2024-12-20",
-    "usage": "Import as shared resource across all microservices",
+    "usage": "Import as shared resource across all microservices - flattened structure for direct access",
     
-    "building_components": {
-      "locus_condition": "context_driven",
-      "self_weight_category": "lightweight", 
-      "order_type": "modular_grid",
-      "form_strategy": "evolutionary_adaptive",
-      "function_flexibility": 0.85,
-      "material_expression": "symbolic_natural",
-      "aesthetic_tension": 0.6,
-      "precision_tolerance": "high",
-      "detail_complexity": "prefab_ready",
-      "joint_type": "slip_fit",
-      "daylight_factor": 0.73,
-      "evolutionary_potential": 0.92
-    },
-    
-    "bidirectional_procedural_model": {
-      "connectivity_validated": true,
-      "symbolic_depth_range": 5,
-      "layout_compactness": 0.72,
-      "hierarchy_type": "heterogeneous",
-      "mirror_operations_enabled": true,
-      "layout_success_rate": 0.99,
-      "room_rectangularity_score": 0.84,
-      "public_private_ratio": "1:4"
-    },
-    
-    "generative_facade_tool": {
-      "facade_style_id": "style_2_bay_variation",
-      "parametric_frame_depth": 0.3,
-      "bay_arrangement_pattern": "alternating_even_odd",
-      "component_modularity": "enabled",
-      "floor_span_variance": "medium",
-      "tilt_transformation": false,
-      "generation_type": "rule_driven",
-      "cad_integration_ready": true
-    }
+    "locus_condition": "context_driven",
+    "self_weight_category": "lightweight",
+    "order_type": "modular_grid",
+    "form_strategy": "evolutionary_adaptive",
+    "function_flexibility": 0.85,
+    "material_expression": "symbolic_natural",
+    "aesthetic_tension": 0.6,
+    "precision_tolerance": "high",
+    "detail_complexity": "prefab_ready",
+    "joint_type": "slip_fit",
+    "daylight_factor": 0.73,
+    "evolutionary_potential": 0.92,
+    "connectivity_validated": true,
+    "symbolic_depth_range": 5,
+    "layout_compactness": 0.72,
+    "hierarchy_type": "heterogeneous",
+    "mirror_operations_enabled": true,
+    "layout_success_rate": 0.99,
+    "room_rectangularity_score": 0.84,
+    "public_private_ratio": "1:4",
+    "facade_style_id": "style_2_bay_variation",
+    "parametric_frame_depth": 0.3,
+    "bay_arrangement_pattern": "alternating_even_odd",
+    "component_modularity": "enabled",
+    "floor_span_variance": "medium",
+    "tilt_transformation": false,
+    "generation_type": "rule_driven",
+    "cad_integration_ready": true
   },
   
   "microservice_integration": {
     "shared_resource_path": "/shared/global_design_parameters.json",
     "environment_variable": "GLOBAL_DESIGN_PARAMS_PATH",
     "cache_ttl_seconds": 3600,
-    "reload_on_change": true
+    "reload_on_change": true,
+    "flattened_structure": true
   },
   
   "usage_examples": {
     "python_import": "from shared.global_design_parameters import global_design_parameters",
-    "node_enrichment": "node.update(global_design_parameters['building_components'])",
-    "scoring_context": "score = calculate_score(component, global_design_parameters)",
-    "ui_rendering": "render_component(component, global_design_parameters['generative_facade_tool'])"
+    "direct_access": "form_strategy = global_design_parameters['form_strategy']",
+    "node_enrichment": "node.update(global_design_parameters)",
+    "selective_mapping": "apply_node_specific_params(node, node_type_mapping[node_type])"
   }
 }
