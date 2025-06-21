@@ -1,0 +1,38 @@
+{
+  "timestamp": "2025-06-21T03:37:18.911243+00:00",
+  "node_id": "V01_DEMO",
+  "functor": "evaluate_manufacturing",
+  "input_snapshot": {
+    "component": "beam",
+    "material": "steel",
+    "dimensions": {
+      "length": 100,
+      "width": 50
+    }
+  },
+  "output_snapshot": {
+    "manufacturing_score": 0.86,
+    "status": "approved",
+    "estimated_cost": 1250.0,
+    "lead_time_days": 5
+  },
+  "dependencies": [
+    "V02",
+    "V05"
+  ],
+  "agent_triggered": "DemoAgent",
+  "global_params_used": [
+    "form_strategy",
+    "precision_tolerance",
+    "material_expression"
+  ],
+  "decision_path": [
+    "spec_check_passed:material_grade >= min_grade",
+    "material_ok:availability == true",
+    "geometry_valid:dimensions_within_tolerance",
+    "cost_approved:cost <= budget"
+  ],
+  "trace_id": "trace_d5b1b776",
+  "chain_id": "CHAIN_-116492983072114314",
+  "execution_time_ms": 45.2
+}

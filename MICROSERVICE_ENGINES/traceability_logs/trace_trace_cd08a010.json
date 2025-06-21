@@ -1,0 +1,27 @@
+{
+  "timestamp": "2025-06-21T03:37:18.912035+00:00",
+  "node_id": "V01_CHAIN",
+  "functor": "process_step_1",
+  "input_snapshot": {
+    "step": 1,
+    "input_value": 0.5
+  },
+  "output_snapshot": {
+    "step_result": 0.7,
+    "next_step": 2
+  },
+  "dependencies": [
+    "V02",
+    "V05"
+  ],
+  "agent_triggered": "Agent1",
+  "global_params_used": [
+    "param_1"
+  ],
+  "decision_path": [
+    "step_1_validated:input_check_passed"
+  ],
+  "trace_id": "trace_cd08a010",
+  "chain_id": "CHAIN_-116492983072114314",
+  "execution_time_ms": 20.0
+}

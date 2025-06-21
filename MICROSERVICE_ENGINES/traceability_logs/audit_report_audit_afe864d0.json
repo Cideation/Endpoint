@@ -1,0 +1,96 @@
+{
+  "report_id": "audit_afe864d0",
+  "generated_at": "2025-06-21T03:37:18.913563+00:00",
+  "chain_id": null,
+  "agent_filter": null,
+  "summary": {
+    "total_traces": 4,
+    "total_decisions": 7,
+    "active_chains": 1,
+    "component_scores": 1
+  },
+  "trace_analysis": [
+    {
+      "trace_id": "trace_06bccbd1",
+      "node_id": "V03_CHAIN",
+      "functor": "process_step_3",
+      "execution_time": 30.0,
+      "decision_count": 1,
+      "param_count": 1
+    },
+    {
+      "trace_id": "trace_82242cea",
+      "node_id": "V02_CHAIN",
+      "functor": "process_step_2",
+      "execution_time": 25.0,
+      "decision_count": 1,
+      "param_count": 1
+    },
+    {
+      "trace_id": "trace_8b92211c",
+      "node_id": "V01",
+      "functor": "evaluate_manufacturing",
+      "execution_time": 45.2,
+      "decision_count": 3,
+      "param_count": 2
+    },
+    {
+      "trace_id": "trace_cd08a010",
+      "node_id": "V01_CHAIN",
+      "functor": "process_step_1",
+      "execution_time": 20.0,
+      "decision_count": 1,
+      "param_count": 1
+    },
+    {
+      "trace_id": "trace_d5b1b776",
+      "node_id": "V01_DEMO",
+      "functor": "evaluate_manufacturing",
+      "execution_time": 45.2,
+      "decision_count": 4,
+      "param_count": 3
+    }
+  ],
+  "decision_patterns": {
+    "step_3_validated:input_check_passed": 1,
+    "step_2_validated:input_check_passed": 1,
+    "spec_check_passed": 1,
+    "material_ok": 1,
+    "geometry_valid": 1,
+    "step_1_validated:input_check_passed": 1,
+    "spec_check_passed:material_grade >= min_grade": 1,
+    "material_ok:availability == true": 1,
+    "geometry_valid:dimensions_within_tolerance": 1,
+    "cost_approved:cost <= budget": 1
+  },
+  "agent_activity": {
+    "DemoAgent": {
+      "traces": 1,
+      "total_decisions": 4,
+      "avg_execution_time": 45.2
+    },
+    "Agent1": {
+      "traces": 1,
+      "total_decisions": 1,
+      "avg_execution_time": 20.0
+    },
+    "Agent2": {
+      "traces": 1,
+      "total_decisions": 1,
+      "avg_execution_time": 25.0
+    },
+    "Agent3": {
+      "traces": 1,
+      "total_decisions": 1,
+      "avg_execution_time": 30.0
+    }
+  },
+  "parameter_usage": {
+    "param_3": 1,
+    "param_2": 1,
+    "form_strategy": 2,
+    "precision_tolerance": 2,
+    "param_1": 1,
+    "material_expression": 1
+  }
+}

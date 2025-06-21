@@ -1,0 +1,30 @@
+{
+  "timestamp": "2025-06-21T03:36:22.761063+00:00",
+  "node_id": "V01",
+  "functor": "evaluate_manufacturing",
+  "input_snapshot": {
+    "component_type": "beam",
+    "material": "steel"
+  },
+  "output_snapshot": {
+    "manufacturing_score": 0.86,
+    "status": "approved"
+  },
+  "dependencies": [
+    "V02",
+    "V05"
+  ],
+  "agent_triggered": "Agent1",
+  "global_params_used": [
+    "form_strategy",
+    "precision_tolerance"
+  ],
+  "decision_path": [
+    "spec_check_passed",
+    "material_ok",
+    "geometry_valid"
+  ],
+  "trace_id": "trace_8b92211c",
+  "chain_id": "CHAIN_-3756854661431438041",
+  "execution_time_ms": 45.2
+}

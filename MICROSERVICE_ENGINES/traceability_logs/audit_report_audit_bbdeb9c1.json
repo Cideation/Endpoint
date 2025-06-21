@@ -1,0 +1,38 @@
+{
+  "report_id": "audit_bbdeb9c1",
+  "generated_at": "2025-06-21T03:36:22.762268+00:00",
+  "chain_id": null,
+  "agent_filter": null,
+  "summary": {
+    "total_traces": 1,
+    "total_decisions": 3,
+    "active_chains": 1,
+    "component_scores": 1
+  },
+  "trace_analysis": [
+    {
+      "trace_id": "trace_8b92211c",
+      "node_id": "V01",
+      "functor": "evaluate_manufacturing",
+      "execution_time": 45.2,
+      "decision_count": 3,
+      "param_count": 2
+    }
+  ],
+  "decision_patterns": {
+    "spec_check_passed": 1,
+    "material_ok": 1,
+    "geometry_valid": 1
+  },
+  "agent_activity": {
+    "Agent1": {
+      "traces": 1,
+      "total_decisions": 3,
+      "avg_execution_time": 45.2
+    }
+  },
+  "parameter_usage": {
+    "form_strategy": 1,
+    "precision_tolerance": 1
+  }
+}
