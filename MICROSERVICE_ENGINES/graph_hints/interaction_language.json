@@ -1,0 +1,295 @@
+{
+  "meta": {
+    "version": "1.0",
+    "description": "Semantic Interaction Language - Data-native communication between agents, nodes, and human perception",
+    "philosophy": "Embedded, interpretable, triggered directly from system state without cosmetic UI logic"
+  },
+  
+  "design_signal": {
+    "evolutionary_peak": { 
+      "color": "#3F51B5", 
+      "intent": "promote", 
+      "urgency": 0.2,
+      "visual_cue": "bright_glow",
+      "semantic_meaning": "Optimal state achieved, ready for advancement"
+    },
+    "neutral_state": { 
+      "color": "#9E9E9E", 
+      "intent": "wait", 
+      "urgency": 0.5,
+      "visual_cue": "steady_pulse",
+      "semantic_meaning": "Stable equilibrium, monitoring for changes"
+    },
+    "low_precision": { 
+      "color": "#BDBDBD", 
+      "intent": "reject", 
+      "urgency": 0.9,
+      "visual_cue": "dim_flicker",
+      "semantic_meaning": "Suboptimal performance, requires intervention"
+    },
+    "critical_failure": {
+      "color": "#F44336",
+      "intent": "emergency",
+      "urgency": 1.0,
+      "visual_cue": "rapid_flash",
+      "semantic_meaning": "System failure, immediate action required"
+    },
+    "learning_phase": {
+      "color": "#FF9800",
+      "intent": "adapt",
+      "urgency": 0.3,
+      "visual_cue": "gradient_shift",
+      "semantic_meaning": "Active learning, state in transition"
+    }
+  },
+  
+  "signal_intent": {
+    "promote": { 
+      "trigger": "broadcast", 
+      "pulse": "bright",
+      "action_type": "amplify",
+      "propagation": "radial",
+      "duration": 2000,
+      "intensity": 0.8
+    },
+    "wait": { 
+      "trigger": "idle", 
+      "pulse": "dim",
+      "action_type": "monitor",
+      "propagation": "local",
+      "duration": 5000,
+      "intensity": 0.3
+    },
+    "reject": { 
+      "trigger": "fallback", 
+      "pulse": "flicker",
+      "action_type": "suppress",
+      "propagation": "reverse",
+      "duration": 1000,
+      "intensity": 0.9
+    },
+    "emergency": {
+      "trigger": "alert",
+      "pulse": "strobe",
+      "action_type": "interrupt",
+      "propagation": "global",
+      "duration": 500,
+      "intensity": 1.0
+    },
+    "adapt": {
+      "trigger": "morph",
+      "pulse": "wave",
+      "action_type": "evolve",
+      "propagation": "cascade",
+      "duration": 3000,
+      "intensity": 0.6
+    }
+  },
+  
+  "agent_feedback": {
+    "positive_reinforcement": {
+      "direction": "forward",
+      "score_shift": 0.1,
+      "visual_response": "green_glow",
+      "behavioral_change": "increase_confidence",
+      "learning_rate": 0.05
+    },
+    "negative_reinforcement": {
+      "direction": "backward",
+      "score_shift": -0.1,
+      "visual_response": "red_fade",
+      "behavioral_change": "decrease_confidence",
+      "learning_rate": 0.03
+    },
+    "neutral_observation": {
+      "direction": "lateral",
+      "score_shift": 0.0,
+      "visual_response": "blue_ripple",
+      "behavioral_change": "maintain_state",
+      "learning_rate": 0.01
+    },
+    "exploration_reward": {
+      "direction": "divergent",
+      "score_shift": 0.05,
+      "visual_response": "purple_spark",
+      "behavioral_change": "increase_exploration",
+      "learning_rate": 0.08
+    }
+  },
+  
+  "interaction_mode": {
+    "passive": {
+      "opacity": 0.4,
+      "edge_glow": "none",
+      "responsiveness": "low",
+      "energy_consumption": 0.1,
+      "interaction_radius": 1
+    },
+    "active": {
+      "opacity": 0.8,
+      "edge_glow": "medium",
+      "responsiveness": "high",
+      "energy_consumption": 0.6,
+      "interaction_radius": 3
+    },
+    "relational": {
+      "opacity": 0.9,
+      "edge_glow": "bright",
+      "responsiveness": "maximum",
+      "energy_consumption": 0.8,
+      "interaction_radius": 5
+    },
+    "dormant": {
+      "opacity": 0.2,
+      "edge_glow": "none",
+      "responsiveness": "minimal",
+      "energy_consumption": 0.05,
+      "interaction_radius": 0
+    }
+  },
+  
+  "gradient_energy": {
+    "high_intensity": {
+      "glow": "intense",
+      "ripple": "fast",
+      "energy_level": 0.9,
+      "propagation_speed": 2.0,
+      "visual_impact": "dominant"
+    },
+    "medium_intensity": {
+      "glow": "moderate",
+      "ripple": "steady",
+      "energy_level": 0.6,
+      "propagation_speed": 1.0,
+      "visual_impact": "noticeable"
+    },
+    "low_intensity": {
+      "glow": "subtle",
+      "ripple": "slow",
+      "energy_level": 0.3,
+      "propagation_speed": 0.5,
+      "visual_impact": "background"
+    },
+    "critical_energy": {
+      "glow": "explosive",
+      "ripple": "shockwave",
+      "energy_level": 1.0,
+      "propagation_speed": 3.0,
+      "visual_impact": "overwhelming"
+    }
+  },
+  
+  "urgency_index": {
+    "immediate": {
+      "flash": "strobe",
+      "rank": 1,
+      "change_rate": 0.9,
+      "attention_demand": "critical",
+      "visual_priority": "foreground"
+    },
+    "high": {
+      "flash": "rapid",
+      "rank": 2,
+      "change_rate": 0.7,
+      "attention_demand": "important",
+      "visual_priority": "elevated"
+    },
+    "moderate": {
+      "flash": "pulse",
+      "rank": 3,
+      "change_rate": 0.4,
+      "attention_demand": "notable",
+      "visual_priority": "normal"
+    },
+    "low": {
+      "flash": "fade",
+      "rank": 4,
+      "change_rate": 0.1,
+      "attention_demand": "minimal",
+      "visual_priority": "background"
+    }
+  },
+  
+  "human_sense_mapping": {
+    "pain": {
+      "graph_equivalent": "urgency_index",
+      "threshold": 0.7,
+      "response": "immediate_attention",
+      "visual_metaphor": "red_intensity"
+    },
+    "color_vision": {
+      "graph_equivalent": "design_signal",
+      "threshold": 0.0,
+      "response": "color_code_assignment",
+      "visual_metaphor": "spectrum_mapping"
+    },
+    "reflex": {
+      "graph_equivalent": "trigger_type",
+      "threshold": 0.8,
+      "response": "auto_action",
+      "visual_metaphor": "instant_response"
+    },
+    "language": {
+      "graph_equivalent": "signal_intent",
+      "threshold": 0.0,
+      "response": "semantic_interpretation",
+      "visual_metaphor": "meaning_communication"
+    },
+    "fatigue": {
+      "graph_equivalent": "node_energy_state",
+      "threshold": 0.3,
+      "response": "reduced_activity",
+      "visual_metaphor": "dimming_glow"
+    },
+    "excitement": {
+      "graph_equivalent": "gradient_energy",
+      "threshold": 0.6,
+      "response": "increased_activity",
+      "visual_metaphor": "bright_animation"
+    }
+  },
+  
+  "phase_specific_language": {
+    "alpha": {
+      "primary_signals": ["design_signal", "urgency_index"],
+      "interaction_style": "sequential",
+      "visual_emphasis": "clarity",
+      "semantic_focus": "precision"
+    },
+    "beta": {
+      "primary_signals": ["agent_feedback", "interaction_mode"],
+      "interaction_style": "relational",
+      "visual_emphasis": "connections",
+      "semantic_focus": "optimization"
+    },
+    "gamma": {
+      "primary_signals": ["gradient_energy", "signal_intent"],
+      "interaction_style": "emergent",
+      "visual_emphasis": "patterns",
+      "semantic_focus": "emergence"
+    }
+  },
+  
+  "composite_expressions": {
+    "urgent_promotion": {
+      "combines": ["urgency_index.high", "signal_intent.promote"],
+      "visual_result": "bright_pulsing_glow",
+      "semantic_meaning": "Critical opportunity requiring immediate action"
+    },
+    "learning_adaptation": {
+      "combines": ["design_signal.learning_phase", "agent_feedback.exploration_reward"],
+      "visual_result": "shifting_gradient_sparkle",
+      "semantic_meaning": "System actively learning and improving"
+    },
+    "network_cascade": {
+      "combines": ["gradient_energy.high_intensity", "interaction_mode.relational"],
+      "visual_result": "rippling_network_activation",
+      "semantic_meaning": "Information propagating through connected system"
+    },
+    "system_fatigue": {
+      "combines": ["urgency_index.low", "interaction_mode.passive"],
+      "visual_result": "dim_steady_state",
+      "semantic_meaning": "System in low-energy conservation mode"
+    }
+  }
+} 
