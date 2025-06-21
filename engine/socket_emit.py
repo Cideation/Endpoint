@@ -10,6 +10,8 @@ import logging
 import asyncio
 from typing import Dict, List, Any, Optional
 from datetime import datetime
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 logger = logging.getLogger(__name__)
 
@@ -182,3 +184,21 @@ if __name__ == "__main__":
         await emitter.disconnect()
     
     asyncio.run(test_emitter())
+
+# Missing: Production-grade rate limiting
+limiter = Limiter(
+    app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"]
+)
+
+# Missing: Comprehensive health checks
+@app.route('/health/detailed')
+def detailed_health():
+    return {
+        "database": check_db_connection(),
+        "redis": check_redis_connection(),
+        "websocket": check_websocket_health(),
+        "disk_space": check_disk_space(),
+        "memory_usage": get_memory_usage()
+    }

@@ -1,0 +1,25 @@
+# APM Monitoring Dependencies
+
+# Core monitoring
+psutil>=5.9.0              # System resource monitoring
+prometheus-client>=0.16.0   # Prometheus metrics
+
+# APM Providers (optional - enable as needed)
+newrelic>=8.7.0            # New Relic APM
+datadog>=0.44.0            # DataDog APM  
+elastic-apm>=6.15.1        # Elastic APM
+
+# Additional monitoring tools
+structlog>=22.3.0          # Structured logging
+pydantic>=1.10.0           # Data validation
+redis>=4.5.0               # Redis for distributed metrics
+flask>=2.2.0               # Flask integration support
+
+# Performance and profiling
+py-spy>=0.3.14             # CPU profiler
+memory-profiler>=0.60.0    # Memory profiler
+line-profiler>=4.0.2       # Line-by-line profiler
+
+# Metrics export formats
+influxdb-client>=1.36.0    # InfluxDB integration
+graphite-api>=1.1.3        # Graphite integration 

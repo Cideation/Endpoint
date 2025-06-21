@@ -1,20 +1,29 @@
 # Production Infrastructure Components
 
-This directory contains the 5 critical production-ready components needed to bring the BEM system from 74% to 90%+ production readiness.
+This directory contains the 6 critical production-ready components needed to bring the BEM system from 74% to 95%+ production readiness.
 
 ## 🎯 Overview
 
 The production infrastructure addresses the most critical gaps identified in the production readiness assessment:
 
-1. **Error Monitoring & Alerting** - Real-time error tracking and notifications
-2. **Rate Limiting & Throttling** - API abuse prevention and DDoS protection  
-3. **Input Validation & Sanitization** - Comprehensive security validation
-4. **Database Connection Pooling** - Optimized database performance
-5. **Health Monitoring** - Comprehensive system status checks
+1. **APM (Application Performance Monitoring)** - Real-time performance monitoring and profiling
+2. **APM (Application Performance Monitoring)** - Real-time performance monitoring and profiling
+3. **Error Monitoring & Alerting** - Real-time error tracking and notifications
+4. **Rate Limiting & Throttling** - API abuse prevention and DDoS protection  
+5. **Input Validation & Sanitization** - Comprehensive security validation
+6. **Database Connection Pooling** - Optimized database performance
+6. **Health Monitoring** - Comprehensive system status checks
 
 ## 📁 Directory Structure
 
 ```
+├── apm-monitoring/            # Application Performance Monitoring (APM)
+│   ├── apm_integration.py     # Multi-provider APM system
+│   ├── performance_profiler.py # CPU/Memory profiling & analysis  
+│   ├── dashboard_integration.py # Real-time web dashboard
+│   ├── apm_demo.py           # Comprehensive APM demo
+│   ├── run_apm_demo.py       # Demo runner script
+│   └── requirements.txt      # APM dependencies
 production-infrastructure/
 ├── error-monitoring/          # Error tracking and alerting system
 │   ├── error_tracker.py      # Main error monitoring class
