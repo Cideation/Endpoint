@@ -1,0 +1,104 @@
+{
+  "sdfa_version": "1.0",
+  "description": "Scientific Design Formula Assignment configuration for BEM visual system",
+  "state_thresholds": {
+    "evolutionary_peak": 0.9,
+    "high_performance": 0.75,
+    "neutral_state": 0.5,
+    "low_precision": 0.25,
+    "critical_state": 0.1
+  },
+  "performance_weights": {
+    "base": 0.4,
+    "quality": 0.3,
+    "stability": 0.2,
+    "convergence": 0.1
+  },
+  "color_mappings": {
+    "evolutionary_peak": {
+      "primary": "#00FF41",
+      "secondary": "#00CC33",
+      "animation": "pulse",
+      "description": "Bright green indicating optimal performance"
+    },
+    "high_performance": {
+      "primary": "#41FF00",
+      "secondary": "#33CC00",
+      "animation": "glow",
+      "description": "Green indicating good performance"
+    },
+    "neutral_state": {
+      "primary": "#FFD700",
+      "secondary": "#FFA500",
+      "animation": "none",
+      "description": "Gold indicating stable neutral state"
+    },
+    "low_precision": {
+      "primary": "#FF8C00",
+      "secondary": "#FF4500",
+      "animation": "fade",
+      "description": "Orange indicating attention needed"
+    },
+    "critical_state": {
+      "primary": "#FF0000",
+      "secondary": "#CC0000",
+      "animation": "urgent_pulse",
+      "description": "Red indicating critical issues"
+    },
+    "undefined": {
+      "primary": "#808080",
+      "secondary": "#606060",
+      "animation": "none",
+      "description": "Gray for undefined or unknown states"
+    }
+  },
+  "animation_config": {
+    "pulse": {
+      "duration": 1.0,
+      "easing": "ease-in-out",
+      "iterations": "infinite"
+    },
+    "glow": {
+      "duration": 2.0,
+      "easing": "linear",
+      "iterations": "infinite"
+    },
+    "fade": {
+      "duration": 1.5,
+      "easing": "ease-out",
+      "iterations": "infinite"
+    },
+    "urgent_pulse": {
+      "duration": 0.5,
+      "easing": "linear",
+      "iterations": "infinite"
+    },
+    "emergence_glow": {
+      "duration": 3.0,
+      "easing": "ease-in-out",
+      "iterations": "infinite"
+    },
+    "instability_pulse": {
+      "duration": 0.8,
+      "easing": "ease-in-out",
+      "iterations": "infinite"
+    }
+  },
+  "platform_specific": {
+    "unreal": {
+      "color_space": "linear_rgb",
+      "gamma_correction": 2.2,
+      "hdr_support": true
+    },
+    "cytoscape": {
+      "edge_color_inheritance": true,
+      "node_size_scaling": true,
+      "label_visibility": "auto"
+    },
+    "web": {
+      "css_variables": true,
+      "accessibility_mode": true,
+      "high_contrast_support": true
+    }
+  }
+}
