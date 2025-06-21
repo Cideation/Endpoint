@@ -1,0 +1,435 @@
+{
+  "abm_version": "1.0",
+  "export_timestamp": "2025-06-21T04:54:23.599374+00:00",
+  "interpretation_maps": {
+    "type_roles": {
+      "V01_ProductComponent": {
+        "default_tags": [
+          "component",
+          "product",
+          "manufacturing"
+        ],
+        "expected_inputs": [
+          "material",
+          "dimensions",
+          "specifications"
+        ],
+        "expected_outputs": [
+          "score",
+          "quality",
+          "feasibility"
+        ],
+        "rendering_priority": "high"
+      },
+      "V04_UserEconomicProfile": {
+        "default_tags": [
+          "user",
+          "economic",
+          "constraints"
+        ],
+        "expected_inputs": [
+          "budget",
+          "preferences",
+          "timeline"
+        ],
+        "expected_outputs": [
+          "profile",
+          "constraints",
+          "priorities"
+        ],
+        "rendering_priority": "medium"
+      },
+      "V05_ManufacturingProcess": {
+        "default_tags": [
+          "process",
+          "manufacturing",
+          "workflow"
+        ],
+        "expected_inputs": [
+          "components",
+          "resources",
+          "schedule"
+        ],
+        "expected_outputs": [
+          "plan",
+          "timeline",
+          "cost"
+        ],
+        "rendering_priority": "high"
+      }
+    },
+    "signal_map": {
+      "manufacturing_ready": {
+        "threshold": 0.8,
+        "color_mapping": "#00FF41",
+        "animation": "pulse",
+        "interpretation": "ready_for_production"
+      },
+      "quality_concern": {
+        "threshold": 0.3,
+        "color_mapping": "#FF8C00",
+        "animation": "warning",
+        "interpretation": "quality_review_needed"
+      },
+      "cost_optimal": {
+        "threshold": 0.9,
+        "color_mapping": "#32CD32",
+        "animation": "glow",
+        "interpretation": "cost_optimized"
+      },
+      "evolutionary_peak": {
+        "threshold": 0.95,
+        "color_mapping": "#FF1493",
+        "animation": "sparkle",
+        "interpretation": "breakthrough_performance"
+      }
+    },
+    "phase_map": {
+      "Alpha": {
+        "execution_order": 1,
+        "dependencies": [],
+        "expected_functors": [
+          "V01_ProductComponent",
+          "V04_UserEconomicProfile"
+        ],
+        "convergence_criteria": {
+          "min_nodes": 3,
+          "stability_threshold": 0.8
+        }
+      },
+      "Beta": {
+        "execution_order": 2,
+        "dependencies": [
+          "Alpha"
+        ],
+        "expected_functors": [
+          "V05_ManufacturingProcess"
+        ],
+        "convergence_criteria": {
+          "min_nodes": 5,
+          "optimization_threshold": 0.85
+        }
+      },
+      "Gamma": {
+        "execution_order": 3,
+        "dependencies": [
+          "Alpha",
+          "Beta"
+        ],
+        "expected_functors": [
+          "V01_ProductComponent",
+          "V05_ManufacturingProcess"
+        ],
+        "convergence_criteria": {
+          "emergence_threshold": 0.9
+        }
+      }
+    },
+    "visual_schema": {
+      "node": {
+        "required_keys": [
+          "id",
+          "type",
+          "state",
+          "position"
+        ],
+        "optional_keys": [
+          "color",
+          "animation",
+          "metadata",
+          "label"
+        ],
+        "rendering_hints": {
+          "min_size": 20,
+          "max_size": 100,
+          "default_color": "#4A90E2"
+        }
+      },
+      "edge": {
+        "required_keys": [
+          "id",
+          "source",
+          "target",
+          "type"
+        ],
+        "optional_keys": [
+          "color",
+          "width",
+          "animation",
+          "label"
+        ],
+        "rendering_hints": {
+          "default_width": 2,
+          "default_color": "#999999"
+        }
+      }
+    },
+    "agent_behavior": {
+      "QualityAgent": {
+        "learning_rate": 0.12,
+        "bidding_pattern": {
+          "quality": 1.8,
+          "manufacturing": 1.2,
+          "cost": 0.6
+        },
+        "adaptation_enabled": true
+      },
+      "CostAgent": {
+        "learning_rate": 0.15,
+        "bidding_pattern": {
+          "cost": 1.9,
+          "manufacturing": 1.1,
+          "quality": 0.7
+        },
+        "adaptation_enabled": true
+      },
+      "TimeAgent": {
+        "learning_rate": 0.1,
+        "bidding_pattern": {
+          "timeline": 1.7,
+          "manufacturing": 1.3,
+          "quality": 0.8
+        },
+        "adaptation_enabled": true
+      },
+      "InnovationAgent": {
+        "learning_rate": 0.2,
+        "bidding_pattern": {
+          "innovation": 2.0,
+          "quality": 1.0,
+          "cost": 0.5
+        },
+        "adaptation_enabled": true
+      }
+    },
+    "emergence_rules": {
+      "manufacturing_optimization": {
+        "conditions": {
+          "quality_score": {
+            "operator": "greater_than",
+            "value": 0.8
+          },
+          "cost_efficiency": {
+            "operator": "greater_than",
+            "value": 0.7
+          },
+          "timeline_feasibility": {
+            "operator": "greater_than",
+            "value": 0.75
+          }
+        },
+        "actions": {
+          "trigger_production": true,
+          "notify_stakeholders": true,
+          "lock_configuration": true
+        },
+        "priority": 0.95,
+        "activation_count": 1,
+        "last_activated": "2025-06-21T04:54:23.597509+00:00"
+      },
+      "innovation_breakthrough": {
+        "conditions": {
+          "innovation_score": {
+            "operator": "greater_than",
+            "value": 0.9
+          },
+          "feasibility": {
+            "operator": "greater_than",
+            "value": 0.8
+          },
+          "market_potential": {
+            "operator": "greater_than",
+            "value": 0.85
+          }
+        },
+        "actions": {
+          "highlight_innovation": true,
+          "increase_priority": 2.0,
+          "alert_leadership": true
+        },
+        "priority": 0.98,
+        "activation_count": 1,
+        "last_activated": "2025-06-21T04:54:23.597590+00:00"
+      },
+      "system_convergence": {
+        "conditions": {
+          "all_phases_stable": {
+            "operator": "equals",
+            "value": true
+          },
+          "agent_consensus": {
+            "operator": "greater_than",
+            "value": 0.85
+          }
+        },
+        "actions": {
+          "finalize_design": true,
+          "generate_reports": true
+        },
+        "priority": 0.9,
+        "activation_count": 1,
+        "last_activated": "2025-06-21T04:54:23.597622+00:00"
+      }
+    }
+  },
+  "agent_adaptations": {
+    "QualityAgent": {
+      "agent_id": "QualityAgent",
+      "learning_rate": 0.12,
+      "bidding_pattern": {
+        "quality": 1.8,
+        "manufacturing": 1.2,
+        "cost": 0.6
+      },
+      "signal_feedback": {
+        "quality": 0.5504,
+        "manufacturing": 0.5456
+      },
+      "adaptation_history": [
+        {
+          "timestamp": "2025-06-21T04:54:23.596958+00:00",
+          "signal": "quality",
+          "feedback_score": 0.92,
+          "new_feedback": 0.5504,
+          "context": {
+            "scenario": "Excellent quality assessment",
+            "demo": true
+          }
+        },
+        {
+          "timestamp": "2025-06-21T04:54:23.597118+00:00",
+          "signal": "manufacturing",
+          "feedback_score": 0.88,
+          "new_feedback": 0.5456,
+          "context": {
+            "scenario": "Manufacturing quality validated",
+            "demo": true
+          }
+        }
+      ],
+      "last_updated": "2025-06-21T04:54:23.597127+00:00"
+    },
+    "CostAgent": {
+      "agent_id": "CostAgent",
+      "learning_rate": 0.15,
+      "bidding_pattern": {
+        "cost": 1.9,
+        "manufacturing": 1.1,
+        "quality": 0.7
+      },
+      "signal_feedback": {
+        "cost": 0.542,
+        "manufacturing": 0.548
+      },
+      "adaptation_history": [
+        {
+          "timestamp": "2025-06-21T04:54:23.597045+00:00",
+          "signal": "cost",
+          "feedback_score": 0.78,
+          "new_feedback": 0.542,
+          "context": {
+            "scenario": "Good cost optimization",
+            "demo": true
+          }
+        },
+        {
+          "timestamp": "2025-06-21T04:54:23.597196+00:00",
+          "signal": "manufacturing",
+          "feedback_score": 0.82,
+          "new_feedback": 0.548,
+          "context": {
+            "scenario": "Cost-effective manufacturing",
+            "demo": true
+          }
+        }
+      ],
+      "last_updated": "2025-06-21T04:54:23.597205+00:00"
+    },
+    "TimeAgent": {
+      "agent_id": "TimeAgent",
+      "learning_rate": 0.1,
+      "bidding_pattern": {
+        "timeline": 1.7,
+        "manufacturing": 1.3,
+        "quality": 0.8
+      },
+      "signal_feedback": {
+        "timeline": 0.535,
+        "manufacturing": 0.54
+      },
+      "adaptation_history": [
+        {
+          "timestamp": "2025-06-21T04:54:23.597064+00:00",
+          "signal": "timeline",
+          "feedback_score": 0.85,
+          "new_feedback": 0.535,
+          "context": {
+            "scenario": "Timeline met with buffer",
+            "demo": true
+          }
+        },
+        {
+          "timestamp": "2025-06-21T04:54:23.597301+00:00",
+          "signal": "manufacturing",
+          "feedback_score": 0.9,
+          "new_feedback": 0.54,
+          "context": {
+            "scenario": "Efficient manufacturing timeline",
+            "demo": true
+          }
+        }
+      ],
+      "last_updated": "2025-06-21T04:54:23.597335+00:00"
+    },
+    "InnovationAgent": {
+      "agent_id": "InnovationAgent",
+      "learning_rate": 0.2,
+      "bidding_pattern": {
+        "innovation": 2.0,
+        "quality": 1.0,
+        "cost": 0.5
+      },
+      "signal_feedback": {
+        "innovation": 0.59,
+        "quality": 0.55
+      },
+      "adaptation_history": [
+        {
+          "timestamp": "2025-06-21T04:54:23.597092+00:00",
+          "signal": "innovation",
+          "feedback_score": 0.95,
+          "new_feedback": 0.59,
+          "context": {
+            "scenario": "Breakthrough innovation identified",
+            "demo": true
+          }
+        },
+        {
+          "timestamp": "2025-06-21T04:54:23.597355+00:00",
+          "signal": "quality",
+          "feedback_score": 0.75,
+          "new_feedback": 0.55,
+          "context": {
+            "scenario": "Innovation maintains quality",
+            "demo": true
+          }
+        }
+      ],
+      "last_updated": "2025-06-21T04:54:23.597357+00:00"
+    }
+  },
+  "system_metadata": {
+    "total_hints": 19,
+    "active_agents": 4,
+    "coherence_score": 0.69,
+    "emergence_rules_count": 3
+  },
+  "abm_characteristics": {
+    "data_first": true,
+    "render_aware": true,
+    "emergence_tuned": true,
+    "composable": true,
+    "trainable": true,
+    "interpretation_driven": true
+  }
+}
