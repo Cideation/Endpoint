@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-DGL Trainer for BEM System — Full Graph Embedding with Database Integration
+DGL Trainer for BEM System — Full Graph Embedding with Database Integration + ABM
 Design Rule: Train on all edges across the system graph (Alpha, Beta, Gamma)
-Enhanced with SFDE scientific foundation, cross-phase learning, and PostgreSQL training database
+Enhanced with SFDE scientific foundation, cross-phase learning, PostgreSQL training database,
+and Graph Hints ABM system integration for agent-driven learning
 """
 
 import dgl
@@ -18,8 +19,9 @@ import os
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 
-# Add postgre directory to path for database integration
+# Add paths for database and ABM integration
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'postgre'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'MICROSERVICE_ENGINES'))
 
 try:
     from training_db_config import get_training_db, setup_training_environment
@@ -28,9 +30,190 @@ except ImportError:
     logging.warning("Training database not available - using fallback data generation")
     DB_AVAILABLE = False
 
+try:
+    from graph_hints_system import GraphHintsSystem, HintCategory
+    ABM_AVAILABLE = True
+except ImportError:
+    logging.warning("Graph Hints ABM system not available - training without agent adaptation")
+    ABM_AVAILABLE = False
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# ============================================================================
+# GRAPH HINTS ABM INTEGRATION FOR DGL TRAINING
+# ============================================================================
+
+class ABMDGLIntegration:
+    """Integration layer between Graph Hints ABM system and DGL training"""
+    
+    def __init__(self, abm_system=None):
+        self.abm_system = abm_system
+        self.agent_training_weights = {}
+        self.training_feedback_history = []
+        self.emergence_detected_during_training = []
+        
+        if self.abm_system:
+            logger.info("🧠 ABM-DGL integration initialized")
+        else:
+            logger.warning("⚠️ ABM system not available for DGL integration")
+    
+    def get_agent_training_weights(self) -> Dict[str, float]:
+        """Get agent-influenced training weights for edge categories"""
+        if not self.abm_system:
+            return {category: 1.0 for category in EDGE_TABLE_SEGREGATION.keys()}
+        
+        weights = {}
+        
+        for category, config in EDGE_TABLE_SEGREGATION.items():
+            base_weight = config['training_weight']
+            
+            # Get agent influences for this edge category
+            agent_influences = []
+            for agent_id, adaptation in self.abm_system.agent_adaptations.items():
+                # Check if agent has bidding for this category type
+                category_signal = self._map_edge_category_to_signal(category)
+                if category_signal in adaptation.bidding_pattern:
+                    bidding_strength = adaptation.bidding_pattern[category_signal]
+                    recent_feedback = adaptation.signal_feedback.get(category_signal, 0.5)
+                    
+                    # Calculate agent influence on training weight
+                    influence = (bidding_strength * recent_feedback) / 2.0
+                    agent_influences.append(influence)
+            
+            # Apply agent influences to base weight
+            if agent_influences:
+                avg_influence = sum(agent_influences) / len(agent_influences)
+                weights[category] = base_weight * (0.5 + avg_influence)  # 0.5-1.5x multiplier
+            else:
+                weights[category] = base_weight
+        
+        self.agent_training_weights = weights
+        return weights
+    
+    def _map_edge_category_to_signal(self, edge_category: str) -> str:
+        """Map edge category to ABM signal type"""
+        mapping = {
+            'alpha_edges': 'dag_execution',
+            'beta_relationships': 'objective_optimization', 
+            'gamma_edges': 'emergence_learning',
+            'cross_phase_edges': 'phase_transition'
+        }
+        return mapping.get(edge_category, 'general_training')
+    
+    def update_agents_from_training_results(self, training_results: Dict[str, Any]):
+        """Update ABM agents based on DGL training results"""
+        if not self.abm_system:
+            return
+        
+        training_loss = training_results.get('final_loss', 1.0)
+        training_accuracy = training_results.get('accuracy', 0.0)
+        epoch_count = training_results.get('epochs', 1)
+        
+        # Convert training metrics to feedback scores (0.0-1.0)
+        loss_feedback = max(0.0, min(1.0, 1.0 - (training_loss / 2.0)))  # Normalize loss
+        accuracy_feedback = max(0.0, min(1.0, training_accuracy))
+        
+        # Combine metrics with epoch consideration
+        combined_feedback = (loss_feedback * 0.6) + (accuracy_feedback * 0.4)
+        
+        # Apply epoch bonus for stable training
+        if epoch_count >= 20:
+            combined_feedback = min(1.0, combined_feedback * 1.1)
+        
+        # Update each agent based on their training contribution
+        for edge_category, training_weight in self.agent_training_weights.items():
+            signal = self._map_edge_category_to_signal(edge_category)
+            
+            # Find agents with bidding for this signal
+            for agent_id, adaptation in self.abm_system.agent_adaptations.items():
+                if signal in adaptation.bidding_pattern:
+                    # Weight feedback by training contribution
+                    weighted_feedback = combined_feedback * (training_weight / 2.0)
+                    
+                    self.abm_system.update_agent_feedback(
+                        agent_id,
+                        signal,
+                        weighted_feedback,
+                        context={
+                            'training_loss': training_loss,
+                            'training_accuracy': training_accuracy,
+                            'epochs': epoch_count,
+                            'edge_category': edge_category,
+                            'dgl_integration': True
+                        }
+                    )
+        
+        # Record training feedback
+        self.training_feedback_history.append({
+            'timestamp': datetime.now().isoformat(),
+            'training_results': training_results,
+            'agent_updates': len(self.abm_system.agent_adaptations),
+            'combined_feedback': combined_feedback
+        })
+        
+        logger.info(f"🤖 Updated {len(self.abm_system.agent_adaptations)} agents from DGL training results")
+    
+    def check_training_emergence(self, training_state: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Check for emergence patterns during DGL training"""
+        if not self.abm_system:
+            return []
+        
+        # Build system state for emergence detection
+        system_state = {
+            'training_loss': training_state.get('current_loss', 1.0),
+            'training_accuracy': training_state.get('current_accuracy', 0.0),
+            'epoch_number': training_state.get('epoch', 0),
+            'convergence_rate': training_state.get('convergence_rate', 0.0),
+            'agent_consensus': self._calculate_agent_consensus(),
+            'edge_category_performance': training_state.get('edge_category_losses', {})
+        }
+        
+        # Check for emergence conditions
+        activated_rules = self.abm_system.check_emergence_conditions(system_state)
+        
+        if activated_rules:
+            self.emergence_detected_during_training.extend(activated_rules)
+            logger.info(f"🌟 Detected {len(activated_rules)} emergence pattern(s) during DGL training")
+        
+        return activated_rules
+    
+    def _calculate_agent_consensus(self) -> float:
+        """Calculate consensus level among agents"""
+        if not self.abm_system or not self.abm_system.agent_adaptations:
+            return 0.0
+        
+        # Calculate variance in agent feedback scores
+        all_feedback_scores = []
+        for adaptation in self.abm_system.agent_adaptations.values():
+            avg_feedback = sum(adaptation.signal_feedback.values()) / max(1, len(adaptation.signal_feedback))
+            all_feedback_scores.append(avg_feedback)
+        
+        if len(all_feedback_scores) < 2:
+            return 1.0
+        
+        mean_feedback = sum(all_feedback_scores) / len(all_feedback_scores)
+        variance = sum((x - mean_feedback) ** 2 for x in all_feedback_scores) / len(all_feedback_scores)
+        
+        # Convert variance to consensus (lower variance = higher consensus)
+        consensus = max(0.0, min(1.0, 1.0 - (variance * 2.0)))
+        return consensus
+    
+    def get_abm_training_summary(self) -> Dict[str, Any]:
+        """Get summary of ABM integration with DGL training"""
+        if not self.abm_system:
+            return {"abm_available": False}
+        
+        return {
+            "abm_available": True,
+            "active_agents": len(self.abm_system.agent_adaptations),
+            "agent_training_weights": self.agent_training_weights,
+            "training_feedback_events": len(self.training_feedback_history),
+            "emergence_detections": len(self.emergence_detected_during_training),
+            "system_coherence": self.abm_system._calculate_coherence_score(),
+            "agent_consensus": self._calculate_agent_consensus()
+        }
 
 # ============================================================================
 # EDGE TABLE SEGREGATION CONFIGURATION
@@ -403,18 +586,31 @@ class BEMGraphEmbedding(nn.Module):
         return embeddings
 
 class BEMTrainer:
-    """Complete BEM training system with database integration"""
+    """Complete BEM training system with database integration and ABM"""
     
-    def __init__(self, model, graph):
+    def __init__(self, model, graph, abm_system=None):
         self.model = model
         self.graph = graph
         self.training_db = get_training_db() if DB_AVAILABLE else None
         self.run_id = None
+        
+        # Initialize ABM integration
+        self.abm_integration = ABMDGLIntegration(abm_system) if ABM_AVAILABLE else None
+        if self.abm_integration:
+            logger.info("🧠 BEM Trainer initialized with Graph Hints ABM integration")
     
     def train(self, epochs=50, lr=0.01, run_name=None):
-        """Train BEM model with database logging and edge segregation weights"""
+        """Train BEM model with database logging, edge segregation weights, and ABM integration"""
         logger.info(f"🚀 Starting BEM training: {epochs} epochs, lr={lr}")
         logger.info("🧱 Using Edge Table Segregation for weighted training")
+        
+        # Get agent-influenced training weights
+        agent_weights = {}
+        if self.abm_integration:
+            agent_weights = self.abm_integration.get_agent_training_weights()
+            logger.info("🤖 Applied agent-influenced training weights")
+            for category, weight in agent_weights.items():
+                logger.info(f"  • {category}: {weight:.3f}")
         
         # Initialize training run in database
         if self.training_db:
@@ -424,66 +620,115 @@ class BEMTrainer:
                 'output_dim': 32,
                 'num_phases': 3,
                 'edge_segregation': True,
+                'abm_integration': self.abm_integration is not None,
                 'edge_weights': {
-                    'alpha_edges': get_edge_training_weight('alpha_edges'),
-                    'beta_relationships': get_edge_training_weight('beta_relationships'),
-                    'gamma_edges': get_edge_training_weight('gamma_edges'),
-                    'cross_phase_edges': get_edge_training_weight('cross_phase_edges')
+                    'alpha_edges': agent_weights.get('alpha_edges', get_edge_training_weight('alpha_edges')),
+                    'beta_relationships': agent_weights.get('beta_relationships', get_edge_training_weight('beta_relationships')),
+                    'gamma_edges': agent_weights.get('gamma_edges', get_edge_training_weight('gamma_edges')),
+                    'cross_phase_edges': agent_weights.get('cross_phase_edges', get_edge_training_weight('cross_phase_edges'))
                 }
             }
             training_params = {
                 'epochs': epochs,
                 'learning_rate': lr,
                 'optimizer': 'Adam',
-                'edge_segregation_enabled': True
+                'edge_segregation_enabled': True,
+                'abm_enabled': self.abm_integration is not None
             }
             
             self.run_id = self.training_db.insert_training_run(
-                run_name or f"bem_training_{datetime.now().strftime('%Y%m%d_%H%M%S')}", 
+                run_name or f"bem_abm_training_{datetime.now().strftime('%Y%m%d_%H%M%S')}", 
                 model_config, 
                 training_params
             )
         
         optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
         
-        # Use weighted loss function based on edge segregation
-        def weighted_loss_fn(predictions, targets, edge_weights=None):
+        # Use weighted loss function based on edge segregation and agent weights
+        def weighted_loss_fn(predictions, targets, edge_weights=None, agent_weights=None):
             base_loss = nn.MSELoss(reduction='none')(predictions, targets)
             
+            # Apply edge segregation weights
             if edge_weights is not None and 'weight' in self.graph.edata:
-                # Apply edge-specific weights to loss
                 edge_weight_tensor = self.graph.edata['weight']
-                # Expand weights to match node predictions if needed
                 if len(edge_weight_tensor) > 0:
-                    # Use mean edge weight per node as node weight
                     node_weights = torch.ones(predictions.shape[0])
                     weighted_loss = base_loss * node_weights.unsqueeze(1)
-                    return weighted_loss.mean()
+                    loss_value = weighted_loss.mean()
+                else:
+                    loss_value = base_loss.mean()
+            else:
+                loss_value = base_loss.mean()
             
-            return base_loss.mean()
+            # Apply agent weight multiplier
+            if agent_weights and self.abm_integration:
+                # Calculate average agent influence
+                avg_agent_weight = sum(agent_weights.values()) / len(agent_weights)
+                loss_value = loss_value * avg_agent_weight
+            
+            return loss_value
         
         best_loss = float('inf')
+        convergence_history = []
         
         for epoch in range(epochs):
             self.model.train()
             logits = self.model(self.graph, self.graph.ndata["feat"])
             
-            # Apply edge segregation weighted loss
+            # Apply edge segregation and agent-weighted loss
             loss = weighted_loss_fn(
                 logits, 
                 self.graph.ndata["label"], 
-                self.graph.edata.get("weight")
+                self.graph.edata.get("weight"),
+                agent_weights
             )
             
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             
-            # Log metrics to database with edge segregation info
+            # Track convergence for emergence detection
+            convergence_history.append(loss.item())
+            if len(convergence_history) > 10:
+                convergence_history.pop(0)
+            
+            # Calculate convergence rate
+            convergence_rate = 0.0
+            if len(convergence_history) >= 5:
+                recent_avg = sum(convergence_history[-5:]) / 5
+                earlier_avg = sum(convergence_history[:5]) / 5
+                if earlier_avg > 0:
+                    convergence_rate = max(0.0, (earlier_avg - recent_avg) / earlier_avg)
+            
+            # Check for emergence patterns during training
+            if self.abm_integration and epoch % 5 == 0:
+                training_state = {
+                    'current_loss': loss.item(),
+                    'current_accuracy': self._calculate_accuracy(logits),
+                    'epoch': epoch,
+                    'convergence_rate': convergence_rate,
+                    'edge_category_losses': self._calculate_edge_category_losses(logits)
+                }
+                
+                emergence_patterns = self.abm_integration.check_training_emergence(training_state)
+                if emergence_patterns:
+                    logger.info(f"🌟 Epoch {epoch}: Detected {len(emergence_patterns)} emergence pattern(s)")
+            
+            # Log metrics to database with edge segregation and ABM info
             if self.training_db and self.run_id:
                 self.training_db.insert_training_metric(
                     self.run_id, epoch, 'training_loss', loss.item()
                 )
+                
+                # Log ABM metrics
+                if self.abm_integration:
+                    abm_summary = self.abm_integration.get_abm_training_summary()
+                    self.training_db.insert_training_metric(
+                        self.run_id, epoch, 'agent_consensus', abm_summary.get('agent_consensus', 0.0)
+                    )
+                    self.training_db.insert_training_metric(
+                        self.run_id, epoch, 'system_coherence', abm_summary.get('system_coherence', 0.0)
+                    )
                 
                 # Log edge type distribution every 10 epochs
                 if epoch % 10 == 0:
@@ -502,19 +747,46 @@ class BEMTrainer:
                 best_loss = loss.item()
             
             if (epoch + 1) % 10 == 0:
-                # Log edge segregation status
+                # Log edge segregation and ABM status
                 edge_info = ""
                 if 'weight' in self.graph.edata:
                     avg_weight = self.graph.edata['weight'].mean().item()
                     edge_info = f", Avg Edge Weight: {avg_weight:.3f}"
                 
-                logger.info(f"Epoch {epoch+1}/{epochs}, Loss: {loss.item():.4f}{edge_info}")
+                abm_info = ""
+                if self.abm_integration:
+                    abm_summary = self.abm_integration.get_abm_training_summary()
+                    abm_info = f", Agent Consensus: {abm_summary.get('agent_consensus', 0.0):.3f}"
+                
+                logger.info(f"Epoch {epoch+1}/{epochs}, Loss: {loss.item():.4f}{edge_info}{abm_info}")
         
-        # Update training status with edge segregation summary
+        # Prepare final training results for ABM feedback
+        final_results = {
+            'final_loss': best_loss,
+            'accuracy': self._calculate_accuracy(logits),
+            'epochs': epochs,
+            'convergence_rate': convergence_rate,
+            'edge_segregation_enabled': True,
+            'abm_integration_enabled': self.abm_integration is not None
+        }
+        
+        # Update ABM agents with training results
+        if self.abm_integration:
+            self.abm_integration.update_agents_from_training_results(final_results)
+            
+            # Log final ABM summary
+            final_abm_summary = self.abm_integration.get_abm_training_summary()
+            logger.info("🧠 Final ABM Training Summary:")
+            logger.info(f"  • Active Agents: {final_abm_summary.get('active_agents', 0)}")
+            logger.info(f"  • Training Feedback Events: {final_abm_summary.get('training_feedback_events', 0)}")
+            logger.info(f"  • Emergence Detections: {final_abm_summary.get('emergence_detections', 0)}")
+            logger.info(f"  • System Coherence: {final_abm_summary.get('system_coherence', 0.0):.3f}")
+        
+        # Update training status with edge segregation and ABM summary
         if self.training_db and self.run_id:
             self.training_db.update_training_status(self.run_id, 'completed')
             
-            # Save final embeddings with edge segregation metadata
+            # Save final embeddings with edge segregation and ABM metadata
             self.model.eval()
             with torch.no_grad():
                 final_embeddings = self.model(self.graph, self.graph.ndata["feat"])
@@ -537,15 +809,49 @@ class BEMTrainer:
                         'segregation_enabled': True
                     }
                 
+                # Add ABM metadata
+                if self.abm_integration:
+                    embedding_dict['abm_metadata'] = self.abm_integration.get_abm_training_summary()
+                
                 self.training_db.save_model_embeddings(self.run_id, embedding_dict)
         
         logger.info(f"✅ Training completed! Best loss: {best_loss:.4f}")
         logger.info("🧱 Edge segregation weights applied during training")
+        if self.abm_integration:
+            logger.info("🧠 ABM agent learning completed during training")
+        
         return best_loss
+    
+    def _calculate_accuracy(self, logits):
+        """Calculate training accuracy metric"""
+        with torch.no_grad():
+            # Simple accuracy calculation based on prediction closeness
+            targets = self.graph.ndata["label"]
+            mse = F.mse_loss(logits, targets)
+            # Convert MSE to accuracy-like metric (0-1 scale)
+            accuracy = max(0.0, min(1.0, 1.0 - (mse.item() / 2.0)))
+            return accuracy
+    
+    def _calculate_edge_category_losses(self, logits):
+        """Calculate losses per edge category for emergence detection"""
+        edge_category_losses = {}
+        
+        if 'type' in self.graph.edata:
+            edge_types = self.graph.edata['type']
+            targets = self.graph.ndata["label"]
+            
+            for edge_type in [0, 1, 2, 3]:  # alpha, beta, gamma, cross-phase
+                type_mask = edge_types == edge_type
+                if type_mask.sum() > 0:
+                    # Calculate loss for nodes connected by this edge type
+                    type_loss = F.mse_loss(logits, targets, reduction='none').mean()
+                    edge_category_losses[f'edge_type_{edge_type}_loss'] = type_loss.item()
+        
+        return edge_category_losses
 
 def run_bem_training_with_database():
-    """Main entry point for database-integrated BEM training"""
-    logger.info("🌐 BEM DGL Trainer with Database Integration")
+    """Main entry point for database-integrated BEM training with ABM"""
+    logger.info("🌐 BEM DGL Trainer with Database Integration + Graph Hints ABM")
     
     # Setup training environment
     if DB_AVAILABLE:
@@ -553,11 +859,31 @@ def run_bem_training_with_database():
             logger.error("❌ Failed to setup training environment")
             return None
     
+    # Initialize Graph Hints ABM system
+    abm_system = None
+    if ABM_AVAILABLE:
+        try:
+            # Load ABM configuration
+            abm_config_path = os.path.join(os.path.dirname(__file__), '..', 'MICROSERVICE_ENGINES', 'graph_hints')
+            if os.path.exists(abm_config_path):
+                from graph_hints_system import GraphHintsSystem
+                abm_system = GraphHintsSystem()
+                abm_system.load_configuration(abm_config_path)
+                logger.info("🧠 Graph Hints ABM system initialized for DGL training")
+            else:
+                logger.warning("⚠️ ABM configuration directory not found, proceeding without ABM")
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to initialize ABM system: {e}")
+            abm_system = None
+    
     # Load graph from database or fallback
     if DB_AVAILABLE:
         graph = load_graph_from_database()
     else:
         graph = load_graph_from_json()
+    
+    # Log edge segregation configuration
+    log_edge_segregation_info()
     
     # Initialize model
     model = BEMGraphEmbedding(
@@ -566,9 +892,35 @@ def run_bem_training_with_database():
         out_feats=32
     )
     
-    # Create trainer and run training
-    trainer = BEMTrainer(model, graph)
-    final_loss = trainer.train(epochs=100, lr=0.001, run_name="bem_full_system_training")
+    # Create trainer with ABM integration
+    trainer = BEMTrainer(model, graph, abm_system)
+    
+    # Run training with extended epochs for ABM learning
+    training_epochs = 150 if abm_system else 100
+    final_loss = trainer.train(
+        epochs=training_epochs, 
+        lr=0.001, 
+        run_name="bem_abm_edge_segregation_training"
+    )
+    
+    # Log final system state
+    if abm_system and trainer.abm_integration:
+        final_abm_state = trainer.abm_integration.get_abm_training_summary()
+        logger.info("🧠 Final ABM System State:")
+        logger.info(f"  • Total Agents: {final_abm_state.get('active_agents', 0)}")
+        logger.info(f"  • Training Events: {final_abm_state.get('training_feedback_events', 0)}")
+        logger.info(f"  • Emergence Events: {final_abm_state.get('emergence_detections', 0)}")
+        logger.info(f"  • System Coherence: {final_abm_state.get('system_coherence', 0.0):.3f}")
+        logger.info(f"  • Agent Consensus: {final_abm_state.get('agent_consensus', 0.0):.3f}")
+        
+        # Save ABM state to file for future reference
+        abm_state_file = os.path.join(os.path.dirname(__file__), 'abm_training_state.json')
+        try:
+            with open(abm_state_file, 'w') as f:
+                json.dump(final_abm_state, f, indent=2)
+            logger.info(f"💾 ABM training state saved to {abm_state_file}")
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to save ABM state: {e}")
     
     # Cleanup
     if DB_AVAILABLE and trainer.training_db:
