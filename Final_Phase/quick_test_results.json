@@ -1,0 +1,220 @@
+{
+  "total_tests": 3,
+  "tests_run": 3,
+  "successful_tests": 3,
+  "failed_tests": 0,
+  "test_results": [
+    {
+      "scenario": "Alpha to Gamma Lifecycle",
+      "test_type": "manual_sim",
+      "start_time": 1750513197.053493,
+      "agents_tested": [
+        "QualityAgent"
+      ],
+      "phase_transitions": [
+        {
+          "agent": "QualityAgent",
+          "phase": "alpha",
+          "performance": {
+            "phase": "alpha",
+            "activities_completed": 3,
+            "average_score": 0.4462368562177033,
+            "success": true
+          }
+        },
+        {
+          "agent": "QualityAgent",
+          "phase": "beta",
+          "performance": {
+            "phase": "beta",
+            "activities_completed": 3,
+            "average_score": 0.7536409551110189,
+            "success": true
+          }
+        },
+        {
+          "agent": "QualityAgent",
+          "phase": "gamma",
+          "performance": {
+            "phase": "gamma",
+            "activities_completed": 3,
+            "average_score": 0.5403641590560485,
+            "success": true
+          }
+        }
+      ],
+      "performance_metrics": {
+        "QualityAgent": {
+          "total_time": 30.913685083389282,
+          "transitions_completed": 3,
+          "average_transition_time": 10.304561694463095,
+          "success_rate": 1.0
+        }
+      },
+      "success": true,
+      "end_time": 1750513227.967228,
+      "duration": 30.913734912872314
+    },
+    {
+      "scenario": "Dual Agent Competition",
+      "test_type": "manual_sim",
+      "start_time": 1750513228.968655,
+      "agents_tested": [
+        "CostAgent",
+        "TimeAgent"
+      ],
+      "phase_transitions": [
+        {
+          "agent": "CostAgent",
+          "phase": "alpha",
+          "performance": {
+            "phase": "alpha",
+            "activities_completed": 3,
+            "average_score": 0.6512528975811017,
+            "success": true
+          }
+        },
+        {
+          "agent": "TimeAgent",
+          "phase": "alpha",
+          "performance": {
+            "phase": "alpha",
+            "activities_completed": 3,
+            "average_score": 0.571619849996223,
+            "success": true
+          }
+        },
+        {
+          "agent": "CostAgent",
+          "phase": "beta",
+          "performance": {
+            "phase": "beta",
+            "activities_completed": 3,
+            "average_score": 0.7070694120618922,
+            "success": true
+          }
+        },
+        {
+          "agent": "TimeAgent",
+          "phase": "beta",
+          "performance": {
+            "phase": "beta",
+            "activities_completed": 3,
+            "average_score": 0.5950768247232132,
+            "success": true
+          }
+        },
+        {
+          "agent": "CostAgent",
+          "phase": "gamma",
+          "performance": {
+            "phase": "gamma",
+            "activities_completed": 3,
+            "average_score": 0.6334554455714462,
+            "success": true
+          }
+        },
+        {
+          "agent": "TimeAgent",
+          "phase": "gamma",
+          "performance": {
+            "phase": "gamma",
+            "activities_completed": 3,
+            "average_score": 0.7623724264010824,
+            "success": true
+          }
+        }
+      ],
+      "performance_metrics": {
+        "QualityAgent": {
+          "total_time": 78.74012017250061,
+          "transitions_completed": 3,
+          "average_transition_time": 26.24670672416687,
+          "success_rate": 1.0
+        },
+        "CostAgent": {
+          "total_time": 46.82490396499634,
+          "transitions_completed": 3,
+          "average_transition_time": 15.608301321665445,
+          "success_rate": 1.0
+        },
+        "TimeAgent": {
+          "total_time": 46.82483410835266,
+          "transitions_completed": 3,
+          "average_transition_time": 15.608278036117554,
+          "success_rate": 1.0
+        }
+      },
+      "success": true,
+      "end_time": 1750513275.7936661,
+      "duration": 46.825011014938354
+    },
+    {
+      "scenario": "Malformed Node Data",
+      "test_type": "edge_case",
+      "start_time": 1750513276.7951481,
+      "edge_cases_tested": [
+        {
+          "case": "_test_malformed_node_features",
+          "result": {
+            "success": true,
+            "error_handled": true
+          },
+          "handled_gracefully": true
+        },
+        {
+          "case": "_test_missing_edge_data",
+          "result": {
+            "success": true,
+            "error_handled": true
+          },
+          "handled_gracefully": true
+        },
+        {
+          "case": "_test_invalid_memory_structure",
+          "result": {
+            "success": true,
+            "error_handled": true
+          },
+          "handled_gracefully": true
+        },
+        {
+          "case": "_test_corrupt_reward_data",
+          "result": {
+            "success": true,
+            "error_handled": true
+          },
+          "handled_gracefully": true
+        },
+        {
+          "case": "_test_extreme_values",
+          "result": {
+            "success": true,
+            "error_handled": true
+          },
+          "handled_gracefully": true
+        }
+      ],
+      "error_handling": {
+        "total_cases": 5,
+        "graceful_handling": 5,
+        "success_rate": 1.0
+      },
+      "success": true,
+      "end_time": 1750513276.795376,
+      "duration": 0.00022792816162109375
+    }
+  ],
+  "performance_summary": {
+    "average_test_duration": 25.912991285324097,
+    "total_test_time": 77.73897385597229,
+    "fastest_test": 0.00022792816162109375,
+    "slowest_test": 46.825011014938354,
+    "tests_by_type": {
+      "manual_sim": 2,
+      "edge_case": 1,
+      "stress_pulse": 0
+    }
+  },
+  "success_rate": 1.0
+}

@@ -1,0 +1,448 @@
+{
+  "total_tests": 6,
+  "tests_run": 6,
+  "successful_tests": 6,
+  "failed_tests": 0,
+  "test_results": [
+    {
+      "scenario": "Memory Overflow Test",
+      "test_type": "stress_pulse",
+      "start_time": 1750513282.421029,
+      "pulse_count": 50,
+      "successful_pulses": 50,
+      "failed_pulses": 0,
+      "memory_usage": [],
+      "response_times": [
+        5.221366882324219e-05,
+        9.5367431640625e-07,
+        9.5367431640625e-07,
+        1.1920928955078125e-06,
+        1.1920928955078125e-06,
+        0.0,
+        1.9073486328125e-06,
+        1.6689300537109375e-06,
+        1.1920928955078125e-06,
+        1.1920928955078125e-06,
+        9.5367431640625e-07,
+        1.9073486328125e-06,
+        4.0531158447265625e-06,
+        9.5367431640625e-07,
+        9.5367431640625e-07,
+        0.0,
+        1.1920928955078125e-06,
+        1.6689300537109375e-06,
+        9.5367431640625e-07,
+        9.5367431640625e-07,
+        0.0,
+        9.5367431640625e-07,
+        0.0,
+        0.0,
+        9.5367431640625e-07,
+        9.5367431640625e-07,
+        1.9073486328125e-06,
+        0.0,
+        9.5367431640625e-07,
+        9.5367431640625e-07,
+        9.5367431640625e-07,
+        0.0,
+        0.0,
+        9.5367431640625e-07,
+        9.5367431640625e-07,
+        9.5367431640625e-07,
+        9.5367431640625e-07,
+        1.1920928955078125e-06,
+        1.9073486328125e-06,
+        0.0,
+        1.6689300537109375e-06,
+        1.9073486328125e-06,
+        0.0,
+        2.86102294921875e-06,
+        9.5367431640625e-07,
+        0.0,
+        9.5367431640625e-07,
+        7.152557373046875e-07,
+        9.5367431640625e-07,
+        9.5367431640625e-07
+      ],
+      "success": true,
+      "end_time": 1750513307.476038,
+      "duration": 25.05500888824463
+    },
+    {
+      "scenario": "Alpha to Gamma Lifecycle",
+      "test_type": "manual_sim",
+      "start_time": 1750513308.47731,
+      "agents_tested": [
+        "QualityAgent"
+      ],
+      "phase_transitions": [
+        {
+          "agent": "QualityAgent",
+          "phase": "alpha",
+          "performance": {
+            "phase": "alpha",
+            "activities_completed": 3,
+            "average_score": 0.6319219366312994,
+            "success": true
+          }
+        },
+        {
+          "agent": "QualityAgent",
+          "phase": "beta",
+          "performance": {
+            "phase": "beta",
+            "activities_completed": 3,
+            "average_score": 0.6124842842698766,
+            "success": true
+          }
+        },
+        {
+          "agent": "QualityAgent",
+          "phase": "gamma",
+          "performance": {
+            "phase": "gamma",
+            "activities_completed": 3,
+            "average_score": 0.6679389594188038,
+            "success": true
+          }
+        }
+      ],
+      "performance_metrics": {
+        "QualityAgent": {
+          "total_time": 30.91280198097229,
+          "transitions_completed": 3,
+          "average_transition_time": 10.304267326990763,
+          "success_rate": 1.0
+        }
+      },
+      "success": true,
+      "end_time": 1750513339.390322,
+      "duration": 30.91301202774048
+    },
+    {
+      "scenario": "Alpha to Gamma Lifecycle",
+      "test_type": "manual_sim",
+      "start_time": 1750513340.3916779,
+      "agents_tested": [
+        "QualityAgent"
+      ],
+      "phase_transitions": [
+        {
+          "agent": "QualityAgent",
+          "phase": "alpha",
+          "performance": {
+            "phase": "alpha",
+            "activities_completed": 3,
+            "average_score": 0.6877573875499884,
+            "success": true
+          }
+        },
+        {
+          "agent": "QualityAgent",
+          "phase": "beta",
+          "performance": {
+            "phase": "beta",
+            "activities_completed": 3,
+            "average_score": 0.5355412216265963,
+            "success": true
+          }
+        },
+        {
+          "agent": "QualityAgent",
+          "phase": "gamma",
+          "performance": {
+            "phase": "gamma",
+            "activities_completed": 3,
+            "average_score": 0.5662461091789303,
+            "success": true
+          }
+        }
+      ],
+      "performance_metrics": {
+        "QualityAgent": {
+          "total_time": 30.91459584236145,
+          "transitions_completed": 3,
+          "average_transition_time": 10.30486528078715,
+          "success_rate": 1.0
+        }
+      },
+      "success": true,
+      "end_time": 1750513371.306436,
+      "duration": 30.91475820541382
+    },
+    {
+      "scenario": "Missing Edge Features",
+      "test_type": "edge_case",
+      "start_time": 1750513372.311105,
+      "edge_cases_tested": [
+        {
+          "case": "_test_malformed_node_features",
+          "result": {
+            "success": true,
+            "error_handled": true
+          },
+          "handled_gracefully": true
+        },
+        {
+          "case": "_test_missing_edge_data",
+          "result": {
+            "success": true,
+            "error_handled": true
+          },
+          "handled_gracefully": true
+        },
+        {
+          "case": "_test_invalid_memory_structure",
+          "result": {
+            "success": true,
+            "error_handled": true
+          },
+          "handled_gracefully": true
+        },
+        {
+          "case": "_test_corrupt_reward_data",
+          "result": {
+            "success": true,
+            "error_handled": true
+          },
+          "handled_gracefully": true
+        },
+        {
+          "case": "_test_extreme_values",
+          "result": {
+            "success": true,
+            "error_handled": true
+          },
+          "handled_gracefully": true
+        }
+      ],
+      "error_handling": {
+        "total_cases": 5,
+        "graceful_handling": 5,
+        "success_rate": 1.0
+      },
+      "success": true,
+      "end_time": 1750513372.311784,
+      "duration": 0.00067901611328125
+    },
+    {
+      "scenario": "Dual Agent Competition",
+      "test_type": "manual_sim",
+      "start_time": 1750513373.3130372,
+      "agents_tested": [
+        "CostAgent",
+        "TimeAgent"
+      ],
+      "phase_transitions": [
+        {
+          "agent": "CostAgent",
+          "phase": "alpha",
+          "performance": {
+            "phase": "alpha",
+            "activities_completed": 3,
+            "average_score": 0.5937592212032944,
+            "success": true
+          }
+        },
+        {
+          "agent": "TimeAgent",
+          "phase": "alpha",
+          "performance": {
+            "phase": "alpha",
+            "activities_completed": 3,
+            "average_score": 0.6507285661171772,
+            "success": true
+          }
+        },
+        {
+          "agent": "CostAgent",
+          "phase": "beta",
+          "performance": {
+            "phase": "beta",
+            "activities_completed": 3,
+            "average_score": 0.6987200549780335,
+            "success": true
+          }
+        },
+        {
+          "agent": "TimeAgent",
+          "phase": "beta",
+          "performance": {
+            "phase": "beta",
+            "activities_completed": 3,
+            "average_score": 0.6032769141052939,
+            "success": true
+          }
+        },
+        {
+          "agent": "CostAgent",
+          "phase": "gamma",
+          "performance": {
+            "phase": "gamma",
+            "activities_completed": 3,
+            "average_score": 0.677275818459492,
+            "success": true
+          }
+        },
+        {
+          "agent": "TimeAgent",
+          "phase": "gamma",
+          "performance": {
+            "phase": "gamma",
+            "activities_completed": 3,
+            "average_score": 0.663558021017521,
+            "success": true
+          }
+        }
+      ],
+      "performance_metrics": {
+        "QualityAgent": {
+          "total_time": 79.74414277076721,
+          "transitions_completed": 3,
+          "average_transition_time": 26.58138092358907,
+          "success_rate": 1.0
+        },
+        "CostAgent": {
+          "total_time": 46.82282996177673,
+          "transitions_completed": 3,
+          "average_transition_time": 15.607609987258911,
+          "success_rate": 1.0
+        },
+        "TimeAgent": {
+          "total_time": 46.82277321815491,
+          "transitions_completed": 3,
+          "average_transition_time": 15.607591072718302,
+          "success_rate": 1.0
+        }
+      },
+      "success": true,
+      "end_time": 1750513420.135961,
+      "duration": 46.8229238986969
+    },
+    {
+      "scenario": "Rapid Fire Pulses",
+      "test_type": "stress_pulse",
+      "start_time": 1750513421.1372402,
+      "pulse_count": 99,
+      "successful_pulses": 99,
+      "failed_pulses": 0,
+      "memory_usage": [],
+      "response_times": [
+        1.0013580322265625e-05,
+        1.1920928955078125e-06,
+        9.5367431640625e-07,
+        0.0,
+        1.1920928955078125e-06,
+        9.5367431640625e-07,
+        0.0,
+        9.5367431640625e-07,
+        7.152557373046875e-07,
+        9.5367431640625e-07,
+        9.5367431640625e-07,
+        0.0,
+        7.152557373046875e-07,
+        9.5367431640625e-07,
+        0.0,
+        7.152557373046875e-07,
+        0.0,
+        9.5367431640625e-07,
+        1.1920928955078125e-06,
+        1.1920928955078125e-06,
+        9.5367431640625e-07,
+        9.5367431640625e-07,
+        0.0,
+        7.152557373046875e-07,
+        9.5367431640625e-07,
+        1.1920928955078125e-06,
+        0.0,
+        9.5367431640625e-07,
+        9.5367431640625e-07,
+        0.0,
+        0.0,
+        1.1920928955078125e-06,
+        9.5367431640625e-07,
+        0.0,
+        1.1920928955078125e-06,
+        9.5367431640625e-07,
+        9.5367431640625e-07,
+        0.0,
+        9.5367431640625e-07,
+        9.5367431640625e-07,
+        9.5367431640625e-07,
+        0.0,
+        7.152557373046875e-07,
+        9.5367431640625e-07,
+        9.5367431640625e-07,
+        0.0,
+        0.0,
+        9.5367431640625e-07,
+        1.1920928955078125e-06,
+        0.0,
+        9.5367431640625e-07,
+        1.1920928955078125e-06,
+        0.0,
+        0.0,
+        9.5367431640625e-07,
+        9.5367431640625e-07,
+        1.1920928955078125e-06,
+        0.0,
+        9.5367431640625e-07,
+        1.1920928955078125e-06,
+        0.0,
+        1.1920928955078125e-06,
+        9.5367431640625e-07,
+        7.152557373046875e-07,
+        1.1920928955078125e-06,
+        9.5367431640625e-07,
+        9.5367431640625e-07,
+        1.1920928955078125e-06,
+        7.152557373046875e-07,
+        0.0,
+        1.1920928955078125e-06,
+        9.5367431640625e-07,
+        0.0,
+        1.1920928955078125e-06,
+        0.0,
+        9.5367431640625e-07,
+        9.5367431640625e-07,
+        9.5367431640625e-07,
+        9.5367431640625e-07,
+        0.0,
+        9.5367431640625e-07,
+        9.5367431640625e-07,
+        0.0,
+        9.5367431640625e-07,
+        9.5367431640625e-07,
+        0.0,
+        0.0,
+        9.5367431640625e-07,
+        9.5367431640625e-07,
+        0.0,
+        9.5367431640625e-07,
+        9.5367431640625e-07,
+        0.0,
+        9.5367431640625e-07,
+        1.1920928955078125e-06,
+        9.5367431640625e-07,
+        0.0,
+        9.5367431640625e-07,
+        9.5367431640625e-07
+      ],
+      "success": true,
+      "end_time": 1750513431.148194,
+      "duration": 10.010953903198242
+    }
+  ],
+  "performance_summary": {
+    "average_test_duration": 23.952889323234558,
+    "total_test_time": 143.71733593940735,
+    "fastest_test": 0.00067901611328125,
+    "slowest_test": 46.8229238986969,
+    "tests_by_type": {
+      "manual_sim": 3,
+      "edge_case": 1,
+      "stress_pulse": 2
+    }
+  },
+  "success_rate": 1.0
+}
