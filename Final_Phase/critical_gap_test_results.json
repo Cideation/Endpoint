@@ -1,0 +1,130 @@
+{
+  "test_results": [
+    {
+      "test_type": "actual_learning",
+      "consistency_score": 0.5726798771444899,
+      "learning_improvement": 0.33707445484651866,
+      "generalization_score": 0.2819962334870252,
+      "consistency_good": false,
+      "learning_detected": true,
+      "generalization_good": false,
+      "success": false,
+      "test_name": "Actual Learning Mechanism"
+    },
+    {
+      "scenarios_tested": [
+        {
+          "type": "json_syntax_error",
+          "detection_success": true,
+          "recovery_success": true
+        },
+        {
+          "type": "json_wrong_types",
+          "detection_success": false,
+          "recovery_success": false
+        },
+        {
+          "type": "memory_overflow",
+          "detection_success": true,
+          "recovery_success": true
+        },
+        {
+          "type": "circular_reference",
+          "detection_success": true,
+          "recovery_success": true
+        },
+        {
+          "type": "nan_values",
+          "detection_success": true,
+          "recovery_success": true
+        },
+        {
+          "type": "wrong_dimensions",
+          "detection_success": true,
+          "recovery_success": true
+        },
+        {
+          "type": "invalid_phase",
+          "detection_success": true,
+          "recovery_success": true
+        },
+        {
+          "type": "negative_scores",
+          "detection_success": true,
+          "recovery_success": true
+        }
+      ],
+      "detection_rate": 0.875,
+      "recovery_rate": 0.875,
+      "success": true,
+      "test_name": "Data Corruption Handling"
+    },
+    {
+      "test_type": "deployment_readiness",
+      "checks_performed": [
+        {
+          "check": "required_files",
+          "success": true,
+          "details": "All files present"
+        },
+        {
+          "check": "json_validity",
+          "success": true,
+          "details": "All JSON valid"
+        },
+        {
+          "check": "memory_usage",
+          "success": true,
+          "details": "Current memory usage: 19.9MB"
+        },
+        {
+          "check": "response_time",
+          "success": true,
+          "details": "Average response time: 0.0012s"
+        },
+        {
+          "check": "error_handling",
+          "success": true,
+          "details": "Error handling tested"
+        }
+      ],
+      "passed_checks": 5,
+      "total_checks": 5,
+      "readiness_score": 1.0,
+      "success": true,
+      "test_name": "Production Deployment Readiness"
+    },
+    {
+      "test_type": "training_loop_integration",
+      "components_working": [
+        {
+          "component": "training_loop_demo",
+          "available": true
+        },
+        {
+          "component": "dgl_integration",
+          "available": true
+        }
+      ],
+      "integration_success": false,
+      "end_to_end": {
+        "node_features_loaded": true,
+        "agent_memory_loaded": true,
+        "training_successful": false,
+        "training_time": 0.06702589988708496,
+        "iterations_completed": 5
+      },
+      "component_success_rate": 1.0,
+      "success": false,
+      "test_name": "Real Training Loop Integration"
+    }
+  ],
+  "critical_issues": [
+    "CRITICAL: Same inputs produce different outputs - no deterministic learning",
+    "WARNING: Poor generalization - similar inputs produce very different outputs",
+    "CRITICAL: Real training loop integration failed - components may not work together in production"
+  ],
+  "total_tests": 4,
+  "passed_tests": 2,
+  "success_rate": 0.5
+}
