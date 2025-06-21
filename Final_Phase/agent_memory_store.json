@@ -5,7 +5,28 @@
     "short_term_memory": {
       "capacity": 100,
       "retention_minutes": 30,
-      "current_entries": []
+      "current_entries": [
+        {
+          "node_id": "test_node",
+          "memory_type": "demo",
+          "timestamp": "2025-06-21T21:31:09.501200",
+          "data": {
+            "action": "user_interaction",
+            "score": 0.8,
+            "feedback": "positive"
+          }
+        },
+        {
+          "node_id": "V01_Component_001",
+          "memory_type": "integration_demo",
+          "timestamp": "2025-06-21T21:31:09.501907",
+          "data": {
+            "training_cycle": 1,
+            "reward": 0.6719999999999999,
+            "user_rating": 4
+          }
+        }
+      ]
     },
     "long_term_memory": {
       "capacity": 1000,
@@ -37,19 +58,31 @@
   },
   "agent_profiles": {
     "QualityAgent": {
-      "memory_priority": ["quality", "manufacturing", "compliance"],
+      "memory_priority": [
+        "quality",
+        "manufacturing",
+        "compliance"
+      ],
       "learning_rate": 0.12,
       "memory_decay_rate": 0.95,
       "short_term_capacity": 50
     },
     "CostAgent": {
-      "memory_priority": ["cost", "efficiency", "roi"],
+      "memory_priority": [
+        "cost",
+        "efficiency",
+        "roi"
+      ],
       "learning_rate": 0.15,
       "memory_decay_rate": 0.92,
       "short_term_capacity": 40
     },
     "TimeAgent": {
-      "memory_priority": ["timeline", "scheduling", "deadlines"],
+      "memory_priority": [
+        "timeline",
+        "scheduling",
+        "deadlines"
+      ],
       "learning_rate": 0.1,
       "memory_decay_rate": 0.98,
       "short_term_capacity": 60
@@ -61,4 +94,4 @@
     "importance_weighting": true,
     "temporal_decay": true
   }
-} 
+}

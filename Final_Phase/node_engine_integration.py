@@ -35,6 +35,11 @@ class NodeEngineWithInteractionLanguage:
         self.interaction_outputs = {}
         self.neighbor_activation_queue = []
         
+        # Memory for reward calculation
+        self.reward_history = {}
+        self.performance_metrics = {}
+        self.user_feedback_history = {}
+        
         logger.info("🔧 Node Engine with Interaction Language initialized")
     
     def process_node_with_interaction(self, node_id: str, node_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -291,6 +296,190 @@ class NodeEngineWithInteractionLanguage:
             "timestamp": datetime.now().isoformat()
         }
     
+    def reward_score(self, node_id: str, node_data: Dict[str, Any], 
+                    user_feedback: Dict[str, Any] = None) -> float:
+        """
+        Calculate reward score for node based on performance, user feedback, and learning
+        This is the key function for the training loop!
+        """
+        
+        # Base performance score
+        base_score = node_data.get("score", 0.5)
+        performance = node_data.get("performance", 0.5)
+        efficiency = node_data.get("efficiency", 0.5)
+        
+        # Performance component (40% weight)
+        performance_reward = (base_score * 0.4) + (performance * 0.3) + (efficiency * 0.3)
+        
+        # User feedback component (30% weight)
+        user_reward = 0.5  # Default neutral
+        if user_feedback and node_id in user_feedback:
+            user_data = user_feedback[node_id]
+            user_rating = user_data.get("rating", 0) / 5.0  # Normalize 0-5 to 0-1
+            user_approval = user_data.get("approval", 0.5)
+            interaction_count = min(user_data.get("interaction_count", 0) / 50.0, 1.0)  # Normalize
+            
+            user_reward = (user_rating * 0.5) + (user_approval * 0.3) + (interaction_count * 0.2)
+        
+        # Learning progress component (20% weight)
+        learning_reward = self._calculate_learning_reward(node_id, node_data)
+        
+        # System coherence component (10% weight)
+        coherence_reward = self._calculate_coherence_reward(node_id, node_data)
+        
+        # Weighted combination
+        total_reward = (
+            performance_reward * 0.4 +
+            user_reward * 0.3 +
+            learning_reward * 0.2 +
+            coherence_reward * 0.1
+        )
+        
+        # Clamp to 0-1 range
+        total_reward = max(0.0, min(1.0, total_reward))
+        
+        # Store reward history for learning
+        if node_id not in self.reward_history:
+            self.reward_history[node_id] = []
+        
+        self.reward_history[node_id].append({
+            "timestamp": datetime.now().isoformat(),
+            "reward": total_reward,
+            "components": {
+                "performance": performance_reward,
+                "user_feedback": user_reward,
+                "learning": learning_reward,
+                "coherence": coherence_reward
+            }
+        })
+        
+        # Keep only last 100 entries
+        if len(self.reward_history[node_id]) > 100:
+            self.reward_history[node_id] = self.reward_history[node_id][-100:]
+        
+        logger.debug(f"🎯 Reward calculated for {node_id}: {total_reward:.3f}")
+        return total_reward
+    
+    def _calculate_learning_reward(self, node_id: str, node_data: Dict[str, Any]) -> float:
+        """Calculate reward based on learning progress"""
+        
+        # Check if node is actively learning
+        is_learning = node_data.get("is_learning", False)
+        change_rate = node_data.get("change_rate", 0.1)
+        
+        if not is_learning:
+            return 0.5  # Neutral for non-learning nodes
+        
+        # Reward based on positive change
+        learning_progress = change_rate * 0.8
+        
+        # Historical learning trend
+        if node_id in self.reward_history and len(self.reward_history[node_id]) > 1:
+            recent_rewards = [entry["reward"] for entry in self.reward_history[node_id][-5:]]
+            if len(recent_rewards) >= 2:
+                trend = recent_rewards[-1] - recent_rewards[0]
+                learning_progress += trend * 0.2  # Bonus for positive trend
+        
+        return max(0.0, min(1.0, learning_progress))
+    
+    def _calculate_coherence_reward(self, node_id: str, node_data: Dict[str, Any]) -> float:
+        """Calculate reward based on system coherence and interaction quality"""
+        
+        # Interaction mode quality
+        interaction_mode = node_data.get("interaction_mode", "passive")
+        mode_rewards = {
+            "active": 0.8,
+            "relational": 0.9,
+            "passive": 0.4
+        }
+        mode_reward = mode_rewards.get(interaction_mode, 0.5)
+        
+        # Design signal coherence (if available)
+        if "interaction_language" in node_data:
+            design_signal = node_data["interaction_language"].get("design_signal", "neutral_state")
+            signal_rewards = {
+                "evolutionary_peak": 1.0,
+                "neutral_state": 0.5,
+                "learning_phase": 0.8,
+                "low_precision": 0.3,
+                "critical_failure": 0.1
+            }
+            signal_reward = signal_rewards.get(design_signal, 0.5)
+        else:
+            signal_reward = 0.5
+        
+        # Combined coherence score
+        coherence = (mode_reward * 0.6) + (signal_reward * 0.4)
+        return max(0.0, min(1.0, coherence))
+    
+    def short_term_memory(self, node_id: str, memory_type: str = "interaction") -> List[Dict[str, Any]]:
+        """
+        Retrieve short-term memory for agent/node
+        This supports the agent memory component of the training loop
+        """
+        
+        # Load agent memory store
+        try:
+            with open("agent_memory_store.json", "r") as f:
+                memory_store = json.load(f)
+        except FileNotFoundError:
+            logger.warning("Agent memory store not found, using empty memory")
+            return []
+        
+        # Get short-term memory entries
+        short_term = memory_store.get("agent_memory", {}).get("short_term_memory", {})
+        current_entries = short_term.get("current_entries", [])
+        
+        # Filter by node_id and memory_type
+        relevant_entries = []
+        for entry in current_entries:
+            if (entry.get("node_id") == node_id and 
+                entry.get("memory_type") == memory_type):
+                relevant_entries.append(entry)
+        
+        # Sort by timestamp (most recent first)
+        relevant_entries.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+        
+        # Return last 10 entries
+        return relevant_entries[:10]
+    
+    def update_short_term_memory(self, node_id: str, memory_data: Dict[str, Any], 
+                                memory_type: str = "interaction"):
+        """Update short-term memory with new entry"""
+        
+        try:
+            with open("agent_memory_store.json", "r") as f:
+                memory_store = json.load(f)
+        except FileNotFoundError:
+            memory_store = {
+                "agent_memory": {
+                    "short_term_memory": {"current_entries": []}
+                }
+            }
+        
+        # Create memory entry
+        memory_entry = {
+            "node_id": node_id,
+            "memory_type": memory_type,
+            "timestamp": datetime.now().isoformat(),
+            "data": memory_data
+        }
+        
+        # Add to short-term memory
+        short_term = memory_store["agent_memory"]["short_term_memory"]
+        short_term["current_entries"].append(memory_entry)
+        
+        # Keep only last 100 entries
+        if len(short_term["current_entries"]) > 100:
+            short_term["current_entries"] = short_term["current_entries"][-100:]
+        
+        # Save back to file
+        try:
+            with open("agent_memory_store.json", "w") as f:
+                json.dump(memory_store, f, indent=2)
+        except Exception as e:
+            logger.error(f"Failed to save memory store: {e}")
+
     def get_system_summary(self) -> Dict[str, Any]:
         """Get summary of the node engine state"""
         return {
@@ -298,6 +487,7 @@ class NodeEngineWithInteractionLanguage:
             "interaction_outputs": len(self.interaction_outputs),
             "pending_activations": len(self.neighbor_activation_queue),
             "interaction_language_available": INTERACTION_AVAILABLE,
+            "total_rewards_calculated": sum(len(history) for history in self.reward_history.values()),
             "system_status": "operational"
         }
 
