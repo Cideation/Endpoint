@@ -1,0 +1,44 @@
+{
+    "FileVersion": 3,
+    "Version": 1,
+    "VersionName": "1.0.0",
+    "FriendlyName": "BEM System Integration",
+    "Description": "Building Engineering Management System integration for Unreal Engine with visual-only pulse rendering and spatial object interaction",
+    "Category": "Engineering",
+    "CreatedBy": "BEM Development Team",
+    "CreatedByURL": "https://github.com/bem-system",
+    "DocsURL": "",
+    "MarketplaceURL": "",
+    "SupportURL": "",
+    "CanContainContent": true,
+    "IsBetaVersion": false,
+    "IsExperimentalVersion": false,
+    "Installed": false,
+    "Modules": [
+        {
+            "Name": "BEMSystem",
+            "Type": "Runtime",
+            "LoadingPhase": "Default",
+            "WhitelistPlatforms": [
+                "Win64",
+                "Mac",
+                "Linux"
+            ]
+        }
+    ],
+    "Plugins": [
+        {
+            "Name": "WebSocketNetworking",
+            "Enabled": true
+        },
+        {
+            "Name": "JsonBlueprintUtilities",
+            "Enabled": true
+        },
+        {
+            "Name": "VaRest",
+            "Enabled": false,
+            "Optional": true
+        }
+    ]
+}
