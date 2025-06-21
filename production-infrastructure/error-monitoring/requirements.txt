@@ -1,0 +1,8 @@
+# Error Monitoring Dependencies
+aiohttp>=3.8.0
+sentry-sdk>=1.40.0
+slack-sdk>=3.21.0
+prometheus-client>=0.17.0
+
+# Optional email dependencies
+secure-smtplib>=0.1.1 
