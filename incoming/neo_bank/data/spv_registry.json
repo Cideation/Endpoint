@@ -1,0 +1,35 @@
+{
+  "SPV-DEMO001": {
+    "spv_id": "SPV-DEMO001",
+    "property_info": {
+      "property_id": "PROP-001",
+      "address": "123 Sample Street, Barangay Centro",
+      "city": "Makati City",
+      "province": "Metro Manila",
+      "postal_code": "1200",
+      "property_type": "Residential House",
+      "estimated_value": 2500000.0,
+      "title_number": "TCT-12345",
+      "title_hash": "abc123def456789",
+      "legal_description": "A parcel of land with improvements located in Makati City"
+    },
+    "config": {
+      "target_amount": 500000.0,
+      "minimum_contribution": 1000.0,
+      "maximum_contribution": 50000.0,
+      "required_participants": 10,
+      "funding_deadline": "2024-12-31T23:59:59",
+      "auto_release": true,
+      "manual_approval_required": false,
+      "contribution_currency": "PHP"
+    },
+    "status": "active",
+    "created_at": "2024-01-15T10:00:00",
+    "updated_at": "2024-01-15T10:00:00",
+    "current_amount": 0.0,
+    "participant_count": 0,
+    "contributions": [],
+    "neobank_reference": "NB-SPV-001",
+    "release_conditions_met": false
+  }
+}

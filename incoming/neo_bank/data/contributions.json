@@ -1,0 +1,18 @@
+{
+  "CONTRIB-DEMO001": {
+    "contribution_id": "CONTRIB-DEMO001",
+    "agent_id": "AGENT-001",
+    "spv_id": "SPV-DEMO001",
+    "amount": 5000.0,
+    "currency": "PHP",
+    "timestamp": "2024-01-15T14:30:00",
+    "fintech_provider": "GCash",
+    "transaction_ref": "GC-TXN-123456789",
+    "status": "completed",
+    "verification_data": {
+      "verified_at": "2024-01-15T14:29:00",
+      "verification_method": "api_callback",
+      "gcash_reference": "GC-REF-987654321"
+    }
+  }
+}

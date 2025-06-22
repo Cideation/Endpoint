@@ -1,0 +1,12 @@
+[
+  {
+    "spv_id": "SPV-DEMO001",
+    "timestamp": "2024-01-15T16:00:00",
+    "manual_override": false,
+    "triggered_by": "system",
+    "status": "initiated",
+    "trigger_reason": "conditions_met",
+    "final_amount": 500000.0,
+    "participant_count": 10
+  }
+]

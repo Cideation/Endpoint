@@ -1,0 +1,83 @@
+# Neo Bank API Configuration
+# Configuration for the contribution routing and SPV management system
+
+api:
+  host: "0.0.0.0"
+  port: 5001
+  debug: false
+  
+database:
+  data_path: "incoming/neo_bank/data"
+  backup_enabled: true
+  backup_interval_hours: 24
+
+neobank:
+  enabled: false  # Set to true with real NEOBANK credentials
+  base_url: "https://api.neobank.com"
+  api_key: "${NEOBANK_API_KEY}"
+  api_secret: "${NEOBANK_API_SECRET}"
+  timeout: 30
+  retry_attempts: 3
+
+security:
+  api_key_required: true
+  rate_limiting:
+    enabled: true
+    requests_per_minute: 100
+  encryption:
+    enabled: true
+    key: "${ENCRYPTION_KEY}"
+
+logging:
+  level: "INFO"
+  file: "logs/neobank_api.log"
+  max_size_mb: 100
+  backup_count: 5
+
+fintech_providers:
+  gcash:
+    name: "GCash"
+    webhook_timeout: 30
+    retry_attempts: 3
+    supported_currencies: ["PHP"]
+  
+  paymaya:
+    name: "PayMaya"
+    webhook_timeout: 30
+    retry_attempts: 3
+    supported_currencies: ["PHP"]
+  
+  maya:
+    name: "Maya"
+    webhook_timeout: 30
+    retry_attempts: 3
+    supported_currencies: ["PHP"]
+
+contribution_limits:
+  minimum_amount: 100.0
+  maximum_amount: 1000000.0
+  daily_limit_per_agent: 500000.0
+  currency: "PHP"
+
+spv_defaults:
+  minimum_target_amount: 50000.0
+  maximum_target_amount: 10000000.0
+  default_funding_period_days: 365
+  minimum_participants: 5
+  maximum_participants: 1000
+  auto_release_enabled: true
+
+alerts:
+  email_enabled: false
+  slack_enabled: false
+  webhook_enabled: true
+  
+  thresholds:
+    spv_funding_completion: 0.95  # 95% of target
+    large_contribution_amount: 100000.0
+    failed_transaction_rate: 0.05  # 5%
+
+monitoring:
+  metrics_enabled: true
+  health_check_interval: 60
+  performance_logging: true

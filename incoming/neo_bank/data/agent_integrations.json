@@ -1,0 +1,58 @@
+{
+  "agent_001": {
+    "agent_id": "agent_001",
+    "fintech_provider": "GCash",
+    "api_credentials": {
+      "gcash_merchant_id": "M123456",
+      "gcash_api_key": "sk_live_xxx",
+      "gcash_webhook_url": "https://agent001.mycoop.org/gcash/webhook"
+    },
+    "registered_at": "2024-01-10T09:00:00",
+    "status": "active",
+    "last_verified": "2024-01-15T08:00:00",
+    "organization_type": "COOP",
+    "organization_name": "Agent 001 Cooperative"
+  },
+  "agent_002": {
+    "agent_id": "agent_002", 
+    "fintech_provider": "GCash",
+    "api_credentials": {
+      "gcash_merchant_id": "M789012",
+      "gcash_api_key": "sk_live_yyy",
+      "gcash_webhook_url": null
+    },
+    "registered_at": "2024-01-12T11:30:00",
+    "status": "active",
+    "last_verified": "2024-01-15T07:30:00",
+    "organization_type": "Individual Agent",
+    "organization_name": "Agent 002 Financial Services"
+  },
+  "coop_manila_001": {
+    "agent_id": "coop_manila_001",
+    "fintech_provider": "PayMaya",
+    "api_credentials": {
+      "paymaya_merchant_id": "PM-COOP-001",
+      "paymaya_api_key": "pk_live_paymaya_xxx",
+      "paymaya_webhook_url": "https://manila-coop.org/paymaya/webhook"
+    },
+    "registered_at": "2024-01-08T14:20:00",
+    "status": "active", 
+    "last_verified": "2024-01-15T06:45:00",
+    "organization_type": "COOP",
+    "organization_name": "Manila Housing Cooperative"
+  },
+  "agent_cebu_003": {
+    "agent_id": "agent_cebu_003",
+    "fintech_provider": "Maya",
+    "api_credentials": {
+      "maya_merchant_id": "MAYA-AG-003",
+      "maya_api_key": "mk_live_cebu_zzz", 
+      "maya_webhook_url": "https://cebu-agent.ph/maya/callback"
+    },
+    "registered_at": "2024-01-14T16:15:00",
+    "status": "pending_verification",
+    "last_verified": null,
+    "organization_type": "Individual Agent",
+    "organization_name": "Cebu Property Solutions"
+  }
+}
